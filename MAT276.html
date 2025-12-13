@@ -79,12 +79,7 @@
               <input id="e_c" type="number" step="any" value="1" />
               <input id="e_d" type="number" step="any" value="2" />
             </div>
-
-            <div class="actions">
-              <button id="e_compute">Compute</button>
-              <label class="chip"><input id="e_norm" type="checkbox" checked /> Normalize real eigenvectors</label>
-            </div>
-
+            
             <div class="out" id="e_out"></div>
             <div class="note">Complex eigenvalues and eigenvectors are shown in complex form when they occur.</div>
           </div>
@@ -280,7 +275,7 @@ function eigenCompute(){
   const b = parseFloat($("e_b").value);
   const c = parseFloat($("e_c").value);
   const d = parseFloat($("e_d").value);
-  const doNorm = $("e_norm").checked;
+  
 
   if (!isFiniteAll([a,b,c,d])) {
     $("e_out").textContent = "Please enter valid numbers for all four entries.";
