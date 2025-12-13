@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Math Tools: Eigen / Linear / Nonlinear Roots / Integrals</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --card:#fff; --bg:#f4f6f8; --ink:#111827; --muted:#6b7280; --blue:#2563eb; --line:#d1d5db; }
+    body { margin:0; padding:20px; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:var(--bg); color:var(--ink); }
+    .wrap { max-width: 1020px; margin: 0 auto; }
+    .card { background:var(--card); border-radius:14px; padding:18px 18px 16px; box-shadow:0 8px 20px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 6px; font-size: 1.45rem; }
+    .sub { margin: 0 0 14px; color: var(--muted); }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 14px; }
+    .tabbtn {
+      border:1px solid var(--line); background:#fff; color:var(--ink);
+      padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600;
+    }
+    .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .box { flex: 1 1 460px; border:1px solid var(--line); border-radius:12px; padding:14px; }
+    .boxtitle { margin: 0 0 10px; font-size: 1.05rem; }
+    .grid2 { display:grid; grid-template-columns: repeat(2, 120px); gap:10px; }
+    .grid4 { display:grid; grid-template-columns: repeat(4, 140px); gap:10px; }
+    label { font-size: .9rem; color: var(--muted); display:block; margin: 10px 0 6px; }
+    input[type="number"], input[type="text"], textarea {
+      width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem;
+    }
+    textarea { min-height: 88px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
+    button {
+      padding:10px 14px; font-size:1rem; border-radius:10px; border:none;
+      background: var(--blue); color:#fff; cursor:pointer; font-weight:700;
+    }
+    button:hover { filter: brightness(.95); }
+    .chip { display:flex; align-items:center; gap:8px; font-size:.95rem; color: var(--ink); }
+    .out {
+      margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: .95rem;
+      white-space: pre-wrap;
+    }
+    .note { color: var(--muted); font-size: .9rem; margin-top: 10px; }
+    code { background:#eef2ff; padding:0 6px; border-radius:8px; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
+
+  <!-- Nerdamer (symbolic algebra + calculus) -->
+  <!-- Source: jsDelivr listing for nerdamer includes all.min.js -->
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Math Tools</h1>
+      <p class="sub">Eigen (2×2) • Linear Systems (2×2) • Nonlinear Roots (2 eqs) • Indefinite Integrals</p>
+
+      <div class="tabs">
+        <button class="tabbtn active" data-tab="eigen">Eigen (2×2)</button>
+        <button class="tabbtn" data-tab="linear">Linear System (2×2)</button>
+        <button class="tabbtn" data-tab="nonlinear">Nonlinear Roots (2×2)</button>
+        <button class="tabbtn" data-tab="integral">Indefinite Integral</button>
+      </div>
+
+      <!-- ============ 1) EIGEN PANEL ============ -->
+      <div class="panel active" id="panel-eigen">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">1) 2×2 Eigenvalues & Eigenvectors</h2>
+
+            <label>Matrix A = [[a, b], [c, d]]</label>
+            <div class="grid2">
+              <input id="e_a" type="number" step="any" value="2" />
+              <input id="e_b" type="number" step="any" value="1" />
+              <input id="e_c" type="number" step="any" value="1" />
+              <input id="e_d" type="number" step="any" value="2" />
+            </div>
+
+            <div class="actions">
+              <button id="e_compute">Compute</button>
+              <label class="chip"><input id="e_norm" type="checkbox" checked /> Normalize real eigenvectors</label>
+            </div>
+
+            <div class="out" id="e_out"></div>
+            <div class="note">Complex eigenvalues and eigenvectors are shown in complex form when they occur.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 2) LINEAR PANEL ============ -->
+      <div class="panel" id="panel-linear">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">2) Solve a 2×2 Linear System</h2>
+
+            <div class="note">Enter coefficients for: <strong>a₁x + b₁y = c₁</strong> and <strong>a₂x + b₂y = c₂</strong></div>
+
+            <label>Equation 1 (a₁, b₁, c₁)</label>
+            <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
+              <input id="l_a1" type="number" step="any" value="1" />
+              <input id="l_b1" type="number" step="any" value="1" />
+              <input id="l_c1" type="number" step="any" value="4" />
+            </div>
+
+            <label>Equation 2 (a₂, b₂, c₂)</label>
+            <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
+              <input id="l_a2" type="number" step="any" value="2" />
+              <input id="l_b2" type="number" step="any" value="-1" />
+              <input id="l_c2" type="number" step="any" value="1" />
+            </div>
+
+            <div class="actions">
+              <button id="l_solve">Solve</button>
+            </div>
+
+            <div class="out" id="l_out"></div>
+            <div class="note">Reports: unique solution, no solution, or infinitely many solutions.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 3) NONLINEAR PANEL ============ -->
+      <div class="panel" id="panel-nonlinear">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
+
+            <div class="note">
+              Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
+              Use JavaScript math: <code>x</code>, <code>y</code>, <code>Math.sin</code>, <code>Math.cos</code>, <code>Math.exp</code>, <code>Math.log</code>, <code>Math.pow</code>.
+            </div>
+
+            <label>f(x, y) = 0</label>
+            <input id="n_f" type="text" value="x*x + y*y - 1" />
+
+            <label>g(x, y) = 0</label>
+            <input id="n_g" type="text" value="y - x" />
+
+            <label>Search region</label>
+            <div class="grid4">
+              <div>
+                <label style="margin:0 0 6px;">x min</label>
+                <input id="n_xmin" type="number" step="any" value="-2" />
+              </div>
+              <div>
+                <label style="margin:0 0 6px;">x max</label>
+                <input id="n_xmax" type="number" step="any" value="2" />
+              </div>
+              <div>
+                <label style="margin:0 0 6px;">y min</label>
+                <input id="n_ymin" type="number" step="any" value="-2" />
+              </div>
+              <div>
+                <label style="margin:0 0 6px;">y max</label>
+                <input id="n_ymax" type="number" step="any" value="2" />
+              </div>
+            </div>
+
+            <label>Search settings</label>
+            <div class="grid4">
+              <div>
+                <label style="margin:0 0 6px;">Grid size</label>
+                <input id="n_grid" type="number" step="1" value="35" />
+              </div>
+              <div>
+                <label style="margin:0 0 6px;">Newton max iters</label>
+                <input id="n_iters" type="number" step="1" value="25" />
+              </div>
+              <div>
+                <label style="margin:0 0 6px;">Tolerance</label>
+                <input id="n_tol" type="number" step="any" value="1e-8" />
+              </div>
+              <div>
+                <label style="margin:0 0 6px;">Dedup radius</label>
+                <input id="n_eps" type="number" step="any" value="1e-4" />
+              </div>
+            </div>
+
+            <div class="actions">
+              <button id="n_find">Find Roots</button>
+            </div>
+
+            <div class="out" id="n_out"></div>
+
+            <div class="note">
+              Numerical search can miss roots if the region is too small or grid too coarse.
+              Increase <strong>Grid size</strong> and/or expand the region if you expect more roots.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 4) INTEGRAL PANEL ============ -->
+      <div class="panel" id="panel-integral">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">4) Indefinite Integral (Symbolic)</h2>
+
+            <div class="note">
+              Enter a function of <strong>t</strong>. Examples:
+              <span class="kbd">t^2</span>, <span class="kbd">sin(t)</span>, <span class="kbd">exp(3*t)</span>,
+              <span class="kbd">1/(1+t^2)</span>, <span class="kbd">sqrt(t)</span>.
+              <br/>
+              Use <strong>^</strong> for powers. Trig is <span class="kbd">sin</span>, <span class="kbd">cos</span>, etc.
+            </div>
+
+            <label>Integrand: ∫ f(t) dt</label>
+            <input id="i_expr" type="text" value="t^3 - 4*t + sin(t)" />
+
+            <div class="actions">
+              <button id="i_integrate">Integrate</button>
+              <label class="chip"><input id="i_simplify" type="checkbox" checked /> Simplify result</label>
+            </div>
+
+            <div class="out" id="i_out"></div>
+
+            <div class="note">
+              If Nerdamer can’t find a closed-form antiderivative, it may return an unevaluated expression.
+              (Still useful for “reasonable” classroom integrals.)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        Tip: If you later split these into separate apps, you can make separate files like <code>integrals.html</code>, <code>eigen.html</code>, etc.
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   Shared helpers + Tabs
+========================= */
+const $ = (id) => document.getElementById(id);
+function isFiniteAll(arr){ return arr.every(Number.isFinite); }
+
+document.querySelectorAll(".tabbtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+/* =========================
+   1) Eigenvalues/Eigenvectors (2x2), complex-capable
+========================= */
+function complex(re, im=0){ return {re, im}; }
+function cAdd(x,y){ return complex(x.re+y.re, x.im+y.im); }
+function cSub(x,y){ return complex(x.re-y.re, x.im-y.im); }
+function cMul(x,y){ return complex(x.re*y.re - x.im*y.im, x.re*y.im + x.im*y.re); }
+function cDiv(x,y){
+  const den = y.re*y.re + y.im*y.im;
+  return complex((x.re*y.re + x.im*y.im)/den, (x.im*y.re - x.re*y.im)/den);
+}
+function cAbs(x){ return Math.hypot(x.re, x.im); }
+function sqrtRealToComplex(x){
+  if (x >= 0) return complex(Math.sqrt(x), 0);
+  return complex(0, Math.sqrt(-x));
+}
+function fmtComplex(z, digits=6){
+  const re = Math.abs(z.re) < 1e-12 ? 0 : z.re;
+  const im = Math.abs(z.im) < 1e-12 ? 0 : z.im;
+  if (im === 0) return `${re.toFixed(digits).replace(/\.?0+$/,"")}`;
+  const sign = im >= 0 ? "+" : "-";
+  return `${re.toFixed(digits).replace(/\.?0+$/,"")} ${sign} ${Math.abs(im).toFixed(digits).replace(/\.?0+$/,"")}i`;
+}
+function normalizeRealVec(v){
+  const n = Math.hypot(v[0], v[1]);
+  if (n < 1e-14) return v;
+  return [v[0]/n, v[1]/n];
+}
+function eigenvector2x2(a,b,c,d, lam){
+  const aa = cSub(complex(a,0), lam);
+  const dd = cSub(complex(d,0), lam);
+  const bb = complex(b,0);
+  const cc = complex(c,0);
+
+  const r1 = cAbs(aa) + cAbs(bb);
+  const r2 = cAbs(cc) + cAbs(dd);
+
+  let x,y;
+  if (r1 >= r2) { x = cMul(complex(-1,0), bb); y = aa; }
+  else { x = cMul(complex(-1,0), dd); y = cc; }
+
+  if (cAbs(x) < 1e-14 && cAbs(y) < 1e-14) return [complex(1,0), complex(0,0)];
+  return [x,y];
+}
+function fmtVec(v, normReal){
+  if (Math.abs(v[0].im) < 1e-12 && Math.abs(v[1].im) < 1e-12) {
+    let vv = [v[0].re, v[1].re];
+    if (normReal) vv = normalizeRealVec(vv);
+    const fx = Math.abs(vv[0]) < 1e-12 ? 0 : vv[0];
+    const fy = Math.abs(vv[1]) < 1e-12 ? 0 : vv[1];
+    return `(${fx.toFixed(6)}, ${fy.toFixed(6)})`;
+  }
+  // Complex vector: scale so largest magnitude entry becomes 1
+  let x = v[0], y = v[1];
+  const ax = cAbs(x), ay = cAbs(y);
+  const scale = (ax >= ay && ax > 1e-14) ? x : (ay > 1e-14 ? y : complex(1,0));
+  x = cDiv(x, scale);
+  y = cDiv(y, scale);
+  return `(${fmtComplex(x)}, ${fmtComplex(y)})`;
+}
+
+function eigenCompute(){
+  const a = parseFloat($("e_a").value);
+  const b = parseFloat($("e_b").value);
+  const c = parseFloat($("e_c").value);
+  const d = parseFloat($("e_d").value);
+  const doNorm = $("e_norm").checked;
+
+  if (!isFiniteAll([a,b,c,d])) {
+    $("e_out").textContent = "Please enter valid numbers for all four entries.";
+    return;
+  }
+
+  const tr = a + d;
+  const det = a*d - b*c;
+  const disc = tr*tr - 4*det;
+  const sqrtDisc = sqrtRealToComplex(disc);
+
+  const halfTr = complex(tr/2, 0);
+  const halfS  = cMul(sqrtDisc, complex(0.5,0));
+
+  const lam1 = cAdd(halfTr, halfS);
+  const lam2 = cSub(halfTr, halfS);
+
+  const v1 = eigenvector2x2(a,b,c,d, lam1);
+  const v2 = eigenvector2x2(a,b,c,d, lam2);
+
+  const lines = [];
+  lines.push(`Matrix A = [[${a}, ${b}], [${c}, ${d}]]`);
+  lines.push(`trace(A) = ${tr}`);
+  lines.push(`det(A)   = ${det}`);
+  lines.push(`disc     = ${disc}`);
+  lines.push("");
+  lines.push(`λ1 = ${fmtComplex(lam1)}`);
+  lines.push(`v1 = ${fmtVec(v1, doNorm)}`);
+  lines.push("");
+  lines.push(`λ2 = ${fmtComplex(lam2)}`);
+  lines.push(`v2 = ${fmtVec(v2, doNorm)}`);
+
+  $("e_out").textContent = lines.join("\n");
+}
+
+$("e_compute").addEventListener("click", eigenCompute);
+eigenCompute();
+
+/* =========================
+   2) Linear system solver (2x2)
+========================= */
+function linearSolve(){
+  const a1 = parseFloat($("l_a1").value);
+  const b1 = parseFloat($("l_b1").value);
+  const c1 = parseFloat($("l_c1").value);
+  const a2 = parseFloat($("l_a2").value);
+  const b2 = parseFloat($("l_b2").value);
+  const c2 = parseFloat($("l_c2").value);
+
+  if (!isFiniteAll([a1,b1,c1,a2,b2,c2])) {
+    $("l_out").textContent = "Please enter valid numbers for all coefficients/constants.";
+    return;
+  }
+
+  const det = a1*b2 - a2*b1;
+  const eps = 1e-12;
+
+  const lines = [];
+  lines.push(`System:`);
+  lines.push(`  ${a1} x + ${b1} y = ${c1}`);
+  lines.push(`  ${a2} x + ${b2} y = ${c2}`);
+  lines.push("");
+  lines.push(`det = ${det}`);
+
+  if (Math.abs(det) > eps) {
+    const x = (c1*b2 - c2*b1) / det;
+    const y = (a1*c2 - a2*c1) / det;
+    lines.push("");
+    lines.push(`Unique solution:`);
+    lines.push(`  x = ${x.toFixed(10).replace(/\.?0+$/,"")}`);
+    lines.push(`  y = ${y.toFixed(10).replace(/\.?0+$/,"")}`);
+  } else {
+    // det = 0 => either none or infinite
+    function isZero(z){ return Math.abs(z) < eps; }
+    const r1 = [a1,b1,c1], r2 = [a2,b2,c2];
+
+    let k = null;
+    for (let i=0;i<3;i++){
+      if (!isZero(r1[i])) { k = r2[i]/r1[i]; break; }
+    }
+
+    lines.push("");
+    if (k === null) {
+      // equation 1 is 0x+0y=c1
+      if (!isZero(c1)) lines.push(`No solution (inconsistent: 0 = ${c1}).`);
+      else lines.push(`Infinitely many solutions (equation 1 is 0=0; rely on equation 2).`);
+    } else {
+      const proportional =
+        Math.abs(r2[0] - k*r1[0]) < 1e-9 &&
+        Math.abs(r2[1] - k*r1[1]) < 1e-9 &&
+        Math.abs(r2[2] - k*r1[2]) < 1e-9;
+
+      if (!proportional) {
+        lines.push(`No solution (inconsistent / parallel lines).`);
+      } else {
+        lines.push(`Infinitely many solutions (same line).`);
+        lines.push("");
+        const t = "t";
+        if (Math.abs(b1) > eps) {
+          lines.push(`Let x = ${t}. Then y = (c1 - a1*t)/b1:`);
+          lines.push(`  y = (${c1} - ${a1}*${t}) / ${b1}`);
+        } else if (Math.abs(a1) > eps) {
+          lines.push(`Let y = ${t}. Then x = (c1 - b1*t)/a1:`);
+          lines.push(`  x = (${c1} - ${b1}*${t}) / ${a1}`);
+        } else {
+          lines.push(`Degenerate line representation.`);
+        }
+      }
+    }
+  }
+
+  $("l_out").textContent = lines.join("\n");
+}
+
+$("l_solve").addEventListener("click", linearSolve);
+linearSolve();
+
+/* =========================
+   3) Nonlinear root finder (numerical)
+========================= */
+function makeSafeFunction(expr){
+  // WARNING: evaluates user expression as JS; OK for a class tool on your own site.
+  const body = `
+    "use strict";
+    const {abs,acos,asin,atan,atan2,ceil,cos,exp,floor,log,max,min,pow,round,sin,sqrt,tan,PI,E} = Math;
+    const MathObj = Math;
+    const Math = MathObj;
+    return (${expr});
+  `;
+  return new Function("x","y", body);
+}
+
+function newton2D(f, g, x0, y0, maxIters, tol){
+  let x = x0, y = y0;
+  const h = 1e-6;
+
+  for (let k=0; k<maxIters; k++){
+    const F = f(x,y);
+    const G = g(x,y);
+    const r = Math.hypot(F,G);
+    if (!Number.isFinite(r)) return null;
+    if (r < tol) return {x, y, r, iters:k};
+
+    const Fx = (f(x+h, y) - f(x-h, y)) / (2*h);
+    const Fy = (f(x, y+h) - f(x, y-h)) / (2*h);
+    const Gx = (g(x+h, y) - g(x-h, y)) / (2*h);
+    const Gy = (g(x, y+h) - g(x, y-h)) / (2*h);
+
+    const detJ = Fx*Gy - Fy*Gx;
+    if (!Number.isFinite(detJ) || Math.abs(detJ) < 1e-14) return null;
+
+    const dx = (-F*Gy + Fy*G) / detJ;
+    const dy = ( -Fx*G + F*Gx) / detJ;
+
+    const step = Math.hypot(dx,dy);
+    const alpha = step > 1 ? 1/step : 1;
+
+    x += alpha*dx;
+    y += alpha*dy;
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  }
+
+  const rFinal = Math.hypot(f(x,y), g(x,y));
+  if (Number.isFinite(rFinal) && rFinal < tol) return {x, y, r:rFinal, iters:maxIters};
+  return null;
+}
+
+function dedupPush(roots, cand, eps){
+  for (const r of roots){
+    if (Math.hypot(r.x - cand.x, r.y - cand.y) < eps) return false;
+  }
+  roots.push(cand);
+  return true;
+}
+
+function nonlinearFind(){
+  const fExpr = $("n_f").value.trim();
+  const gExpr = $("n_g").value.trim();
+
+  let f, g;
+  try {
+    f = makeSafeFunction(fExpr);
+    g = makeSafeFunction(gExpr);
+    f(0,0); g(0,0);
+  } catch (e) {
+    $("n_out").textContent = `Error parsing functions.\n\nDetails: ${e.message}`;
+    return;
+  }
+
+  const xmin = parseFloat($("n_xmin").value);
+  const xmax = parseFloat($("n_xmax").value);
+  const ymin = parseFloat($("n_ymin").value);
+  const ymax = parseFloat($("n_ymax").value);
+  const grid = Math.max(5, Math.floor(parseFloat($("n_grid").value)));
+  const iters = Math.max(1, Math.floor(parseFloat($("n_iters").value)));
+  const tol = parseFloat($("n_tol").value);
+  const eps = parseFloat($("n_eps").value);
+
+  if (!isFiniteAll([xmin,xmax,ymin,ymax,grid,iters,tol,eps]) || xmax <= xmin || ymax <= ymin) {
+    $("n_out").textContent = "Please enter a valid search region and settings.";
+    return;
+  }
+
+  const roots = [];
+  const lines = [];
+  lines.push(`f(x,y) = ${fExpr}`);
+  lines.push(`g(x,y) = ${gExpr}`);
+  lines.push(`Region: x in [${xmin}, ${xmax}], y in [${ymin}, ${ymax}]`);
+  lines.push(`Grid: ${grid}×${grid}, Newton iters: ${iters}, tol: ${tol}, dedup: ${eps}`);
+  lines.push("");
+
+  for (let i=0;i<grid;i++){
+    const x0 = xmin + (xmax - xmin) * (i/(grid-1));
+    for (let j=0;j<grid;j++){
+      const y0 = ymin + (ymax - ymin) * (j/(grid-1));
+      const res = newton2D(f, g, x0, y0, iters, tol);
+      if (!res) continue;
+      if (res.x < xmin-1e-6 || res.x > xmax+1e-6 || res.y < ymin-1e-6 || res.y > ymax+1e-6) continue;
+      dedupPush(roots, res, eps);
+    }
+  }
+
+  roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
+
+  if (roots.length === 0) {
+    lines.push("No roots found in the region with the current settings.");
+    lines.push("Try expanding the region or increasing the grid size / iterations.");
+  } else {
+    lines.push(`Roots found (${roots.length}):`);
+    for (const r of roots){
+      const xs = r.x.toFixed(10).replace(/\.?0+$/,"");
+      const ys = r.y.toFixed(10).replace(/\.?0+$/,"");
+      lines.push(`  (x, y) = (${xs}, ${ys})   residual ≈ ${r.r.toExponential(2)}   iters=${r.iters}`);
+    }
+  }
+
+  $("n_out").textContent = lines.join("\n");
+}
+
+$("n_find").addEventListener("click", nonlinearFind);
+nonlinearFind();
+
+/* =========================
+   4) Indefinite Integral (symbolic) using Nerdamer
+========================= */
+function integralCompute(){
+  const expr = $("i_expr").value.trim();
+  const simplify = $("i_simplify").checked;
+
+  if (!expr) {
+    $("i_out").textContent = "Please enter a function of t.";
+    return;
+  }
+
+  if (typeof nerdamer === "undefined") {
+    $("i_out").textContent =
+      "Nerdamer failed to load (network/CDN blocked).\n" +
+      "If you need offline use, download nerdamer all.min.js into this repo and reference it locally.";
+    return;
+  }
+
+  try {
+    let antideriv = nerdamer.integrate(expr, "t");
+    if (simplify) antideriv = antideriv.simplify();
+    $("i_out").textContent = `∫ (${expr}) dt = ${antideriv.toString()} + C`;
+  } catch (e) {
+    $("i_out").textContent = `Could not integrate.\n\nDetails: ${e.message}`;
+  }
+}
+
+$("i_integrate").addEventListener("click", integralCompute);
+integralCompute();
+</script>
+</body>
+</html>
