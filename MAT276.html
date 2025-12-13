@@ -4,30 +4,19 @@
   <meta charset="UTF-8" />
   <title>Math Apps Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     :root { --card:#fff; --bg:#f4f6f8; --ink:#111827; --muted:#6b7280; --blue:#2563eb; --line:#d1d5db; }
     body { margin:0; padding:20px; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:var(--bg); color:var(--ink); }
-    .wrap { max-width: 1100px; margin: 0 auto; }
+    .wrap { max-width: 1120px; margin: 0 auto; }
     .card { background:var(--card); border-radius:14px; padding:18px 18px 16px; box-shadow:0 8px 20px rgba(0,0,0,.08); }
     h1 { margin: 0 0 6px; font-size: 1.45rem; }
     .sub { margin: 0 0 14px; color: var(--muted); }
     .note { color: var(--muted); font-size: .9rem; margin-top: 10px; }
 
-    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; }
-    .box { flex: 1 1 460px; border:1px solid var(--line); border-radius:12px; padding:14px; }
-    .boxtitle { margin: 0 0 10px; font-size: 1.05rem; }
-
-    button {
-      padding:10px 14px; font-size:1rem; border-radius:10px; border:none;
-      background: var(--blue); color:#fff; cursor:pointer; font-weight:700;
-    }
-    button:hover { filter: brightness(.95); }
-    .btn-ghost {
-      background:#fff; color:var(--ink); border:1px solid var(--line);
-    }
-    .btn-ghost:hover { filter:none; background:#f9fafb; }
     .course-grid {
-      display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-top:12px;
+      display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap:12px; margin-top:12px;
     }
     .course-card {
       border:1px solid var(--line); border-radius:14px; padding:14px; background:#fff;
@@ -37,28 +26,43 @@
     .course-card p { margin:0; color:var(--muted); font-size:.95rem; line-height:1.3; }
 
     .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px; }
-    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#1f2a6d; font-weight:700; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#1f2a6d; font-weight:800; }
 
-    /* Tabs + inputs + outputs (reused from your existing page) */
+    button {
+      padding:10px 14px; font-size:1rem; border-radius:10px; border:none;
+      background: var(--blue); color:#fff; cursor:pointer; font-weight:800;
+    }
+    button:hover { filter: brightness(.95); }
+    .btn-ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
+    .btn-ghost:hover { filter:none; background:#f9fafb; }
+
     .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 14px; }
-    .tabbtn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600; }
+    .tabbtn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
     .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
+
     .panel { display:none; }
     .panel.active { display:block; }
 
-    .grid2 { display:grid; grid-template-columns: repeat(2, 120px); gap:10px; }
-    .grid4 { display:grid; grid-template-columns: repeat(4, 140px); gap:10px; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .box { flex: 1 1 480px; border:1px solid var(--line); border-radius:12px; padding:14px; }
+    .boxtitle { margin: 0 0 10px; font-size: 1.05rem; }
+
     label { font-size: .9rem; color: var(--muted); display:block; margin: 10px 0 6px; }
     input[type="number"], input[type="text"] {
       width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem;
     }
+
+    .grid2 { display:grid; grid-template-columns: repeat(2, 120px); gap:10px; }
+    .grid3 { display:grid; grid-template-columns: repeat(3, 120px); gap:10px; }
     .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
+
     .out {
       margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       font-size: .95rem;
       white-space: pre-wrap;
     }
+
     code { background:#eef2ff; padding:0 6px; border-radius:8px; }
     .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
 
@@ -81,17 +85,17 @@
         <div class="course-grid">
           <div class="course-card">
             <h2>MAT225</h2>
-            <p>(Framework placeholder) You’ll add MAT225 tools here later.</p>
+            <p>Eigenvalues & eigenvectors (2×2 and 3×3).</p>
             <div style="margin-top:auto;">
-              <button onclick="selectCourse('MAT225')" class="btn-ghost">Open MAT225</button>
+              <button onclick="selectCourse('MAT225')">Open MAT225</button>
             </div>
           </div>
 
           <div class="course-card">
             <h2>MAT227</h2>
-            <p>(Framework placeholder) You’ll add MAT227 tools here later.</p>
+            <p>Quadratic roots for <span class="kbd">x^2 = a x + b</span> + 2×2 linear systems.</p>
             <div style="margin-top:auto;">
-              <button onclick="selectCourse('MAT227')" class="btn-ghost">Open MAT227</button>
+              <button onclick="selectCourse('MAT227')">Open MAT227</button>
             </div>
           </div>
 
@@ -105,7 +109,7 @@
         </div>
 
         <div class="note">
-          Tip: you can link students straight to a course by appending <code>?course=MAT276</code> to the URL once this is live.
+          Tip: you can link students straight to a course with <code>?course=MAT276</code>, <code>?course=MAT225</code>, or <code>?course=MAT227</code>.
         </div>
       </div>
 
@@ -121,164 +125,253 @@
           </div>
         </div>
 
-        <!-- ===== MAT276 APPS (your existing suite) ===== -->
-        <div id="course-MAT276" style="display:none; margin-top:12px;">
+        <!-- =========================
+             MAT225
+        ========================= -->
+        <div id="course-MAT225" class="course-tools" style="display:none; margin-top:12px;">
           <div class="tabs">
-            <button class="tabbtn active" data-tab="eigen">Eigen (2×2)</button>
-            <button class="tabbtn" data-tab="linear">Linear System (2×2)</button>
-            <button class="tabbtn" data-tab="nonlinear">Nonlinear Roots (2×2)</button>
-            <button class="tabbtn" data-tab="integral">Indefinite Integral</button>
+            <button class="tabbtn active" data-course="MAT225" data-tab="eigen2">Eigen (2×2)</button>
+            <button class="tabbtn" data-course="MAT225" data-tab="eigen3">Eigen (3×3)</button>
           </div>
 
-          <!-- 1) EIGEN -->
-          <div class="panel active" id="panel-eigen">
+          <div class="panel active" id="MAT225-panel-eigen2">
             <div class="row">
               <div class="box">
-                <h2 class="boxtitle">1) 2×2 Eigenvalues & Eigenvectors</h2>
+                <h2 class="boxtitle">MAT225 • 2×2 Eigenvalues & Eigenvectors</h2>
                 <label>Matrix A = [[a, b], [c, d]]</label>
                 <div class="grid2">
-                  <input id="e_a" type="number" step="any" value="2" />
-                  <input id="e_b" type="number" step="any" value="1" />
-                  <input id="e_c" type="number" step="any" value="1" />
-                  <input id="e_d" type="number" step="any" value="2" />
+                  <input id="MAT225_e2_a" type="number" step="any" value="2" />
+                  <input id="MAT225_e2_b" type="number" step="any" value="1" />
+                  <input id="MAT225_e2_c" type="number" step="any" value="1" />
+                  <input id="MAT225_e2_d" type="number" step="any" value="2" />
                 </div>
                 <div class="actions">
-                  <button id="e_compute">Compute</button>
+                  <button id="MAT225_e2_compute">Compute</button>
                 </div>
-                <div class="out" id="e_out"></div>
+                <div class="out" id="MAT225_e2_out"></div>
                 <div class="note">Complex eigenvalues/eigenvectors are shown in complex form when they occur.</div>
               </div>
             </div>
           </div>
 
-          <!-- 2) LINEAR -->
-          <div class="panel" id="panel-linear">
+          <div class="panel" id="MAT225-panel-eigen3">
             <div class="row">
               <div class="box">
-                <h2 class="boxtitle">2) Solve a 2×2 Linear System</h2>
-                <div class="note">Enter coefficients for: <strong>a₁x + b₁y = c₁</strong> and <strong>a₂x + b₂y = c₂</strong></div>
-
-                <label>Equation 1 (a₁, b₁, c₁)</label>
-                <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
-                  <input id="l_a1" type="number" step="any" value="1" />
-                  <input id="l_b1" type="number" step="any" value="1" />
-                  <input id="l_c1" type="number" step="any" value="4" />
+                <h2 class="boxtitle">MAT225 • 3×3 Eigenvalues & Eigenvectors (Numerical)</h2>
+                <div class="note">
+                  Computes eigenvalues from the characteristic polynomial and returns one eigenvector for each eigenvalue.
+                  For repeated/defective cases, results may show fewer independent eigenvectors.
                 </div>
 
-                <label>Equation 2 (a₂, b₂, c₂)</label>
-                <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
-                  <input id="l_a2" type="number" step="any" value="2" />
-                  <input id="l_b2" type="number" step="any" value="-1" />
-                  <input id="l_c2" type="number" step="any" value="1" />
+                <label>Matrix A (3×3)</label>
+                <div class="grid3">
+                  <input id="MAT225_e3_a11" type="number" step="any" value="3" />
+                  <input id="MAT225_e3_a12" type="number" step="any" value="0" />
+                  <input id="MAT225_e3_a13" type="number" step="any" value="0" />
+                  <input id="MAT225_e3_a21" type="number" step="any" value="0" />
+                  <input id="MAT225_e3_a22" type="number" step="any" value="2" />
+                  <input id="MAT225_e3_a23" type="number" step="any" value="1" />
+                  <input id="MAT225_e3_a31" type="number" step="any" value="0" />
+                  <input id="MAT225_e3_a32" type="number" step="any" value="1" />
+                  <input id="MAT225_e3_a33" type="number" step="any" value="2" />
                 </div>
 
                 <div class="actions">
-                  <button id="l_solve">Solve</button>
+                  <button id="MAT225_e3_compute">Compute</button>
                 </div>
 
-                <div class="out" id="l_out"></div>
-                <div class="note">Reports: unique solution, no solution, or infinitely many solutions.</div>
+                <div class="out" id="MAT225_e3_out"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================
+             MAT227
+        ========================= -->
+        <div id="course-MAT227" class="course-tools" style="display:none; margin-top:12px;">
+          <div class="tabs">
+            <button class="tabbtn active" data-course="MAT227" data-tab="quad">Quadratic Roots</button>
+            <button class="tabbtn" data-course="MAT227" data-tab="linear2">Linear System (2×2)</button>
+          </div>
+
+          <div class="panel active" id="MAT227-panel-quad">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">MAT227 • Solve <span class="kbd">x² = a x + b</span></h2>
+                <div class="note">This solves <span class="kbd">x² − a x − b = 0</span> and displays the roots (real or complex).</div>
+
+                <label>a</label>
+                <input id="MAT227_q_a" type="number" step="any" value="1" />
+                <label>b</label>
+                <input id="MAT227_q_b" type="number" step="any" value="1" />
+
+                <div class="actions">
+                  <button id="MAT227_q_compute">Compute roots</button>
+                </div>
+
+                <div class="out" id="MAT227_q_out"></div>
               </div>
             </div>
           </div>
 
-          <!-- 3) NONLINEAR (fixed region, hidden settings) -->
-          <div class="panel" id="panel-nonlinear">
+          <div class="panel" id="MAT227-panel-linear2">
             <div class="row">
               <div class="box">
-                <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
+                <h2 class="boxtitle">MAT227 • Solve a 2×2 Linear System</h2>
+                <div class="note">Enter coefficients for <strong>a₁x + b₁y = c₁</strong> and <strong>a₂x + b₂y = c₂</strong>.</div>
 
+                <label>Equation 1 (a₁, b₁, c₁)</label>
+                <div class="grid3">
+                  <input id="MAT227_l_a1" type="number" step="any" value="1" />
+                  <input id="MAT227_l_b1" type="number" step="any" value="1" />
+                  <input id="MAT227_l_c1" type="number" step="any" value="4" />
+                </div>
+
+                <label>Equation 2 (a₂, b₂, c₂)</label>
+                <div class="grid3">
+                  <input id="MAT227_l_a2" type="number" step="any" value="2" />
+                  <input id="MAT227_l_b2" type="number" step="any" value="-1" />
+                  <input id="MAT227_l_c2" type="number" step="any" value="1" />
+                </div>
+
+                <div class="actions">
+                  <button id="MAT227_l_solve">Solve</button>
+                </div>
+
+                <div class="out" id="MAT227_l_out"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================
+             MAT276 (your existing suite)
+        ========================= -->
+        <div id="course-MAT276" class="course-tools" style="display:none; margin-top:12px;">
+          <div class="tabs">
+            <button class="tabbtn active" data-course="MAT276" data-tab="eigen2">Eigen (2×2)</button>
+            <button class="tabbtn" data-course="MAT276" data-tab="linear2">Linear System (2×2)</button>
+            <button class="tabbtn" data-course="MAT276" data-tab="nonlinear">Nonlinear Roots (2×2)</button>
+            <button class="tabbtn" data-course="MAT276" data-tab="integral">Indefinite Integral</button>
+          </div>
+
+          <!-- MAT276 • Eigen 2×2 -->
+          <div class="panel active" id="MAT276-panel-eigen2">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">MAT276 • 2×2 Eigenvalues & Eigenvectors</h2>
+                <label>Matrix A = [[a, b], [c, d]]</label>
+                <div class="grid2">
+                  <input id="MAT276_e2_a" type="number" step="any" value="2" />
+                  <input id="MAT276_e2_b" type="number" step="any" value="1" />
+                  <input id="MAT276_e2_c" type="number" step="any" value="1" />
+                  <input id="MAT276_e2_d" type="number" step="any" value="2" />
+                </div>
+                <div class="actions">
+                  <button id="MAT276_e2_compute">Compute</button>
+                </div>
+                <div class="out" id="MAT276_e2_out"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MAT276 • Linear 2×2 -->
+          <div class="panel" id="MAT276-panel-linear2">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">MAT276 • Solve a 2×2 Linear System</h2>
+                <div class="note">Enter coefficients for <strong>a₁x + b₁y = c₁</strong> and <strong>a₂x + b₂y = c₂</strong>.</div>
+
+                <label>Equation 1 (a₁, b₁, c₁)</label>
+                <div class="grid3">
+                  <input id="MAT276_l_a1" type="number" step="any" value="1" />
+                  <input id="MAT276_l_b1" type="number" step="any" value="1" />
+                  <input id="MAT276_l_c1" type="number" step="any" value="4" />
+                </div>
+
+                <label>Equation 2 (a₂, b₂, c₂)</label>
+                <div class="grid3">
+                  <input id="MAT276_l_a2" type="number" step="any" value="2" />
+                  <input id="MAT276_l_b2" type="number" step="any" value="-1" />
+                  <input id="MAT276_l_c2" type="number" step="any" value="1" />
+                </div>
+
+                <div class="actions">
+                  <button id="MAT276_l_solve">Solve</button>
+                </div>
+
+                <div class="out" id="MAT276_l_out"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MAT276 • Nonlinear (fixed region / hidden settings) -->
+          <div class="panel" id="MAT276-panel-nonlinear">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">MAT276 • Roots of a Nonlinear System (Numerical)</h2>
                 <div class="note">
                   Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
                   You can use <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, <code>pow</code>.
                 </div>
 
                 <label>f(x, y) = 0</label>
-                <input id="n_f" type="text" value="x*x + y*y - 1" />
+                <input id="MAT276_n_f" type="text" value="x*x + y*y - 1" />
 
                 <label>g(x, y) = 0</label>
-                <input id="n_g" type="text" value="y - x" />
-
-                <!-- Fixed region hidden from students -->
-                <input id="n_xmin" type="hidden" value="-4" />
-                <input id="n_xmax" type="hidden" value="4" />
-                <input id="n_ymin" type="hidden" value="-4" />
-                <input id="n_ymax" type="hidden" value="4" />
+                <input id="MAT276_n_g" type="text" value="y - x" />
 
                 <div class="actions">
-                  <button id="n_find">Find Roots</button>
+                  <button id="MAT276_n_find">Find Roots</button>
                 </div>
 
-                <div class="out" id="n_out"></div>
-
-                <div class="note">
-                  Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.
-                  This numerical search can miss roots for difficult systems.
-                </div>
+                <div class="out" id="MAT276_n_out"></div>
+                <div class="note">Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.</div>
               </div>
             </div>
           </div>
 
-          <!-- 4) INTEGRAL -->
-          <div class="panel" id="panel-integral">
+          <!-- MAT276 • Integral -->
+          <div class="panel" id="MAT276-panel-integral">
             <div class="row">
               <div class="box">
-                <h2 class="boxtitle">4) Indefinite Integral (Symbolic)</h2>
-
+                <h2 class="boxtitle">MAT276 • Indefinite Integral (Symbolic)</h2>
                 <div class="note">
-                  Enter a function of <strong>t</strong>. Examples:
+                  Examples:
                   <span class="kbd">t^2</span>, <span class="kbd">sin(t)</span>, <span class="kbd">exp(3*t)</span>,
-                  <span class="kbd">1/(1+t^2)</span>, <span class="kbd">sqrt(t)</span>. Use <strong>^</strong> for powers.
+                  <span class="kbd">1/(1+t^2)</span>, <span class="kbd">sqrt(t)</span>.
                 </div>
 
                 <label>Integrand: ∫ f(t) dt</label>
-                <input id="i_expr" type="text" value="t^3 - 4*t + sin(t)" />
+                <input id="MAT276_i_expr" type="text" value="t^3 - 4*t + sin(t)" />
 
                 <div class="actions">
-                  <button id="i_integrate">Integrate</button>
-                  <label style="display:flex; align-items:center; gap:8px; font-size:.95rem; color: var(--ink);">
-                    <input id="i_simplify" type="checkbox" checked /> Simplify result
-                  </label>
+                  <button id="MAT276_i_integrate">Integrate</button>
                 </div>
 
-                <div class="out" id="i_out"></div>
-                <div class="note">If Nerdamer can’t find a closed-form antiderivative, it may return an unevaluated expression.</div>
+                <div class="out" id="MAT276_i_out"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===== Placeholders for other courses ===== -->
-        <div id="course-MAT225" style="display:none; margin-top:12px;">
-          <div class="box">
-            <h2 class="boxtitle">MAT225 tools (coming soon)</h2>
-            <div class="note">This is a placeholder. We’ll add MAT225 apps into this section next.</div>
-          </div>
+        <div class="note" style="margin-top:14px;">
+          Canvas tip: embed this page once and students pick their course; or embed course-specific URLs like <code>?course=MAT225</code>.
         </div>
-
-        <div id="course-MAT227" style="display:none; margin-top:12px;">
-          <div class="box">
-            <h2 class="boxtitle">MAT227 tools (coming soon)</h2>
-            <div class="note">This is a placeholder. We’ll add MAT227 apps into this section next.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="note" style="margin-top:14px;">
-        Canvas tip: embed this page once, and students pick their course; or embed separate URLs with <code>?course=MAT276</code>.
       </div>
     </div>
   </div>
 
 <script>
 /* =========================
-   Helpers
+   Basic helpers
 ========================= */
 const $ = (id) => document.getElementById(id);
 function isFiniteAll(arr){ return arr.every(Number.isFinite); }
 
 /* =========================
-   Screen switching (Course picker → Apps)
+   Course screen switching
 ========================= */
 function showScreen(which){
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -293,9 +386,9 @@ function hideAllCourses(){
 function setCourseUI(course){
   $("course-pill").textContent = course;
   const sub = {
-    MAT276: "MAT276 tools: eigenvalues/eigenvectors, linear systems, nonlinear roots, integrals.",
-    MAT225: "MAT225 framework placeholder (apps coming soon).",
-    MAT227: "MAT227 framework placeholder (apps coming soon)."
+    MAT225: "MAT225 tools: eigenvalues/eigenvectors (2×2 and 3×3).",
+    MAT227: "MAT227 tools: quadratic roots (x² = a x + b) and 2×2 linear systems.",
+    MAT276: "MAT276 tools: eigen (2×2), linear systems (2×2), nonlinear roots, integrals."
   }[course] || "";
   $("course-subnote").textContent = sub;
 }
@@ -306,19 +399,15 @@ function selectCourse(course){
   if (el) el.style.display = "block";
   showScreen("screen-apps");
 
-  // If MAT276, ensure the MAT276 tabs behave
-  if (course === "MAT276") {
-    initTabs();
-    // Kick computations so outputs are populated
-    eigenCompute();
-    linearSolve();
-    nonlinearFind();
-    integralCompute();
-  }
-  // Persist selection in URL without reloading
+  // Set URL param without reload
   const url = new URL(window.location.href);
   url.searchParams.set("course", course);
   history.replaceState({}, "", url.toString());
+
+  // Run initial computations (nice UX)
+  if (course === "MAT225") { MAT225_eigen2(); MAT225_eigen3(); }
+  if (course === "MAT227") { MAT227_quadratic(); MAT227_linear2(); }
+  if (course === "MAT276") { MAT276_eigen2(); MAT276_linear2(); MAT276_nonlinear(); MAT276_integral(); }
 }
 function goHome(){
   const url = new URL(window.location.href);
@@ -327,32 +416,35 @@ function goHome(){
   showScreen("screen-course");
 }
 
-/* Auto-select course from URL: ?course=MAT276 */
+/* Auto-select via URL: ?course=MAT276 */
 (function initFromURL(){
   const course = new URL(window.location.href).searchParams.get("course");
   if (course && ["MAT225","MAT227","MAT276"].includes(course)) selectCourse(course);
 })();
 
 /* =========================
-   Tabs (MAT276)
+   Tabs (works per-course)
 ========================= */
-let tabsInitialized = false;
-function initTabs(){
-  if (tabsInitialized) return;
-  tabsInitialized = true;
+document.addEventListener("click", (ev) => {
+  const btn = ev.target;
+  if (!btn || !btn.classList || !btn.classList.contains("tabbtn")) return;
 
-  document.querySelectorAll("#course-MAT276 .tabbtn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("#course-MAT276 .tabbtn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll("#course-MAT276 .panel").forEach(p => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
-    });
-  });
-}
+  const course = btn.dataset.course;
+  const tab = btn.dataset.tab;
+  if (!course || !tab) return;
+
+  // deactivate other tabs in that course
+  document.querySelectorAll(`#course-${course} .tabbtn`).forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(`#course-${course} .panel`).forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+
+  const panelId = `${course}-panel-${tab}`;
+  const panel = document.getElementById(panelId);
+  if (panel) panel.classList.add("active");
+});
 
 /* =========================
-   MAT276 APP 1: Eigen (2x2), no normalization option
+   Complex arithmetic
 ========================= */
 function complex(re, im=0){ return {re, im}; }
 function cAdd(x,y){ return complex(x.re+y.re, x.im+y.im); }
@@ -363,10 +455,9 @@ function cDiv(x,y){
   return complex((x.re*y.re + x.im*y.im)/den, (x.im*y.re - x.re*y.im)/den);
 }
 function cAbs(x){ return Math.hypot(x.re, x.im); }
-function sqrtRealToComplex(x){
-  if (x >= 0) return complex(Math.sqrt(x), 0);
-  return complex(0, Math.sqrt(-x));
-}
+function cNeg(x){ return complex(-x.re, -x.im); }
+function cIsZero(x, eps=1e-12){ return cAbs(x) < eps; }
+
 function fmtComplex(z, digits=6){
   const re = Math.abs(z.re) < 1e-12 ? 0 : z.re;
   const im = Math.abs(z.im) < 1e-12 ? 0 : z.im;
@@ -374,89 +465,255 @@ function fmtComplex(z, digits=6){
   const sign = im >= 0 ? "+" : "-";
   return `${re.toFixed(digits).replace(/\.?0+$/,"")} ${sign} ${Math.abs(im).toFixed(digits).replace(/\.?0+$/,"")}i`;
 }
-function eigenvector2x2(a,b,c,d, lam){
-  const aa = cSub(complex(a,0), lam);
-  const dd = cSub(complex(d,0), lam);
-  const bb = complex(b,0);
-  const cc = complex(c,0);
-
-  const r1 = cAbs(aa) + cAbs(bb);
-  const r2 = cAbs(cc) + cAbs(dd);
-
-  let x,y;
-  if (r1 >= r2) { x = cMul(complex(-1,0), bb); y = aa; }
-  else { x = cMul(complex(-1,0), dd); y = cc; }
-
-  if (cAbs(x) < 1e-14 && cAbs(y) < 1e-14) return [complex(1,0), complex(0,0)];
-  return [x,y];
-}
-function fmtVec(v){
-  if (Math.abs(v[0].im) < 1e-12 && Math.abs(v[1].im) < 1e-12) {
-    const x = Math.abs(v[0].re) < 1e-12 ? 0 : v[0].re;
-    const y = Math.abs(v[1].re) < 1e-12 ? 0 : v[1].re;
-    return `(${x.toFixed(6)}, ${y.toFixed(6)})`;
+function fmtVecComplex(v){
+  // If essentially real, show real components; else scale so largest entry becomes 1
+  const allReal = v.every(z => Math.abs(z.im) < 1e-12);
+  if (allReal) {
+    const xs = v.map(z => (Math.abs(z.re) < 1e-12 ? 0 : z.re).toFixed(6));
+    return `(${xs.join(", ")})`;
   }
-  let x = v[0], y = v[1];
-  const ax = cAbs(x), ay = cAbs(y);
-  const scale = (ax >= ay && ax > 1e-14) ? x : (ay > 1e-14 ? y : complex(1,0));
-  x = cDiv(x, scale);
-  y = cDiv(y, scale);
-  return `(${fmtComplex(x)}, ${fmtComplex(y)})`;
+  // scale
+  let maxIdx = 0;
+  for (let i=1;i<v.length;i++) if (cAbs(v[i]) > cAbs(v[maxIdx])) maxIdx = i;
+  const scale = cIsZero(v[maxIdx]) ? complex(1,0) : v[maxIdx];
+  const vv = v.map(z => cDiv(z, scale));
+  return `(${vv.map(z => fmtComplex(z)).join(", ")})`;
 }
-function eigenCompute(){
-  // If MAT276 not shown yet, skip silently
-  if (!$("e_a")) return;
 
-  const a = parseFloat($("e_a").value);
-  const b = parseFloat($("e_b").value);
-  const c = parseFloat($("e_c").value);
-  const d = parseFloat($("e_d").value);
-
-  if (!isFiniteAll([a,b,c,d])) { $("e_out").textContent = "Please enter valid numbers for all four entries."; return; }
-
+/* =========================
+   2×2 eigen helper (reused for MAT225 & MAT276)
+========================= */
+function eigen2x2(a,b,c,d){
   const tr = a + d;
   const det = a*d - b*c;
   const disc = tr*tr - 4*det;
-  const sqrtDisc = sqrtRealToComplex(disc);
 
+  const sqrtDisc = disc >= 0 ? complex(Math.sqrt(disc), 0) : complex(0, Math.sqrt(-disc));
   const halfTr = complex(tr/2, 0);
   const halfS  = cMul(sqrtDisc, complex(0.5,0));
 
   const lam1 = cAdd(halfTr, halfS);
   const lam2 = cSub(halfTr, halfS);
 
-  const v1 = eigenvector2x2(a,b,c,d, lam1);
-  const v2 = eigenvector2x2(a,b,c,d, lam2);
+  function eigenvector2x2(lam){
+    const aa = cSub(complex(a,0), lam);
+    const dd = cSub(complex(d,0), lam);
+    const bb = complex(b,0);
+    const cc = complex(c,0);
 
-  const lines = [];
-  lines.push(`Matrix A = [[${a}, ${b}], [${c}, ${d}]]`);
-  lines.push(`trace(A) = ${tr}`);
-  lines.push(`det(A)   = ${det}`);
-  lines.push(`disc     = ${disc}`);
-  lines.push("");
-  lines.push(`λ1 = ${fmtComplex(lam1)}`);
-  lines.push(`v1 = ${fmtVec(v1)}`);
-  lines.push("");
-  lines.push(`λ2 = ${fmtComplex(lam2)}`);
-  lines.push(`v2 = ${fmtVec(v2)}`);
+    const r1 = cAbs(aa) + cAbs(bb);
+    const r2 = cAbs(cc) + cAbs(dd);
 
-  $("e_out").textContent = lines.join("\n");
+    let x,y;
+    if (r1 >= r2) { x = cMul(complex(-1,0), bb); y = aa; }
+    else { x = cMul(complex(-1,0), dd); y = cc; }
+
+    if (cIsZero(x) && cIsZero(y)) return [complex(1,0), complex(0,0)];
+    return [x,y];
+  }
+
+  const v1 = eigenvector2x2(lam1);
+  const v2 = eigenvector2x2(lam2);
+
+  return { tr, det, disc, lam1, lam2, v1, v2 };
 }
 
 /* =========================
-   MAT276 APP 2: Linear system solver
+   3×3 eigen (Cardano cubic + row-cross eigenvector)
 ========================= */
-function linearSolve(){
-  if (!$("l_a1")) return;
+function det3(A){
+  const [[a,b,c],[d,e,f],[g,h,i]] = A;
+  return a*(e*i - f*h) - b*(d*i - f*g) + c*(d*h - e*g);
+}
+function mul3(A,B){
+  const C = Array.from({length:3}, ()=>[0,0,0]);
+  for (let r=0;r<3;r++) for (let c=0;c<3;c++){
+    let s = 0;
+    for (let k=0;k<3;k++) s += A[r][k]*B[k][c];
+    C[r][c]=s;
+  }
+  return C;
+}
+function tr3(A){ return A[0][0] + A[1][1] + A[2][2]; }
+function trA2(A){
+  const A2 = mul3(A,A);
+  return tr3(A2);
+}
+function realCbrt(x){
+  return x >= 0 ? Math.pow(x, 1/3) : -Math.pow(-x, 1/3);
+}
+function cubicRootsRealCoeffs(t, s, d){
+  // λ^3 - t λ^2 + s λ - d = 0
+  // Convert to x^3 + ax^2 + bx + c = 0 with a=-t, b=s, c=-d
+  const a = -t, b = s, c = -d;
 
-  const a1 = parseFloat($("l_a1").value);
-  const b1 = parseFloat($("l_b1").value);
-  const c1 = parseFloat($("l_c1").value);
-  const a2 = parseFloat($("l_a2").value);
-  const b2 = parseFloat($("l_b2").value);
-  const c2 = parseFloat($("l_c2").value);
+  // Depress: x = u - a/3  => u^3 + p u + q = 0
+  const p = b - a*a/3;
+  const q = 2*a*a*a/27 - a*b/3 + c;
 
-  if (!isFiniteAll([a1,b1,c1,a2,b2,c2])) { $("l_out").textContent = "Please enter valid numbers for all coefficients/constants."; return; }
+  const halfQ = q/2;
+  const thirdP = p/3;
+  const Delta = halfQ*halfQ + thirdP*thirdP*thirdP;
+
+  if (Delta >= 0) {
+    const sqrtD = Math.sqrt(Delta);
+    const u = realCbrt(-halfQ + sqrtD);
+    const v = realCbrt(-halfQ - sqrtD);
+    const u1 = u+v;
+
+    const re2 = -(u+v)/2;
+    const im2 = (Math.sqrt(3)/2)*(u - v);
+
+    const x1 = complex(u1 - a/3, 0);
+    const x2 = complex(re2 - a/3, im2);
+    const x3 = complex(re2 - a/3, -im2);
+    return [x1,x2,x3];
+  } else {
+    // three real
+    const r = Math.sqrt(-thirdP);
+    const phi = Math.acos((-halfQ)/(r*r*r));
+    const x1 = 2*r*Math.cos(phi/3) - a/3;
+    const x2 = 2*r*Math.cos((phi + 2*Math.PI)/3) - a/3;
+    const x3 = 2*r*Math.cos((phi + 4*Math.PI)/3) - a/3;
+    return [complex(x1,0), complex(x2,0), complex(x3,0)];
+  }
+}
+
+function rowCrossEigenvector3(A, lam){
+  // A is real 3x3, lam is complex. Build rows of (A - lam I) as complex vectors and cross two.
+  const M = [
+    [cSub(complex(A[0][0],0), lam), complex(A[0][1],0),            complex(A[0][2],0)],
+    [complex(A[1][0],0),            cSub(complex(A[1][1],0), lam), complex(A[1][2],0)],
+    [complex(A[2][0],0),            complex(A[2][1],0),            cSub(complex(A[2][2],0), lam)]
+  ];
+
+  function rowNorm(r){ return cAbs(r[0]) + cAbs(r[1]) + cAbs(r[2]); }
+
+  // choose two "strong" rows
+  const idx = [0,1,2].sort((i,j)=>rowNorm(M[j]) - rowNorm(M[i]));
+  const pairs = [[idx[0],idx[1]],[idx[0],idx[2]],[idx[1],idx[2]]];
+
+  function cross(u,v){
+    // u×v
+    return [
+      cSub(cMul(u[1], v[2]), cMul(u[2], v[1])),
+      cSub(cMul(u[2], v[0]), cMul(u[0], v[2])),
+      cSub(cMul(u[0], v[1]), cMul(u[1], v[0]))
+    ];
+  }
+
+  for (const [i,j] of pairs){
+    const w = cross(M[i], M[j]);
+    if (!cIsZero(w[0],1e-10) || !cIsZero(w[1],1e-10) || !cIsZero(w[2],1e-10)) return w;
+  }
+
+  // fallback (rare): return standard basis
+  return [complex(1,0), complex(0,0), complex(0,0)];
+}
+
+/* =========================
+   MAT225 apps
+========================= */
+function MAT225_eigen2(){
+  if (!$("MAT225_e2_a")) return;
+  const a = parseFloat($("MAT225_e2_a").value);
+  const b = parseFloat($("MAT225_e2_b").value);
+  const c = parseFloat($("MAT225_e2_c").value);
+  const d = parseFloat($("MAT225_e2_d").value);
+  if (!isFiniteAll([a,b,c,d])) { $("MAT225_e2_out").textContent = "Please enter valid numbers for all entries."; return; }
+
+  const R = eigen2x2(a,b,c,d);
+  const lines = [];
+  lines.push(`A = [[${a}, ${b}], [${c}, ${d}]]`);
+  lines.push(`trace(A) = ${R.tr}`);
+  lines.push(`det(A)   = ${R.det}`);
+  lines.push(`disc     = ${R.disc}`);
+  lines.push("");
+  lines.push(`λ1 = ${fmtComplex(R.lam1)}`);
+  lines.push(`v1 = ${fmtVecComplex(R.v1)}`);
+  lines.push("");
+  lines.push(`λ2 = ${fmtComplex(R.lam2)}`);
+  lines.push(`v2 = ${fmtVecComplex(R.v2)}`);
+  $("MAT225_e2_out").textContent = lines.join("\n");
+}
+
+function MAT225_eigen3(){
+  if (!$("MAT225_e3_a11")) return;
+
+  const A = [
+    [parseFloat($("MAT225_e3_a11").value), parseFloat($("MAT225_e3_a12").value), parseFloat($("MAT225_e3_a13").value)],
+    [parseFloat($("MAT225_e3_a21").value), parseFloat($("MAT225_e3_a22").value), parseFloat($("MAT225_e3_a23").value)],
+    [parseFloat($("MAT225_e3_a31").value), parseFloat($("MAT225_e3_a32").value), parseFloat($("MAT225_e3_a33").value)]
+  ];
+  if (!A.flat().every(Number.isFinite)) { $("MAT225_e3_out").textContent = "Please enter valid numbers for all 9 entries."; return; }
+
+  const t = tr3(A);
+  const s = 0.5*(t*t - trA2(A));
+  const d = det3(A);
+
+  const lambdas = cubicRootsRealCoeffs(t, s, d);
+  const vecs = lambdas.map(lam => rowCrossEigenvector3(A, lam));
+
+  const lines = [];
+  lines.push(`A =`);
+  lines.push(`  [${A[0].join(", ")}]`);
+  lines.push(`  [${A[1].join(", ")}]`);
+  lines.push(`  [${A[2].join(", ")}]`);
+  lines.push("");
+  lines.push(`Characteristic: λ^3 - (tr)λ^2 + (s)λ - det = 0`);
+  lines.push(`tr  = ${t}`);
+  lines.push(`s   = ${s}`);
+  lines.push(`det = ${d}`);
+  lines.push("");
+  for (let k=0;k<3;k++){
+    lines.push(`λ${k+1} = ${fmtComplex(lambdas[k])}`);
+    lines.push(`v${k+1} = ${fmtVecComplex(vecs[k])}`);
+    lines.push("");
+  }
+  $("MAT225_e3_out").textContent = lines.join("\n").trim();
+}
+
+/* =========================
+   MAT227 apps
+========================= */
+function MAT227_quadratic(){
+  if (!$("MAT227_q_a")) return;
+  const a = parseFloat($("MAT227_q_a").value);
+  const b = parseFloat($("MAT227_q_b").value);
+  if (!isFiniteAll([a,b])) { $("MAT227_q_out").textContent = "Please enter valid numbers for a and b."; return; }
+
+  // x^2 = a x + b  => x^2 - a x - b = 0
+  const disc = a*a + 4*b;
+  let r1, r2;
+  if (disc >= 0) {
+    const s = Math.sqrt(disc);
+    r1 = complex((a + s)/2, 0);
+    r2 = complex((a - s)/2, 0);
+  } else {
+    const s = Math.sqrt(-disc);
+    r1 = complex(a/2,  s/2);
+    r2 = complex(a/2, -s/2);
+  }
+
+  const lines = [];
+  lines.push(`Solve: x^2 = (${a})x + (${b})`);
+  lines.push(`=> x^2 - (${a})x - (${b}) = 0`);
+  lines.push(`Discriminant: a^2 + 4b = ${disc}`);
+  lines.push("");
+  lines.push(`x1 = ${fmtComplex(r1)}`);
+  lines.push(`x2 = ${fmtComplex(r2)}`);
+  $("MAT227_q_out").textContent = lines.join("\n");
+}
+
+function linear2_solve(prefix){
+  const a1 = parseFloat($(prefix+"_a1").value);
+  const b1 = parseFloat($(prefix+"_b1").value);
+  const c1 = parseFloat($(prefix+"_c1").value);
+  const a2 = parseFloat($(prefix+"_a2").value);
+  const b2 = parseFloat($(prefix+"_b2").value);
+  const c2 = parseFloat($(prefix+"_c2").value);
+
+  if (!isFiniteAll([a1,b1,c1,a2,b2,c2])) return { ok:false, text:"Please enter valid numbers for all coefficients/constants." };
 
   const det = a1*b2 - a2*b1;
   const eps = 1e-12;
@@ -510,12 +767,49 @@ function linearSolve(){
       }
     }
   }
-  $("l_out").textContent = lines.join("\n");
+
+  return { ok:true, text: lines.join("\n") };
+}
+
+function MAT227_linear2(){
+  if (!$("MAT227_l_a1")) return;
+  const res = linear2_solve("MAT227_l");
+  $("MAT227_l_out").textContent = res.ok ? res.text : res.text;
 }
 
 /* =========================
-   MAT276 APP 3: Nonlinear roots (fixed region, hidden settings)
+   MAT276 apps
 ========================= */
+function MAT276_eigen2(){
+  if (!$("MAT276_e2_a")) return;
+  const a = parseFloat($("MAT276_e2_a").value);
+  const b = parseFloat($("MAT276_e2_b").value);
+  const c = parseFloat($("MAT276_e2_c").value);
+  const d = parseFloat($("MAT276_e2_d").value);
+  if (!isFiniteAll([a,b,c,d])) { $("MAT276_e2_out").textContent = "Please enter valid numbers for all entries."; return; }
+
+  const R = eigen2x2(a,b,c,d);
+  const lines = [];
+  lines.push(`A = [[${a}, ${b}], [${c}, ${d}]]`);
+  lines.push(`trace(A) = ${R.tr}`);
+  lines.push(`det(A)   = ${R.det}`);
+  lines.push(`disc     = ${R.disc}`);
+  lines.push("");
+  lines.push(`λ1 = ${fmtComplex(R.lam1)}`);
+  lines.push(`v1 = ${fmtVecComplex(R.v1)}`);
+  lines.push("");
+  lines.push(`λ2 = ${fmtComplex(R.lam2)}`);
+  lines.push(`v2 = ${fmtVecComplex(R.v2)}`);
+  $("MAT276_e2_out").textContent = lines.join("\n");
+}
+
+function MAT276_linear2(){
+  if (!$("MAT276_l_a1")) return;
+  const res = linear2_solve("MAT276_l");
+  $("MAT276_l_out").textContent = res.ok ? res.text : res.text;
+}
+
+/* Nonlinear (fixed region [-4,4]^2; hidden settings) */
 function makeSafeFunction(expr){
   const body = `
     "use strict";
@@ -567,31 +861,20 @@ function dedupPush(roots, cand, eps){
   roots.push(cand);
   return true;
 }
-function nonlinearFind(){
-  if (!$("n_f")) return;
+function MAT276_nonlinear(){
+  if (!$("MAT276_n_f")) return;
 
-  const fExpr = $("n_f").value.trim();
-  const gExpr = $("n_g").value.trim();
+  const fExpr = $("MAT276_n_f").value.trim();
+  const gExpr = $("MAT276_n_g").value.trim();
 
   let f, g;
   try { f = makeSafeFunction(fExpr); g = makeSafeFunction(gExpr); f(0,0); g(0,0); }
-  catch (e) { $("n_out").textContent = `Error parsing functions.\n\nDetails: ${e.message}`; return; }
+  catch (e) { $("MAT276_n_out").textContent = `Error parsing functions.\n\nDetails: ${e.message}`; return; }
 
-  const xmin = -4, xmax = 4, ymin = -4, ymax = 4;
-
-  // Hidden defaults (tune here, not in the UI)
-  const grid  = 41;
-  const iters = 30;
-  const tol   = 1e-9;
-  const eps   = 1e-4;
+  const xmin=-4, xmax=4, ymin=-4, ymax=4;
+  const grid=41, iters=30, tol=1e-9, eps=1e-4;
 
   const roots = [];
-  const lines = [];
-  lines.push(`f(x,y) = ${fExpr}`);
-  lines.push(`g(x,y) = ${gExpr}`);
-  lines.push(`Region: x in [${xmin}, ${xmax}], y in [${ymin}, ${ymax}]`);
-  lines.push("");
-
   for (let i=0;i<grid;i++){
     const x0 = xmin + (xmax - xmin) * (i/(grid-1));
     for (let j=0;j<grid;j++){
@@ -602,9 +885,13 @@ function nonlinearFind(){
       dedupPush(roots, res, eps);
     }
   }
-
   roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
 
+  const lines = [];
+  lines.push(`f(x,y) = ${fExpr}`);
+  lines.push(`g(x,y) = ${gExpr}`);
+  lines.push(`Region: x in [${xmin}, ${xmax}], y in [${ymin}, ${ymax}]`);
+  lines.push("");
   if (roots.length === 0) {
     lines.push("No roots found in the region with the current settings.");
   } else {
@@ -615,42 +902,47 @@ function nonlinearFind(){
       lines.push(`  (x, y) = (${xs}, ${ys})   residual ≈ ${r.r.toExponential(2)}`);
     }
   }
-  $("n_out").textContent = lines.join("\n");
+  $("MAT276_n_out").textContent = lines.join("\n");
 }
 
-/* =========================
-   MAT276 APP 4: Indefinite integral (Nerdamer)
-========================= */
-function integralCompute(){
-  if (!$("i_expr")) return;
-
-  const expr = $("i_expr").value.trim();
-  const simplify = $("i_simplify").checked;
-
-  if (!expr) { $("i_out").textContent = "Please enter a function of t."; return; }
+/* Integral (Nerdamer) */
+function MAT276_integral(){
+  if (!$("MAT276_i_expr")) return;
+  const expr = $("MAT276_i_expr").value.trim();
+  if (!expr) { $("MAT276_i_out").textContent = "Please enter a function of t."; return; }
   if (typeof nerdamer === "undefined") {
-    $("i_out").textContent =
+    $("MAT276_i_out").textContent =
       "Nerdamer failed to load (network/CDN blocked).\n" +
       "If you need offline use, download nerdamer all.min.js into this repo and reference it locally.";
     return;
   }
-
   try {
-    let antideriv = nerdamer.integrate(expr, "t");
-    if (simplify) antideriv = antideriv.simplify();
-    $("i_out").textContent = `∫ (${expr}) dt = ${antideriv.toString()} + C`;
+    const antideriv = nerdamer.integrate(expr, "t").simplify();
+    $("MAT276_i_out").textContent = `∫ (${expr}) dt = ${antideriv.toString()} + C`;
   } catch (e) {
-    $("i_out").textContent = `Could not integrate.\n\nDetails: ${e.message}`;
+    $("MAT276_i_out").textContent = `Could not integrate.\n\nDetails: ${e.message}`;
   }
 }
 
-/* Wire buttons (only matters once MAT276 is selected) */
+/* =========================
+   Button wiring
+========================= */
 document.addEventListener("click", (ev) => {
-  if (ev.target && ev.target.id === "e_compute") eigenCompute();
-  if (ev.target && ev.target.id === "l_solve") linearSolve();
-  if (ev.target && ev.target.id === "n_find") nonlinearFind();
-  if (ev.target && ev.target.id === "i_integrate") integralCompute();
+  const id = ev.target && ev.target.id;
+
+  if (id === "MAT225_e2_compute") MAT225_eigen2();
+  if (id === "MAT225_e3_compute") MAT225_eigen3();
+
+  if (id === "MAT227_q_compute") MAT227_quadratic();
+  if (id === "MAT227_l_solve") MAT227_linear2();
+
+  if (id === "MAT276_e2_compute") MAT276_eigen2();
+  if (id === "MAT276_l_solve") MAT276_linear2();
+  if (id === "MAT276_n_find") MAT276_nonlinear();
+  if (id === "MAT276_i_integrate") MAT276_integral();
 });
+
+/* Initial compute if user stays on course picker (does nothing) */
 </script>
 </body>
 </html>
