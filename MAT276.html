@@ -123,76 +123,42 @@
         </div>
       </div>
 
-      <!-- ============ 3) NONLINEAR PANEL ============ -->
-      <div class="panel" id="panel-nonlinear">
-        <div class="row">
-          <div class="box">
-            <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
+<!-- ============ 3) NONLINEAR PANEL ============ -->
+<div class="panel" id="panel-nonlinear">
+  <div class="row">
+    <div class="box">
+      <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
 
-            <div class="note">
-              Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
-              Use JavaScript math: <code>x</code>, <code>y</code>, <code>Math.sin</code>, <code>Math.cos</code>, <code>Math.exp</code>, <code>Math.log</code>, <code>Math.pow</code>.
-            </div>
-
-            <label>f(x, y) = 0</label>
-            <input id="n_f" type="text" value="x*x + y*y - 1" />
-
-            <label>g(x, y) = 0</label>
-            <input id="n_g" type="text" value="y - x" />
-
-            <label>Search region</label>
-            <div class="grid4">
-              <div>
-                <label style="margin:0 0 6px;">x min</label>
-                <input id="n_xmin" type="number" step="any" value="-2" />
-              </div>
-              <div>
-                <label style="margin:0 0 6px;">x max</label>
-                <input id="n_xmax" type="number" step="any" value="2" />
-              </div>
-              <div>
-                <label style="margin:0 0 6px;">y min</label>
-                <input id="n_ymin" type="number" step="any" value="-2" />
-              </div>
-              <div>
-                <label style="margin:0 0 6px;">y max</label>
-                <input id="n_ymax" type="number" step="any" value="2" />
-              </div>
-            </div>
-
-            <label>Search settings</label>
-            <div class="grid4">
-              <div>
-                <label style="margin:0 0 6px;">Grid size</label>
-                <input id="n_grid" type="number" step="1" value="35" />
-              </div>
-              <div>
-                <label style="margin:0 0 6px;">Newton max iters</label>
-                <input id="n_iters" type="number" step="1" value="25" />
-              </div>
-              <div>
-                <label style="margin:0 0 6px;">Tolerance</label>
-                <input id="n_tol" type="number" step="any" value="1e-8" />
-              </div>
-              <div>
-                <label style="margin:0 0 6px;">Dedup radius</label>
-                <input id="n_eps" type="number" step="any" value="1e-4" />
-              </div>
-            </div>
-
-            <div class="actions">
-              <button id="n_find">Find Roots</button>
-            </div>
-
-            <div class="out" id="n_out"></div>
-
-            <div class="note">
-              Numerical search can miss roots if the region is too small or grid too coarse.
-              Increase <strong>Grid size</strong> and/or expand the region if you expect more roots.
-            </div>
-          </div>
-        </div>
+      <div class="note">
+        Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
+        You can use <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, <code>pow</code>.
       </div>
+
+      <label>f(x, y) = 0</label>
+      <input id="n_f" type="text" value="x*x + y*y - 1" />
+
+      <label>g(x, y) = 0</label>
+      <input id="n_g" type="text" value="y - x" />
+
+      <!-- Hidden fixed region (still editable by you in code) -->
+      <input id="n_xmin" type="hidden" value="-4" />
+      <input id="n_xmax" type="hidden" value="4" />
+      <input id="n_ymin" type="hidden" value="-4" />
+      <input id="n_ymax" type="hidden" value="4" />
+
+      <div class="actions">
+        <button id="n_find">Find Roots</button>
+      </div>
+
+      <div class="out" id="n_out"></div>
+
+      <div class="note">
+        Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.
+      </div>
+    </div>
+  </div>
+</div>
+
 
       <!-- ============ 4) INTEGRAL PANEL ============ -->
       <div class="panel" id="panel-integral">
@@ -436,8 +402,7 @@ linearSolve();
    3) Nonlinear root finder (numerical)
 ========================= */
 function makeSafeFunction(expr){
-  // Evaluates expr as a JS expression in terms of x and y.
-  // Provides common Math functions as bare names: sin, cos, exp, log, sqrt, pow, etc.
+  // Lets students use sin(x), cos(x), exp(x), etc. without Math.
   const body = `
     "use strict";
     const {
@@ -446,7 +411,7 @@ function makeSafeFunction(expr){
     } = Math;
     return (${expr});
   `;
-  return new Function("x", "y", body);
+  return new Function("x","y", body);
 }
 
 function newton2D(f, g, x0, y0, maxIters, tol){
@@ -507,26 +472,20 @@ function nonlinearFind(){
     return;
   }
 
-  const xmin = parseFloat($("n_xmin").value);
-  const xmax = parseFloat($("n_xmax").value);
-  const ymin = parseFloat($("n_ymin").value);
-  const ymax = parseFloat($("n_ymax").value);
-  const grid = Math.max(5, Math.floor(parseFloat($("n_grid").value)));
-  const iters = Math.max(1, Math.floor(parseFloat($("n_iters").value)));
-  const tol = parseFloat($("n_tol").value);
-  const eps = parseFloat($("n_eps").value);
+  // Fixed region (defaults requested)
+  const xmin = -4, xmax = 4, ymin = -4, ymax = 4;
 
-  if (!isFiniteAll([xmin,xmax,ymin,ymax,grid,iters,tol,eps]) || xmax <= xmin || ymax <= ymin) {
-    $("n_out").textContent = "Please enter a valid search region and settings.";
-    return;
-  }
+  // Hidden defaults (you can tweak these)
+  const grid  = 41;      // number of start points per axis (higher = more thorough, slower)
+  const iters = 30;      // Newton iterations
+  const tol   = 1e-9;    // residual tolerance
+  const eps   = 1e-4;    // dedup radius
 
   const roots = [];
   const lines = [];
   lines.push(`f(x,y) = ${fExpr}`);
   lines.push(`g(x,y) = ${gExpr}`);
   lines.push(`Region: x in [${xmin}, ${xmax}], y in [${ymin}, ${ymax}]`);
-  lines.push(`Grid: ${grid}×${grid}, Newton iters: ${iters}, tol: ${tol}, dedup: ${eps}`);
   lines.push("");
 
   for (let i=0;i<grid;i++){
@@ -539,7 +498,6 @@ function nonlinearFind(){
       dedupPush(roots, res, eps);
     }
   }
-
   roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
 
   if (roots.length === 0) {
