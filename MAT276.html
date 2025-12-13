@@ -436,15 +436,17 @@ linearSolve();
    3) Nonlinear root finder (numerical)
 ========================= */
 function makeSafeFunction(expr){
-  // WARNING: evaluates user expression as JS; OK for a class tool on your own site.
+  // Evaluates expr as a JS expression in terms of x and y.
+  // Provides common Math functions as bare names: sin, cos, exp, log, sqrt, pow, etc.
   const body = `
     "use strict";
-    const {abs,acos,asin,atan,atan2,ceil,cos,exp,floor,log,max,min,pow,round,sin,sqrt,tan,PI,E} = Math;
-    const MathObj = Math;
-    const Math = MathObj;
+    const {
+      abs, acos, asin, atan, atan2, ceil, cos, exp, floor, log,
+      max, min, pow, round, sin, sqrt, tan, PI, E
+    } = Math;
     return (${expr});
   `;
-  return new Function("x","y", body);
+  return new Function("x", "y", body);
 }
 
 function newton2D(f, g, x0, y0, maxIters, tol){
