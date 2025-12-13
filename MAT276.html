@@ -2,219 +2,357 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Math Tools</title>
-  <h2>Use the tabs to select the appropriate app.</h2>
+  <title>Math Apps Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { --card:#fff; --bg:#f4f6f8; --ink:#111827; --muted:#6b7280; --blue:#2563eb; --line:#d1d5db; }
     body { margin:0; padding:20px; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:var(--bg); color:var(--ink); }
-    .wrap { max-width: 1020px; margin: 0 auto; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
     .card { background:var(--card); border-radius:14px; padding:18px 18px 16px; box-shadow:0 8px 20px rgba(0,0,0,.08); }
     h1 { margin: 0 0 6px; font-size: 1.45rem; }
     .sub { margin: 0 0 14px; color: var(--muted); }
-    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 14px; }
-    .tabbtn {
-      border:1px solid var(--line); background:#fff; color:var(--ink);
-      padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600;
-    }
-    .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
-    .panel { display:none; }
-    .panel.active { display:block; }
+    .note { color: var(--muted); font-size: .9rem; margin-top: 10px; }
 
-    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; }
     .box { flex: 1 1 460px; border:1px solid var(--line); border-radius:12px; padding:14px; }
     .boxtitle { margin: 0 0 10px; font-size: 1.05rem; }
-    .grid2 { display:grid; grid-template-columns: repeat(2, 120px); gap:10px; }
-    .grid4 { display:grid; grid-template-columns: repeat(4, 140px); gap:10px; }
-    label { font-size: .9rem; color: var(--muted); display:block; margin: 10px 0 6px; }
-    input[type="number"], input[type="text"], textarea {
-      width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem;
-    }
-    textarea { min-height: 88px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-    .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
+
     button {
       padding:10px 14px; font-size:1rem; border-radius:10px; border:none;
       background: var(--blue); color:#fff; cursor:pointer; font-weight:700;
     }
     button:hover { filter: brightness(.95); }
+    .btn-ghost {
+      background:#fff; color:var(--ink); border:1px solid var(--line);
+    }
+    .btn-ghost:hover { filter:none; background:#f9fafb; }
+    .course-grid {
+      display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-top:12px;
+    }
+    .course-card {
+      border:1px solid var(--line); border-radius:14px; padding:14px; background:#fff;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .course-card h2 { margin:0; font-size:1.1rem; }
+    .course-card p { margin:0; color:var(--muted); font-size:.95rem; line-height:1.3; }
+
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#1f2a6d; font-weight:700; }
+
+    /* Tabs + inputs + outputs (reused from your existing page) */
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 14px; }
+    .tabbtn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600; }
+    .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
+    .panel { display:none; }
+    .panel.active { display:block; }
+
+    .grid2 { display:grid; grid-template-columns: repeat(2, 120px); gap:10px; }
+    .grid4 { display:grid; grid-template-columns: repeat(4, 140px); gap:10px; }
+    label { font-size: .9rem; color: var(--muted); display:block; margin: 10px 0 6px; }
+    input[type="number"], input[type="text"] {
+      width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem;
+    }
+    .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
     .out {
       margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       font-size: .95rem;
       white-space: pre-wrap;
     }
-    .note { color: var(--muted); font-size: .9rem; margin-top: 10px; }
     code { background:#eef2ff; padding:0 6px; border-radius:8px; }
     .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+
+    .screen { display:none; }
+    .screen.active { display:block; }
   </style>
 
-  <!-- Nerdamer (symbolic algebra + calculus). If your network blocks CDNs, download this file into your repo and reference it locally. -->
+  <!-- Nerdamer (symbolic algebra + calculus). If CDN is blocked, download to repo and reference locally. -->
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
 </head>
 
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Math Tools</h1>
-      <p class="sub">Eigen (2×2) • Linear Systems (2×2) • Nonlinear Roots (2 eqs) • Indefinite Integrals</p>
+      <h1>Math Apps Hub</h1>
+      <p class="sub">Pick your course to see the appropriate set of tools.</p>
 
-      <div class="tabs">
-        <button class="tabbtn active" data-tab="eigen">Eigen (2×2)</button>
-        <button class="tabbtn" data-tab="linear">Linear System (2×2)</button>
-        <button class="tabbtn" data-tab="nonlinear">Nonlinear Roots (2×2)</button>
-        <button class="tabbtn" data-tab="integral">Indefinite Integral</button>
+      <!-- ========= SCREEN 1: COURSE PICKER ========= -->
+      <div id="screen-course" class="screen active">
+        <div class="course-grid">
+          <div class="course-card">
+            <h2>MAT225</h2>
+            <p>(Framework placeholder) You’ll add MAT225 tools here later.</p>
+            <div style="margin-top:auto;">
+              <button onclick="selectCourse('MAT225')" class="btn-ghost">Open MAT225</button>
+            </div>
+          </div>
+
+          <div class="course-card">
+            <h2>MAT227</h2>
+            <p>(Framework placeholder) You’ll add MAT227 tools here later.</p>
+            <div style="margin-top:auto;">
+              <button onclick="selectCourse('MAT227')" class="btn-ghost">Open MAT227</button>
+            </div>
+          </div>
+
+          <div class="course-card">
+            <h2>MAT276</h2>
+            <p>Eigen (2×2) • Linear Systems (2×2) • Nonlinear Roots • Indefinite Integrals</p>
+            <div style="margin-top:auto;">
+              <button onclick="selectCourse('MAT276')">Open MAT276</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          Tip: you can link students straight to a course by appending <code>?course=MAT276</code> to the URL once this is live.
+        </div>
       </div>
 
-      <!-- ============ 1) EIGEN PANEL ============ -->
-      <div class="panel active" id="panel-eigen">
-        <div class="row">
+      <!-- ========= SCREEN 2: COURSE CONTENT ========= -->
+      <div id="screen-apps" class="screen">
+        <div class="toolbar">
+          <div>
+            <span class="pill" id="course-pill">Course</span>
+            <div class="note" id="course-subnote" style="margin-top:6px;"></div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-ghost" onclick="goHome()">Change course</button>
+          </div>
+        </div>
+
+        <!-- ===== MAT276 APPS (your existing suite) ===== -->
+        <div id="course-MAT276" style="display:none; margin-top:12px;">
+          <div class="tabs">
+            <button class="tabbtn active" data-tab="eigen">Eigen (2×2)</button>
+            <button class="tabbtn" data-tab="linear">Linear System (2×2)</button>
+            <button class="tabbtn" data-tab="nonlinear">Nonlinear Roots (2×2)</button>
+            <button class="tabbtn" data-tab="integral">Indefinite Integral</button>
+          </div>
+
+          <!-- 1) EIGEN -->
+          <div class="panel active" id="panel-eigen">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">1) 2×2 Eigenvalues & Eigenvectors</h2>
+                <label>Matrix A = [[a, b], [c, d]]</label>
+                <div class="grid2">
+                  <input id="e_a" type="number" step="any" value="2" />
+                  <input id="e_b" type="number" step="any" value="1" />
+                  <input id="e_c" type="number" step="any" value="1" />
+                  <input id="e_d" type="number" step="any" value="2" />
+                </div>
+                <div class="actions">
+                  <button id="e_compute">Compute</button>
+                </div>
+                <div class="out" id="e_out"></div>
+                <div class="note">Complex eigenvalues/eigenvectors are shown in complex form when they occur.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2) LINEAR -->
+          <div class="panel" id="panel-linear">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">2) Solve a 2×2 Linear System</h2>
+                <div class="note">Enter coefficients for: <strong>a₁x + b₁y = c₁</strong> and <strong>a₂x + b₂y = c₂</strong></div>
+
+                <label>Equation 1 (a₁, b₁, c₁)</label>
+                <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
+                  <input id="l_a1" type="number" step="any" value="1" />
+                  <input id="l_b1" type="number" step="any" value="1" />
+                  <input id="l_c1" type="number" step="any" value="4" />
+                </div>
+
+                <label>Equation 2 (a₂, b₂, c₂)</label>
+                <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
+                  <input id="l_a2" type="number" step="any" value="2" />
+                  <input id="l_b2" type="number" step="any" value="-1" />
+                  <input id="l_c2" type="number" step="any" value="1" />
+                </div>
+
+                <div class="actions">
+                  <button id="l_solve">Solve</button>
+                </div>
+
+                <div class="out" id="l_out"></div>
+                <div class="note">Reports: unique solution, no solution, or infinitely many solutions.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3) NONLINEAR (fixed region, hidden settings) -->
+          <div class="panel" id="panel-nonlinear">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
+
+                <div class="note">
+                  Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
+                  You can use <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, <code>pow</code>.
+                </div>
+
+                <label>f(x, y) = 0</label>
+                <input id="n_f" type="text" value="x*x + y*y - 1" />
+
+                <label>g(x, y) = 0</label>
+                <input id="n_g" type="text" value="y - x" />
+
+                <!-- Fixed region hidden from students -->
+                <input id="n_xmin" type="hidden" value="-4" />
+                <input id="n_xmax" type="hidden" value="4" />
+                <input id="n_ymin" type="hidden" value="-4" />
+                <input id="n_ymax" type="hidden" value="4" />
+
+                <div class="actions">
+                  <button id="n_find">Find Roots</button>
+                </div>
+
+                <div class="out" id="n_out"></div>
+
+                <div class="note">
+                  Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.
+                  This numerical search can miss roots for difficult systems.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4) INTEGRAL -->
+          <div class="panel" id="panel-integral">
+            <div class="row">
+              <div class="box">
+                <h2 class="boxtitle">4) Indefinite Integral (Symbolic)</h2>
+
+                <div class="note">
+                  Enter a function of <strong>t</strong>. Examples:
+                  <span class="kbd">t^2</span>, <span class="kbd">sin(t)</span>, <span class="kbd">exp(3*t)</span>,
+                  <span class="kbd">1/(1+t^2)</span>, <span class="kbd">sqrt(t)</span>. Use <strong>^</strong> for powers.
+                </div>
+
+                <label>Integrand: ∫ f(t) dt</label>
+                <input id="i_expr" type="text" value="t^3 - 4*t + sin(t)" />
+
+                <div class="actions">
+                  <button id="i_integrate">Integrate</button>
+                  <label style="display:flex; align-items:center; gap:8px; font-size:.95rem; color: var(--ink);">
+                    <input id="i_simplify" type="checkbox" checked /> Simplify result
+                  </label>
+                </div>
+
+                <div class="out" id="i_out"></div>
+                <div class="note">If Nerdamer can’t find a closed-form antiderivative, it may return an unevaluated expression.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Placeholders for other courses ===== -->
+        <div id="course-MAT225" style="display:none; margin-top:12px;">
           <div class="box">
-            <h2 class="boxtitle">1) 2×2 Eigenvalues & Eigenvectors</h2>
+            <h2 class="boxtitle">MAT225 tools (coming soon)</h2>
+            <div class="note">This is a placeholder. We’ll add MAT225 apps into this section next.</div>
+          </div>
+        </div>
 
-            <label>Matrix A = [[a, b], [c, d]]</label>
-            <div class="grid2">
-              <input id="e_a" type="number" step="any" value="2" />
-              <input id="e_b" type="number" step="any" value="1" />
-              <input id="e_c" type="number" step="any" value="1" />
-              <input id="e_d" type="number" step="any" value="2" />
-            </div>
-
-            <div class="actions">
-              <button id="e_compute">Compute</button>
-            </div>
-
-            <div class="out" id="e_out"></div>
-            <div class="note">Complex eigenvalues/eigenvectors are shown in complex form when they occur.</div>
+        <div id="course-MAT227" style="display:none; margin-top:12px;">
+          <div class="box">
+            <h2 class="boxtitle">MAT227 tools (coming soon)</h2>
+            <div class="note">This is a placeholder. We’ll add MAT227 apps into this section next.</div>
           </div>
         </div>
       </div>
 
-      <!-- ============ 2) LINEAR PANEL ============ -->
-      <div class="panel" id="panel-linear">
-        <div class="row">
-          <div class="box">
-            <h2 class="boxtitle">2) Solve a 2×2 Linear System</h2>
-
-            <div class="note">Enter coefficients for: <strong>a₁x + b₁y = c₁</strong> and <strong>a₂x + b₂y = c₂</strong></div>
-
-            <label>Equation 1 (a₁, b₁, c₁)</label>
-            <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
-              <input id="l_a1" type="number" step="any" value="1" />
-              <input id="l_b1" type="number" step="any" value="1" />
-              <input id="l_c1" type="number" step="any" value="4" />
-            </div>
-
-            <label>Equation 2 (a₂, b₂, c₂)</label>
-            <div class="grid4" style="grid-template-columns: repeat(3, 160px);">
-              <input id="l_a2" type="number" step="any" value="2" />
-              <input id="l_b2" type="number" step="any" value="-1" />
-              <input id="l_c2" type="number" step="any" value="1" />
-            </div>
-
-            <div class="actions">
-              <button id="l_solve">Solve</button>
-            </div>
-
-            <div class="out" id="l_out"></div>
-            <div class="note">Reports: unique solution, no solution, or infinitely many solutions.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ 3) NONLINEAR PANEL ============ -->
-      <div class="panel" id="panel-nonlinear">
-        <div class="row">
-          <div class="box">
-            <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
-
-            <div class="note">
-              Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
-              You can use <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, <code>pow</code>.
-            </div>
-
-            <label>f(x, y) = 0</label>
-            <input id="n_f" type="text" value="x*x + y*y - 1" />
-
-            <label>g(x, y) = 0</label>
-            <input id="n_g" type="text" value="y - x" />
-
-            <!-- Fixed region hidden from students -->
-            <input id="n_xmin" type="hidden" value="-4" />
-            <input id="n_xmax" type="hidden" value="4" />
-            <input id="n_ymin" type="hidden" value="-4" />
-            <input id="n_ymax" type="hidden" value="4" />
-
-            <div class="actions">
-              <button id="n_find">Find Roots</button>
-            </div>
-
-            <div class="out" id="n_out"></div>
-
-            <div class="note">
-              Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.
-              This numerical search can miss roots for difficult systems.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ 4) INTEGRAL PANEL ============ -->
-      <div class="panel" id="panel-integral">
-        <div class="row">
-          <div class="box">
-            <h2 class="boxtitle">4) Indefinite Integral (Symbolic)</h2>
-
-            <div class="note">
-              Enter a function of <strong>t</strong>. Examples:
-              <span class="kbd">t^2</span>, <span class="kbd">sin(t)</span>, <span class="kbd">exp(3*t)</span>,
-              <span class="kbd">1/(1+t^2)</span>, <span class="kbd">sqrt(t)</span>.
-              Use <strong>^</strong> for powers.
-            </div>
-
-            <label>Integrand: ∫ f(t) dt</label>
-            <input id="i_expr" type="text" value="t^3 - 4*t + sin(t)" />
-
-            <div class="actions">
-              <button id="i_integrate">Integrate</button>
-              <label style="display:flex; align-items:center; gap:8px; font-size:.95rem; color: var(--ink);">
-                <input id="i_simplify" type="checkbox" checked /> Simplify result
-              </label>
-            </div>
-
-            <div class="out" id="i_out"></div>
-
-            <div class="note">
-              If Nerdamer can’t find a closed-form antiderivative, it may return an unevaluated expression.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="note">
-        Tip: Later, you can split these into separate pages (e.g., <code>eigen.html</code>, <code>roots.html</code>) and embed each one in Canvas.
+      <div class="note" style="margin-top:14px;">
+        Canvas tip: embed this page once, and students pick their course; or embed separate URLs with <code>?course=MAT276</code>.
       </div>
     </div>
   </div>
 
 <script>
 /* =========================
-   Shared helpers + Tabs
+   Helpers
 ========================= */
 const $ = (id) => document.getElementById(id);
 function isFiniteAll(arr){ return arr.every(Number.isFinite); }
 
-document.querySelectorAll(".tabbtn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+/* =========================
+   Screen switching (Course picker → Apps)
+========================= */
+function showScreen(which){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(which).classList.add("active");
+}
+function hideAllCourses(){
+  ["MAT225","MAT227","MAT276"].forEach(c => {
+    const el = document.getElementById("course-" + c);
+    if (el) el.style.display = "none";
   });
-});
+}
+function setCourseUI(course){
+  $("course-pill").textContent = course;
+  const sub = {
+    MAT276: "MAT276 tools: eigenvalues/eigenvectors, linear systems, nonlinear roots, integrals.",
+    MAT225: "MAT225 framework placeholder (apps coming soon).",
+    MAT227: "MAT227 framework placeholder (apps coming soon)."
+  }[course] || "";
+  $("course-subnote").textContent = sub;
+}
+function selectCourse(course){
+  hideAllCourses();
+  setCourseUI(course);
+  const el = document.getElementById("course-" + course);
+  if (el) el.style.display = "block";
+  showScreen("screen-apps");
+
+  // If MAT276, ensure the MAT276 tabs behave
+  if (course === "MAT276") {
+    initTabs();
+    // Kick computations so outputs are populated
+    eigenCompute();
+    linearSolve();
+    nonlinearFind();
+    integralCompute();
+  }
+  // Persist selection in URL without reloading
+  const url = new URL(window.location.href);
+  url.searchParams.set("course", course);
+  history.replaceState({}, "", url.toString());
+}
+function goHome(){
+  const url = new URL(window.location.href);
+  url.searchParams.delete("course");
+  history.replaceState({}, "", url.toString());
+  showScreen("screen-course");
+}
+
+/* Auto-select course from URL: ?course=MAT276 */
+(function initFromURL(){
+  const course = new URL(window.location.href).searchParams.get("course");
+  if (course && ["MAT225","MAT227","MAT276"].includes(course)) selectCourse(course);
+})();
 
 /* =========================
-   1) Eigenvalues/Eigenvectors (2x2), complex-capable
-   (No normalization option)
+   Tabs (MAT276)
+========================= */
+let tabsInitialized = false;
+function initTabs(){
+  if (tabsInitialized) return;
+  tabsInitialized = true;
+
+  document.querySelectorAll("#course-MAT276 .tabbtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#course-MAT276 .tabbtn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll("#course-MAT276 .panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+/* =========================
+   MAT276 APP 1: Eigen (2x2), no normalization option
 ========================= */
 function complex(re, im=0){ return {re, im}; }
 function cAdd(x,y){ return complex(x.re+y.re, x.im+y.im); }
@@ -237,7 +375,6 @@ function fmtComplex(z, digits=6){
   return `${re.toFixed(digits).replace(/\.?0+$/,"")} ${sign} ${Math.abs(im).toFixed(digits).replace(/\.?0+$/,"")}i`;
 }
 function eigenvector2x2(a,b,c,d, lam){
-  // Solve (A - lam I)v = 0 in complex arithmetic.
   const aa = cSub(complex(a,0), lam);
   const dd = cSub(complex(d,0), lam);
   const bb = complex(b,0);
@@ -254,13 +391,11 @@ function eigenvector2x2(a,b,c,d, lam){
   return [x,y];
 }
 function fmtVec(v){
-  // If essentially real, show real components.
   if (Math.abs(v[0].im) < 1e-12 && Math.abs(v[1].im) < 1e-12) {
     const x = Math.abs(v[0].re) < 1e-12 ? 0 : v[0].re;
     const y = Math.abs(v[1].re) < 1e-12 ? 0 : v[1].re;
     return `(${x.toFixed(6)}, ${y.toFixed(6)})`;
   }
-  // Complex vector: scale so largest magnitude entry becomes 1
   let x = v[0], y = v[1];
   const ax = cAbs(x), ay = cAbs(y);
   const scale = (ax >= ay && ax > 1e-14) ? x : (ay > 1e-14 ? y : complex(1,0));
@@ -268,17 +403,16 @@ function fmtVec(v){
   y = cDiv(y, scale);
   return `(${fmtComplex(x)}, ${fmtComplex(y)})`;
 }
-
 function eigenCompute(){
+  // If MAT276 not shown yet, skip silently
+  if (!$("e_a")) return;
+
   const a = parseFloat($("e_a").value);
   const b = parseFloat($("e_b").value);
   const c = parseFloat($("e_c").value);
   const d = parseFloat($("e_d").value);
 
-  if (!isFiniteAll([a,b,c,d])) {
-    $("e_out").textContent = "Please enter valid numbers for all four entries.";
-    return;
-  }
+  if (!isFiniteAll([a,b,c,d])) { $("e_out").textContent = "Please enter valid numbers for all four entries."; return; }
 
   const tr = a + d;
   const det = a*d - b*c;
@@ -309,13 +443,12 @@ function eigenCompute(){
   $("e_out").textContent = lines.join("\n");
 }
 
-$("e_compute").addEventListener("click", eigenCompute);
-eigenCompute();
-
 /* =========================
-   2) Linear system solver (2x2)
+   MAT276 APP 2: Linear system solver
 ========================= */
 function linearSolve(){
+  if (!$("l_a1")) return;
+
   const a1 = parseFloat($("l_a1").value);
   const b1 = parseFloat($("l_b1").value);
   const c1 = parseFloat($("l_c1").value);
@@ -323,10 +456,7 @@ function linearSolve(){
   const b2 = parseFloat($("l_b2").value);
   const c2 = parseFloat($("l_c2").value);
 
-  if (!isFiniteAll([a1,b1,c1,a2,b2,c2])) {
-    $("l_out").textContent = "Please enter valid numbers for all coefficients/constants.";
-    return;
-  }
+  if (!isFiniteAll([a1,b1,c1,a2,b2,c2])) { $("l_out").textContent = "Please enter valid numbers for all coefficients/constants."; return; }
 
   const det = a1*b2 - a2*b1;
   const eps = 1e-12;
@@ -350,9 +480,7 @@ function linearSolve(){
     const r1 = [a1,b1,c1], r2 = [a2,b2,c2];
 
     let k = null;
-    for (let i=0;i<3;i++){
-      if (!isZero(r1[i])) { k = r2[i]/r1[i]; break; }
-    }
+    for (let i=0;i<3;i++){ if (!isZero(r1[i])) { k = r2[i]/r1[i]; break; } }
 
     lines.push("");
     if (k === null) {
@@ -382,18 +510,11 @@ function linearSolve(){
       }
     }
   }
-
   $("l_out").textContent = lines.join("\n");
 }
 
-$("l_solve").addEventListener("click", linearSolve);
-linearSolve();
-
 /* =========================
-   3) Nonlinear root finder (numerical)
-   - fixed region: [-4,4] × [-4,4]
-   - hidden defaults for grid/iters/tol/dedup
-   - fixed makeSafeFunction (no Math redeclare)
+   MAT276 APP 3: Nonlinear roots (fixed region, hidden settings)
 ========================= */
 function makeSafeFunction(expr){
   const body = `
@@ -406,14 +527,12 @@ function makeSafeFunction(expr){
   `;
   return new Function("x","y", body);
 }
-
 function newton2D(f, g, x0, y0, maxIters, tol){
   let x = x0, y = y0;
   const h = 1e-6;
 
   for (let k=0; k<maxIters; k++){
-    const F = f(x,y);
-    const G = g(x,y);
+    const F = f(x,y), G = g(x,y);
     const r = Math.hypot(F,G);
     if (!Number.isFinite(r)) return null;
     if (r < tol) return {x, y, r, iters:k};
@@ -434,7 +553,6 @@ function newton2D(f, g, x0, y0, maxIters, tol){
 
     x += alpha*dx;
     y += alpha*dy;
-
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   }
 
@@ -442,7 +560,6 @@ function newton2D(f, g, x0, y0, maxIters, tol){
   if (Number.isFinite(rFinal) && rFinal < tol) return {x, y, r:rFinal, iters:maxIters};
   return null;
 }
-
 function dedupPush(roots, cand, eps){
   for (const r of roots){
     if (Math.hypot(r.x - cand.x, r.y - cand.y) < eps) return false;
@@ -450,26 +567,20 @@ function dedupPush(roots, cand, eps){
   roots.push(cand);
   return true;
 }
-
 function nonlinearFind(){
+  if (!$("n_f")) return;
+
   const fExpr = $("n_f").value.trim();
   const gExpr = $("n_g").value.trim();
 
   let f, g;
-  try {
-    f = makeSafeFunction(fExpr);
-    g = makeSafeFunction(gExpr);
-    f(0,0); g(0,0);
-  } catch (e) {
-    $("n_out").textContent = `Error parsing functions.\n\nDetails: ${e.message}`;
-    return;
-  }
+  try { f = makeSafeFunction(fExpr); g = makeSafeFunction(gExpr); f(0,0); g(0,0); }
+  catch (e) { $("n_out").textContent = `Error parsing functions.\n\nDetails: ${e.message}`; return; }
 
-  // Fixed region (hidden inputs kept in DOM; you can change there if desired)
   const xmin = -4, xmax = 4, ymin = -4, ymax = 4;
 
-  // Hidden defaults (tweak here, not in the UI)
-  const grid  = 41;   // higher = more thorough, slower
+  // Hidden defaults (tune here, not in the UI)
+  const grid  = 41;
   const iters = 30;
   const tol   = 1e-9;
   const eps   = 1e-4;
@@ -504,25 +615,19 @@ function nonlinearFind(){
       lines.push(`  (x, y) = (${xs}, ${ys})   residual ≈ ${r.r.toExponential(2)}`);
     }
   }
-
   $("n_out").textContent = lines.join("\n");
 }
 
-$("n_find").addEventListener("click", nonlinearFind);
-nonlinearFind();
-
 /* =========================
-   4) Indefinite Integral (symbolic) using Nerdamer
+   MAT276 APP 4: Indefinite integral (Nerdamer)
 ========================= */
 function integralCompute(){
+  if (!$("i_expr")) return;
+
   const expr = $("i_expr").value.trim();
   const simplify = $("i_simplify").checked;
 
-  if (!expr) {
-    $("i_out").textContent = "Please enter a function of t.";
-    return;
-  }
-
+  if (!expr) { $("i_out").textContent = "Please enter a function of t."; return; }
   if (typeof nerdamer === "undefined") {
     $("i_out").textContent =
       "Nerdamer failed to load (network/CDN blocked).\n" +
@@ -539,8 +644,13 @@ function integralCompute(){
   }
 }
 
-$("i_integrate").addEventListener("click", integralCompute);
-integralCompute();
+/* Wire buttons (only matters once MAT276 is selected) */
+document.addEventListener("click", (ev) => {
+  if (ev.target && ev.target.id === "e_compute") eigenCompute();
+  if (ev.target && ev.target.id === "l_solve") linearSolve();
+  if (ev.target && ev.target.id === "n_find") nonlinearFind();
+  if (ev.target && ev.target.id === "i_integrate") integralCompute();
+});
 </script>
 </body>
 </html>
