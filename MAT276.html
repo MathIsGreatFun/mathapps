@@ -36,7 +36,6 @@
       background: var(--blue); color:#fff; cursor:pointer; font-weight:700;
     }
     button:hover { filter: brightness(.95); }
-    .chip { display:flex; align-items:center; gap:8px; font-size:.95rem; color: var(--ink); }
     .out {
       margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -48,8 +47,7 @@
     .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
   </style>
 
-  <!-- Nerdamer (symbolic algebra + calculus) -->
-  <!-- Source: jsDelivr listing for nerdamer includes all.min.js -->
+  <!-- Nerdamer (symbolic algebra + calculus). If your network blocks CDNs, download this file into your repo and reference it locally. -->
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
 </head>
 
@@ -79,9 +77,13 @@
               <input id="e_c" type="number" step="any" value="1" />
               <input id="e_d" type="number" step="any" value="2" />
             </div>
-            
+
+            <div class="actions">
+              <button id="e_compute">Compute</button>
+            </div>
+
             <div class="out" id="e_out"></div>
-            <div class="note">Complex eigenvalues and eigenvectors are shown in complex form when they occur.</div>
+            <div class="note">Complex eigenvalues/eigenvectors are shown in complex form when they occur.</div>
           </div>
         </div>
       </div>
@@ -118,42 +120,42 @@
         </div>
       </div>
 
-<!-- ============ 3) NONLINEAR PANEL ============ -->
-<div class="panel" id="panel-nonlinear">
-  <div class="row">
-    <div class="box">
-      <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
+      <!-- ============ 3) NONLINEAR PANEL ============ -->
+      <div class="panel" id="panel-nonlinear">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">3) Roots of a Nonlinear System (Numerical)</h2>
 
-      <div class="note">
-        Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
-        You can use <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, <code>pow</code>.
+            <div class="note">
+              Enter <strong>f(x,y)</strong> and <strong>g(x,y)</strong> (both set to 0).
+              You can use <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, <code>pow</code>.
+            </div>
+
+            <label>f(x, y) = 0</label>
+            <input id="n_f" type="text" value="x*x + y*y - 1" />
+
+            <label>g(x, y) = 0</label>
+            <input id="n_g" type="text" value="y - x" />
+
+            <!-- Fixed region hidden from students -->
+            <input id="n_xmin" type="hidden" value="-4" />
+            <input id="n_xmax" type="hidden" value="4" />
+            <input id="n_ymin" type="hidden" value="-4" />
+            <input id="n_ymax" type="hidden" value="4" />
+
+            <div class="actions">
+              <button id="n_find">Find Roots</button>
+            </div>
+
+            <div class="out" id="n_out"></div>
+
+            <div class="note">
+              Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.
+              This numerical search can miss roots for difficult systems.
+            </div>
+          </div>
+        </div>
       </div>
-
-      <label>f(x, y) = 0</label>
-      <input id="n_f" type="text" value="x*x + y*y - 1" />
-
-      <label>g(x, y) = 0</label>
-      <input id="n_g" type="text" value="y - x" />
-
-      <!-- Hidden fixed region (still editable by you in code) -->
-      <input id="n_xmin" type="hidden" value="-4" />
-      <input id="n_xmax" type="hidden" value="4" />
-      <input id="n_ymin" type="hidden" value="-4" />
-      <input id="n_ymax" type="hidden" value="4" />
-
-      <div class="actions">
-        <button id="n_find">Find Roots</button>
-      </div>
-
-      <div class="out" id="n_out"></div>
-
-      <div class="note">
-        Search region is fixed to <strong>-4 ≤ x ≤ 4</strong>, <strong>-4 ≤ y ≤ 4</strong>.
-      </div>
-    </div>
-  </div>
-</div>
-
 
       <!-- ============ 4) INTEGRAL PANEL ============ -->
       <div class="panel" id="panel-integral">
@@ -165,8 +167,7 @@
               Enter a function of <strong>t</strong>. Examples:
               <span class="kbd">t^2</span>, <span class="kbd">sin(t)</span>, <span class="kbd">exp(3*t)</span>,
               <span class="kbd">1/(1+t^2)</span>, <span class="kbd">sqrt(t)</span>.
-              <br/>
-              Use <strong>^</strong> for powers. Trig is <span class="kbd">sin</span>, <span class="kbd">cos</span>, etc.
+              Use <strong>^</strong> for powers.
             </div>
 
             <label>Integrand: ∫ f(t) dt</label>
@@ -174,21 +175,22 @@
 
             <div class="actions">
               <button id="i_integrate">Integrate</button>
-              <label class="chip"><input id="i_simplify" type="checkbox" checked /> Simplify result</label>
+              <label style="display:flex; align-items:center; gap:8px; font-size:.95rem; color: var(--ink);">
+                <input id="i_simplify" type="checkbox" checked /> Simplify result
+              </label>
             </div>
 
             <div class="out" id="i_out"></div>
 
             <div class="note">
               If Nerdamer can’t find a closed-form antiderivative, it may return an unevaluated expression.
-              (Still useful for “reasonable” classroom integrals.)
             </div>
           </div>
         </div>
       </div>
 
       <div class="note">
-        Tip: If you later split these into separate apps, you can make separate files like <code>integrals.html</code>, <code>eigen.html</code>, etc.
+        Tip: Later, you can split these into separate pages (e.g., <code>eigen.html</code>, <code>roots.html</code>) and embed each one in Canvas.
       </div>
     </div>
   </div>
@@ -211,6 +213,7 @@ document.querySelectorAll(".tabbtn").forEach(btn => {
 
 /* =========================
    1) Eigenvalues/Eigenvectors (2x2), complex-capable
+   (No normalization option)
 ========================= */
 function complex(re, im=0){ return {re, im}; }
 function cAdd(x,y){ return complex(x.re+y.re, x.im+y.im); }
@@ -232,12 +235,8 @@ function fmtComplex(z, digits=6){
   const sign = im >= 0 ? "+" : "-";
   return `${re.toFixed(digits).replace(/\.?0+$/,"")} ${sign} ${Math.abs(im).toFixed(digits).replace(/\.?0+$/,"")}i`;
 }
-function normalizeRealVec(v){
-  const n = Math.hypot(v[0], v[1]);
-  if (n < 1e-14) return v;
-  return [v[0]/n, v[1]/n];
-}
 function eigenvector2x2(a,b,c,d, lam){
+  // Solve (A - lam I)v = 0 in complex arithmetic.
   const aa = cSub(complex(a,0), lam);
   const dd = cSub(complex(d,0), lam);
   const bb = complex(b,0);
@@ -253,13 +252,12 @@ function eigenvector2x2(a,b,c,d, lam){
   if (cAbs(x) < 1e-14 && cAbs(y) < 1e-14) return [complex(1,0), complex(0,0)];
   return [x,y];
 }
-function fmtVec(v, normReal){
+function fmtVec(v){
+  // If essentially real, show real components.
   if (Math.abs(v[0].im) < 1e-12 && Math.abs(v[1].im) < 1e-12) {
-    let vv = [v[0].re, v[1].re];
-    if (normReal) vv = normalizeRealVec(vv);
-    const fx = Math.abs(vv[0]) < 1e-12 ? 0 : vv[0];
-    const fy = Math.abs(vv[1]) < 1e-12 ? 0 : vv[1];
-    return `(${fx.toFixed(6)}, ${fy.toFixed(6)})`;
+    const x = Math.abs(v[0].re) < 1e-12 ? 0 : v[0].re;
+    const y = Math.abs(v[1].re) < 1e-12 ? 0 : v[1].re;
+    return `(${x.toFixed(6)}, ${y.toFixed(6)})`;
   }
   // Complex vector: scale so largest magnitude entry becomes 1
   let x = v[0], y = v[1];
@@ -275,7 +273,6 @@ function eigenCompute(){
   const b = parseFloat($("e_b").value);
   const c = parseFloat($("e_c").value);
   const d = parseFloat($("e_d").value);
-  
 
   if (!isFiniteAll([a,b,c,d])) {
     $("e_out").textContent = "Please enter valid numbers for all four entries.";
@@ -303,10 +300,10 @@ function eigenCompute(){
   lines.push(`disc     = ${disc}`);
   lines.push("");
   lines.push(`λ1 = ${fmtComplex(lam1)}`);
-  lines.push(`v1 = ${fmtVec(v1, doNorm)}`);
+  lines.push(`v1 = ${fmtVec(v1)}`);
   lines.push("");
   lines.push(`λ2 = ${fmtComplex(lam2)}`);
-  lines.push(`v2 = ${fmtVec(v2, doNorm)}`);
+  lines.push(`v2 = ${fmtVec(v2)}`);
 
   $("e_out").textContent = lines.join("\n");
 }
@@ -348,7 +345,6 @@ function linearSolve(){
     lines.push(`  x = ${x.toFixed(10).replace(/\.?0+$/,"")}`);
     lines.push(`  y = ${y.toFixed(10).replace(/\.?0+$/,"")}`);
   } else {
-    // det = 0 => either none or infinite
     function isZero(z){ return Math.abs(z) < eps; }
     const r1 = [a1,b1,c1], r2 = [a2,b2,c2];
 
@@ -359,7 +355,6 @@ function linearSolve(){
 
     lines.push("");
     if (k === null) {
-      // equation 1 is 0x+0y=c1
       if (!isZero(c1)) lines.push(`No solution (inconsistent: 0 = ${c1}).`);
       else lines.push(`Infinitely many solutions (equation 1 is 0=0; rely on equation 2).`);
     } else {
@@ -395,9 +390,11 @@ linearSolve();
 
 /* =========================
    3) Nonlinear root finder (numerical)
+   - fixed region: [-4,4] × [-4,4]
+   - hidden defaults for grid/iters/tol/dedup
+   - fixed makeSafeFunction (no Math redeclare)
 ========================= */
 function makeSafeFunction(expr){
-  // Lets students use sin(x), cos(x), exp(x), etc. without Math.
   const body = `
     "use strict";
     const {
@@ -467,14 +464,14 @@ function nonlinearFind(){
     return;
   }
 
-  // Fixed region (defaults requested)
+  // Fixed region (hidden inputs kept in DOM; you can change there if desired)
   const xmin = -4, xmax = 4, ymin = -4, ymax = 4;
 
-  // Hidden defaults (you can tweak these)
-  const grid  = 41;      // number of start points per axis (higher = more thorough, slower)
-  const iters = 30;      // Newton iterations
-  const tol   = 1e-9;    // residual tolerance
-  const eps   = 1e-4;    // dedup radius
+  // Hidden defaults (tweak here, not in the UI)
+  const grid  = 41;   // higher = more thorough, slower
+  const iters = 30;
+  const tol   = 1e-9;
+  const eps   = 1e-4;
 
   const roots = [];
   const lines = [];
@@ -493,17 +490,17 @@ function nonlinearFind(){
       dedupPush(roots, res, eps);
     }
   }
+
   roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
 
   if (roots.length === 0) {
     lines.push("No roots found in the region with the current settings.");
-    lines.push("Try expanding the region or increasing the grid size / iterations.");
   } else {
     lines.push(`Roots found (${roots.length}):`);
     for (const r of roots){
       const xs = r.x.toFixed(10).replace(/\.?0+$/,"");
       const ys = r.y.toFixed(10).replace(/\.?0+$/,"");
-      lines.push(`  (x, y) = (${xs}, ${ys})   residual ≈ ${r.r.toExponential(2)}   iters=${r.iters}`);
+      lines.push(`  (x, y) = (${xs}, ${ys})   residual ≈ ${r.r.toExponential(2)}`);
     }
   }
 
