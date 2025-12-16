@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Virtual Tongue Drum</title>
+  <style>
+    :root { --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#aab4e6; --accent:#7aa2ff; }
+    body { margin:0; font-family:system-ui,Segoe UI,Roboto,Arial; background:radial-gradient(1000px 600px at 20% 0%, #16204a 0%, var(--bg) 55%); color:var(--text); }
+    .wrap { max-width:980px; margin:0 auto; padding:24px; }
+    h1 { margin:0 0 8px; font-size:20px; font-weight:650; letter-spacing:.2px; }
+    p { margin:0 0 16px; color:var(--muted); line-height:1.35; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+    .card { background:rgba(18,26,51,.9); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; }
+    label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    input[type="text"]{
+      width:min(680px, 92vw);
+      padding:10px 12px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18); color:var(--text); outline:none;
+    }
+    button{
+      padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(122,162,255,.14); color:var(--text); cursor:pointer;
+    }
+    button:hover{ background:rgba(122,162,255,.22); }
+    .pads {
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap:12px;
+    }
+    .pad{
+      user-select:none;
+      padding:14px 12px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      transition: transform .06s ease, border-color .06s ease;
+      text-align:left;
+      position:relative;
+      overflow:hidden;
+      touch-action:manipulation;
+    }
+    .pad:active{ transform: scale(.985); }
+    .pad.playing{ border-color: rgba(122,162,255,.55); }
+    .note { font-size:18px; font-weight:700; }
+    .freq { margin-top:4px; font-size:12px; color:var(--muted); }
+    .hint { margin-top:12px; font-size:12px; color:var(--muted); }
+    .tiny { font-size:12px; color:var(--muted); }
+    .sep { height:1px; background:rgba(255,255,255,.08); margin:14px 0; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding:2px 6px; border:1px solid rgba(255,255,255,.14); border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Virtual Tongue Drum</h1>
+    <p>Enter notes like <span class="kbd">D3-Gb3-A3-Db4</span> (dash-separated). Supports flats (<span class="kbd">Gb</span>) and sharps (<span class="kbd">F#</span>).</p>
+
+    <div class="row">
+      <div class="card">
+        <label for="notes">Notes</label>
+        <input id="notes" type="text" spellcheck="false" />
+        <div class="hint">Tip: share links like <span class="kbd">?notes=D3-Gb3-A3-Db4-D4</span></div>
+      </div>
+      <div class="card">
+        <label>&nbsp;</label>
+        <button id="apply">Apply</button>
+        <div class="tiny" style="margin-top:8px;">Spacebar toggles mute.</div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div id="pads" class="pads"></div>
+    <div class="hint">Keyboard: number keys <span class="kbd">1–0</span> play the first 10 pads (if present).</div>
+  </div>
+
+<script>
+(() => {
+  // ---------- URL + parsing ----------
+  const qs = new URLSearchParams(location.search);
+  const defaultNotes = "D3-Gb3-A3-Db4-D4-E4-Ab4-A4-B4-Db5";
+  const input = document.getElementById("notes");
+  const padsEl = document.getElementById("pads");
+  const applyBtn = document.getElementById("apply");
+
+  input.value = (qs.get("notes") || defaultNotes).trim();
+
+  function normalizeToken(tok){
+    // Accept: Db4, D♭4, F#3, Gb3, A3, etc.
+    tok = tok.trim()
+      .replaceAll("♭","b")
+      .replaceAll("♯","#");
+    // Uppercase letter, keep accidental as-is, keep octave
+    // Example: gb3 -> Gb3
+    if (!tok) return "";
+    const m = tok.match(/^([A-Ga-g])([#b]?)(-?\d+)$/);
+    if (!m) return "";
+    return m[1].toUpperCase() + (m[2] || "") + m[3];
+  }
+
+  function parseNotes(str){
+    return str.split("-")
+      .map(normalizeToken)
+      .filter(Boolean);
+  }
+
+  // ---------- Note -> frequency ----------
+  const SEMI = {
+    "C":0, "C#":1, "Db":1,
+    "D":2, "D#":3, "Eb":3,
+    "E":4,
+    "F":5, "F#":6, "Gb":6,
+    "G":7, "G#":8, "Ab":8,
+    "A":9, "A#":10, "Bb":10,
+    "B":11
+  };
+
+  function noteToMidi(note){
+    const m = note.match(/^([A-G])([#b]?)(-?\d+)$/);
+    if (!m) return null;
+    const name = m[1] + (m[2] || "");
+    const oct = Number(m[3]);
+    if (!(name in SEMI) || !Number.isFinite(oct)) return null;
+    // MIDI: C4 = 60 -> (oct+1)*12 + semitone
+    return (oct + 1) * 12 + SEMI[name];
+  }
+
+  function midiToFreq(midi){
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  // ---------- Audio (tongue-drum-ish) ----------
+  let audio = null;
+  let master = null;
+  let muted = false;
+
+  function ensureAudio(){
+    if (audio) return;
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+
+    master = audio.createGain();
+    master.gain.value = 0.9;
+    master.connect(audio.destination);
+  }
+
+  function hit(freq){
+    ensureAudio();
+    if (audio.state === "suspended") audio.resume();
+    if (muted) return;
+
+    const now = audio.currentTime;
+
+    // A little “metallic” but warm: fundamental + a few partials
+    const out = audio.createGain();
+    out.gain.setValueAtTime(0.0001, now);
+    out.gain.exponentialRampToValueAtTime(0.9, now + 0.008);   // fast attack
+    out.gain.exponentialRampToValueAtTime(0.0001, now + 2.2); // long decay
+    out.connect(master);
+
+    const partials = [
+      { mult: 1.0, gain: 0.85 },
+      { mult: 2.01, gain: 0.18 },
+      { mult: 3.98, gain: 0.10 },
+      { mult: 6.02, gain: 0.06 }
+    ];
+
+    partials.forEach(p => {
+      const osc = audio.createOscillator();
+      const g = audio.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq * p.mult, now);
+      g.gain.setValueAtTime(p.gain, now);
+      osc.connect(g).connect(out);
+      osc.start(now);
+      osc.stop(now + 2.4);
+    });
+
+    // Tiny pitch dip for percussive feel
+    // (implemented by a quick detune on an extra osc)
+    const osc2 = audio.createOscillator();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(freq, now);
+    osc2.frequency.exponentialRampToValueAtTime(freq * 0.995, now + 0.04);
+    const g2 = audio.createGain();
+    g2.gain.setValueAtTime(0.12, now);
+    osc2.connect(g2).connect(out);
+    osc2.start(now);
+    osc2.stop(now + 0.25);
+  }
+
+  // ---------- UI ----------
+  function setURL(notesStr){
+    const u = new URL(location.href);
+    u.searchParams.set("notes", notesStr);
+    history.replaceState({}, "", u);
+  }
+
+  function render(){
+    const notes = parseNotes(input.value);
+    setURL(notes.join("-"));
+
+    padsEl.innerHTML = "";
+    notes.forEach((n, idx) => {
+      const midi = noteToMidi(n);
+      const freq = midi == null ? null : midiToFreq(midi);
+
+      const div = document.createElement("div");
+      div.className = "pad";
+      div.setAttribute("role","button");
+      div.tabIndex = 0;
+
+      const label = document.createElement("div");
+      label.className = "note";
+      label.textContent = n + (idx < 10 ? `  [${(idx+1)%10}]` : "");
+      div.appendChild(label);
+
+      const meta = document.createElement("div");
+      meta.className = "freq";
+      meta.textContent = freq ? `${freq.toFixed(2)} Hz` : "Invalid note";
+      div.appendChild(meta);
+
+      function play(){
+        if (!freq) return;
+        div.classList.add("playing");
+        hit(freq);
+        setTimeout(() => div.classList.remove("playing"), 90);
+      }
+
+      div.addEventListener("pointerdown", (e) => { e.preventDefault(); play(); });
+      div.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); play(); }
+      });
+
+      padsEl.appendChild(div);
+    });
+  }
+
+  applyBtn.addEventListener("click", render);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") render(); });
+
+  // Keyboard shortcuts: 1-0 play first 10 pads, space toggles mute.
+  window.addEventListener("keydown", (e) => {
+    if (e.target === input) return;
+
+    if (e.code === "Space") {
+      muted = !muted;
+      return;
+    }
+
+    const k = e.key;
+    const map = { "1":0,"2":1,"3":2,"4":3,"5":4,"6":5,"7":6,"8":7,"9":8,"0":9 };
+    if (k in map) {
+      const pad = padsEl.children[map[k]];
+      if (pad) pad.dispatchEvent(new PointerEvent("pointerdown", { bubbles:true }));
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
