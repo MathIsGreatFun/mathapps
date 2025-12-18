@@ -49,11 +49,13 @@ svg{max-width:100%}
 
 <body>
 <div class="wrap">
-<h1>Tongue Drum Builder (C3 → B5)</h1>
-<p>
-Pads <b>1–10</b> are always <b>ascending in frequency</b>.
-Lowest note = center pad.
+<h1 style="text-align:center; font-size:26px; margin:0 0 10px;">
+  Aether Instruments Virtual Tongue Drum
+</h1>
+<p style="text-align:center; margin:0 0 18px;">
+  Please select 10 notes. Press numbers 1 through 0 on the keyboard, or click on the tongues to play the corresponding notes.
 </p>
+
 
 <div class="grid">
 <div class="card">
@@ -195,6 +197,25 @@ function buildDrum(){
 
 let tongues=null;
 
+window.addEventListener("keydown", (e) => {
+  const tag = (e.target && e.target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea") return;
+
+  const k = e.key;
+  let pad = null;
+
+  if (k >= "1" && k <= "9") pad = Number(k);
+  else if (k === "0") pad = 10;
+
+  if (!pad) return;
+
+  const n = padNotes[pad - 1];
+  if (!n) return;
+
+  hit(midiToFreq(noteToMidi(n)));
+});
+
+  
 function syncDrum(){
   if(!tongues) tongues=buildDrum();
   tongues.forEach(t=>{
