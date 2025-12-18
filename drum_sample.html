@@ -66,7 +66,7 @@
     <div class="card">
       <div class="row">
         <div class="pill" id="countPill">Selected: 0 / 10</div>
-        <div class="pill">Perimeter spacing: 40° (9 tongues)</div>
+        <div class="pill">Perimeter: 9 tongues @ 40°</div>
         <button class="btn" id="clear">Clear</button>
         <button class="btn" id="playSeq">Play pads 1→10</button>
       </div>
@@ -87,7 +87,7 @@
       <div class="sep"></div>
       <div class="drumWrap" id="drumHost"></div>
       <div class="small" style="margin-top:10px;">
-        Numbering matches your diagram: #2 bottom-left, #3 bottom-right, then left→right bottom→top, with #10 at top.
+        Perimeter numbering uses your angle system (0° = up, clockwise).
       </div>
     </div>
   </div>
@@ -265,38 +265,21 @@
     renderAll();
   }
 
-  // ---------- DRUM GEOMETRY ----------
-  // 9 perimeter tongues => equal spacing 40°.
-  // We assign those equally spaced slots to pad numbers to match your diagram ordering:
-  // bottom row: 2 (bottom-left), 3 (bottom-right)
-  // then 4/5, 6/7, 8/9, and 10 at top.
-  //
-  // We pick 10 at top (90°) and step clockwise by 40°.
-  // Clockwise angles from 90° are: 90, 50, 10, -30, -70, -110, -150, -190, -230
-  // Then map them to pad numbers in your desired visual pattern around the circle:
-  // 10(top)=90
-  // 9(top-right)=50
-  // 7(right)=10
-  // 5(right-lower)=-30
-  // 3(bottom-right)=-70
-  // 2(bottom-left)=-110
-  // 4(left-lower)=-150
-  // 6(left)=-190
-  // 8(top-left)=-230
-  // User-defined angles: 0° is up, increasing clockwise.
-// We'll store those user angles, then convert when placing.
-const PAD_ANGLE_UP_CW = new Map([
-  [10,   0],
-  [ 9,  40],
-  [ 7,  80],
-  [ 5, 120],
-  [ 3, 160],
-  [ 2, 200],
-  [ 4, 240],
-  [ 6, 280],
-  [ 8, 320],
-]);
-
+  // ---------- PLACEMENT (your angle system) ----------
+  // Your definition: 0° is straight up from center; angles increase clockwise.
+  // Tongue numbers at angles:
+  // 0: #10, 40: #9, 80: #7, 120: #5, 160: #3, 200: #2, 240: #4, 280: #6, 320: #8
+  const PAD_ANGLE_UP_CW = new Map([
+    [10,   0],
+    [ 9,  40],
+    [ 7,  80],
+    [ 5, 120],
+    [ 3, 160],
+    [ 2, 200],
+    [ 4, 240],
+    [ 6, 280],
+    [ 8, 320],
+  ]);
 
   function buildDrum(){
     const W=520, H=520, cx=W/2, cy=H/2;
@@ -354,22 +337,41 @@ const PAD_ANGLE_UP_CW = new Map([
     const w=70, h=130, rx=18;
 
     for (let pad=2; pad<=10; pad++){
-      const deg = PAD_ANGLE.get(pad);
-      if (deg == null) continue;
+      const userDeg = PAD_ANGLE_UP_CW.get(pad);
+      if (userDeg == null) continue;
 
-      // Convert your angle system (0=up, clockwise) -> trig system (0=right, CCW)
-const userDeg = PAD_ANGLE_UP_CW.get(pad);
-const trigDeg = 90 - userDeg;
+      // Convert your system (0=up, clockwise) -> trig system (0=right, CCW)
+      const trigDeg = 90 - userDeg;
 
-const rad = trigDeg * Math.PI / 180;
-const tx = cx + rMid * Math.cos(rad);
-const ty = cy + rMid * Math.sin(rad);
+      const rad = trigDeg * Math.PI/180;
+      const tx = cx + rMid*Math.cos(rad);
+      const ty = cy + rMid*Math.sin(rad);
 
-// Rotate tongue to point outward.
-// In trigDeg, 0 points right; outward direction is trigDeg.
-// Our tongue's "up" axis needs to align with outward, so add 90.
-g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
+      const g = document.createElementNS(svg.namespaceURI,"g");
+      g.classList.add("tongue");
+      g.dataset.pad = String(pad);
 
+      const rect = document.createElementNS(svg.namespaceURI,"rect");
+      rect.setAttribute("x", -w/2);
+      rect.setAttribute("y", -h/2);
+      rect.setAttribute("width", w);
+      rect.setAttribute("height", h);
+      rect.setAttribute("rx", rx);
+      rect.setAttribute("fill", "rgba(255,255,255,.10)");
+      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
+      rect.setAttribute("stroke-width","1.2");
+
+      const label = document.createElementNS(svg.namespaceURI,"text");
+      label.setAttribute("text-anchor","middle");
+      label.setAttribute("y","6");
+      label.setAttribute("class","labelMuted");
+      label.textContent = "";
+
+      g.appendChild(rect);
+      g.appendChild(label);
+
+      // Rotate tongue so it points outward along trigDeg
+      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
 
       g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(pad, g); });
 
@@ -438,7 +440,7 @@ g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
   // ---------- RENDER ----------
   function renderAll(){
     recomputePads();
-    countPill.textContent = `Selected: ${selectedSet.size} / ${MAX_NOTES}`;
+    countPill.textContent = `Selected: ${selectedSet.size} / 10`;
     setURL();
     buildPicker();
     syncDrum();
