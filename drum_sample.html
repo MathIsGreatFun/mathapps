@@ -357,35 +357,19 @@ const PAD_ANGLE_UP_CW = new Map([
       const deg = PAD_ANGLE.get(pad);
       if (deg == null) continue;
 
-      const rad = deg * Math.PI/180;
-      const tx = cx + rMid*Math.cos(rad);
-      const ty = cy + rMid*Math.sin(rad);
+      // Convert your angle system (0=up, clockwise) -> trig system (0=right, CCW)
+const userDeg = PAD_ANGLE_UP_CW.get(pad);
+const trigDeg = 90 - userDeg;
 
-      const g = document.createElementNS(svg.namespaceURI,"g");
-      g.classList.add("tongue");
-      g.dataset.pad = String(pad);
+const rad = trigDeg * Math.PI / 180;
+const tx = cx + rMid * Math.cos(rad);
+const ty = cy + rMid * Math.sin(rad);
 
-      const rect = document.createElementNS(svg.namespaceURI,"rect");
-      rect.setAttribute("x", -w/2);
-      rect.setAttribute("y", -h/2);
-      rect.setAttribute("width", w);
-      rect.setAttribute("height", h);
-      rect.setAttribute("rx", rx);
-      rect.setAttribute("fill", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke-width","1.2");
+// Rotate tongue to point outward.
+// In trigDeg, 0 points right; outward direction is trigDeg.
+// Our tongue's "up" axis needs to align with outward, so add 90.
+g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
 
-      const label = document.createElementNS(svg.namespaceURI,"text");
-      label.setAttribute("text-anchor","middle");
-      label.setAttribute("y","6");
-      label.setAttribute("class","labelMuted");
-      label.textContent = "";
-
-      g.appendChild(rect);
-      g.appendChild(label);
-
-      // rotate outward
-      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${deg + 90})`);
 
       g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(pad, g); });
 
