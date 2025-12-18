@@ -58,11 +58,9 @@
 <div class="wrap">
   <h1>Tongue Drum Builder (C3 → B5)</h1>
   <p>
-    Click notes to select up to <b>10</b>.
-    The <b>first</b> selected note goes to the <b>center</b>.
-    Notes #2–#10 populate around the perimeter in your requested order:
-    200°, 160°, 240°, 120°, 280°, 80°, 320°, 40°, 0°
-    (angles measured from <b>up</b>, going <b>counter-clockwise</b>).
+    Select up to <b>10</b> notes. They are placed in the <b>order you click them</b>:
+    1st in the center, then 200°, 160°, 240°, 120°, 280°, 80°, 320°, 40°, 0°
+    (from <b>up = 0°</b>, going <b>counter-clockwise</b>).
     Play by clicking tongues or pressing <b>1–9</b> and <b>0</b>.
   </p>
 
@@ -70,9 +68,8 @@
     <div class="card">
       <div class="row">
         <div class="pill" id="countPill">Selected: 0 / 10</div>
-        <div class="pill">Fill order preserved (no sorting)</div>
         <button class="btn" id="clear">Clear</button>
-        <button class="btn" id="playSeq">Play in chosen order</button>
+        <button class="btn" id="playSeq">Play (selection order)</button>
       </div>
 
       <div class="sep"></div>
@@ -90,9 +87,6 @@
       </div>
       <div class="sep"></div>
       <div class="drumWrap" id="drumHost"></div>
-      <div class="small" style="margin-top:10px;">
-        Perimeter tongues are spaced evenly by index (using your custom angle order).
-      </div>
     </div>
   </div>
 </div>
@@ -118,11 +112,10 @@
     {name:"B",  token:"B"},
   ];
 
-  // NOTE: user fill order for perimeter pads 2..10
-  // Angles measured from "up" (0°) going COUNTER-CLOCKWISE.
-  // pad2 uses first angle, pad3 uses second angle, ..., pad10 uses last angle.
+  // Placement order for pads 2..10 (i.e., 2nd..10th selected note)
+  // Angles measured from UP (0°) going COUNTER-CLOCKWISE.
   const PERIMETER_ANGLES_UP_CCW = [
-    200, // pad 2 (2nd selected note)
+    200, // pad 2 (2nd note)
     160, // pad 3
     240, // pad 4
     120, // pad 5
@@ -130,7 +123,7 @@
      80, // pad 7
     320, // pad 8
      40, // pad 9
-      0, // pad 10 (10th selected note)
+      0, // pad 10 (10th note)
   ];
 
   // ---------- NOTE/MIDI ----------
@@ -216,10 +209,8 @@
   }
 
   // ---------- STATE ----------
-  // IMPORTANT: we preserve selection order (first click is pad1, second is pad2, etc.)
-  const selected = []; // array of note strings in chosen order (max 10)
-
-  function hasNote(n){ return selected.includes(n); }
+  // Selection order is pad order.
+  const selected = []; // ["C3", "D3", ...] max 10
 
   // ---------- DOM ----------
   const picker = document.getElementById("picker");
@@ -254,12 +245,10 @@
 
         const div = document.createElement("div");
         div.className = "key";
-        if (hasNote(note)) div.classList.add("sel");
+        if (selected.includes(note)) div.classList.add("sel");
 
         const midi = noteToMidi(note);
-        const idx = selected.indexOf(note);
-        const tag = idx >= 0 ? ` (pad ${idx+1})` : "";
-        div.innerHTML = `<div class="n">${ch.name}${oct}${tag}</div><div class="m">${midi ?? ""}</div>`;
+        div.innerHTML = `<div class="n">${ch.name}${oct}</div><div class="m">${midi ?? ""}</div>`;
 
         div.addEventListener("pointerdown", (e)=>{
           e.preventDefault();
@@ -275,9 +264,8 @@
 
   function toggleNote(note){
     const i = selected.indexOf(note);
-    if (i >= 0) {
-      selected.splice(i, 1); // remove; later pads shift down automatically
-    } else {
+    if (i >= 0) selected.splice(i, 1);
+    else {
       if (selected.length >= MAX_NOTES) return;
       selected.push(note);
     }
@@ -309,7 +297,7 @@
 
     const tongues = [];
 
-    // Pad 1 center triangle
+    // Pad 1: center triangle
     {
       const g = document.createElementNS(svg.namespaceURI,"g");
       g.classList.add("tongue");
@@ -336,7 +324,7 @@
       tongues.push({ pad:1, g, label });
     }
 
-    // Pads 2–10 perimeter tongues
+    // Pads 2–10: perimeter tongues
     const rMid = 185;
     const w=70, h=130, rx=18;
 
@@ -416,10 +404,9 @@
     hitFreq(midiToFreq(midi));
   }
 
-  async function playInChosenOrder(){
+  async function playSelectionOrder(){
     for (let i=0;i<selected.length;i++){
-      const note = selected[i];
-      const midi = noteToMidi(note);
+      const midi = noteToMidi(selected[i]);
       if (midi != null) hitFreq(midiToFreq(midi));
       await new Promise(r=>setTimeout(r, 220));
     }
@@ -453,7 +440,7 @@
     renderAll();
   });
 
-  document.getElementById("playSeq").addEventListener("click", playInChosenOrder);
+  document.getElementById("playSeq").addEventListener("click", playSelectionOrder);
 
   document.getElementById("muteBtn").addEventListener("click", ()=>{
     muted = !muted;
