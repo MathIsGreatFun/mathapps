@@ -232,120 +232,156 @@
 
   // ------- drum SVG (10 tongues) -------
   function buildDrum(){
-    // Tongues are laid around a circle. We’ll map selected[0..9] to tongues 1..10.
-    const W=520, H=520, cx=W/2, cy=H/2;
+  const W=520, H=520, cx=W/2, cy=H/2;
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("width","520");
-    svg.setAttribute("height","520");
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width","520");
+  svg.setAttribute("height","520");
 
-    // background circle (drum body)
-    const body = document.createElementNS(svg.namespaceURI,"circle");
-    body.setAttribute("cx", cx); body.setAttribute("cy", cy); body.setAttribute("r", 235);
-    body.setAttribute("fill", "rgba(255,255,255,.06)");
-    body.setAttribute("stroke", "rgba(255,255,255,.12)");
-    body.setAttribute("stroke-width","2");
-    svg.appendChild(body);
+  // drum body
+  const body = document.createElementNS(svg.namespaceURI,"circle");
+  body.setAttribute("cx", cx); body.setAttribute("cy", cy); body.setAttribute("r", 235);
+  body.setAttribute("fill", "rgba(255,255,255,.06)");
+  body.setAttribute("stroke", "rgba(255,255,255,.12)");
+  body.setAttribute("stroke-width","2");
+  svg.appendChild(body);
 
-    // subtle inner circle
-    const inner = document.createElementNS(svg.namespaceURI,"circle");
-    inner.setAttribute("cx", cx); inner.setAttribute("cy", cy); inner.setAttribute("r", 120);
-    inner.setAttribute("fill", "rgba(0,0,0,.10)");
-    inner.setAttribute("stroke", "rgba(255,255,255,.08)");
-    inner.setAttribute("stroke-width","1");
-    svg.appendChild(inner);
+  // subtle inner circle
+  const inner = document.createElementNS(svg.namespaceURI,"circle");
+  inner.setAttribute("cx", cx); inner.setAttribute("cy", cy); inner.setAttribute("r", 125);
+  inner.setAttribute("fill", "rgba(0,0,0,.10)");
+  inner.setAttribute("stroke", "rgba(255,255,255,.08)");
+  inner.setAttribute("stroke-width","1");
+  svg.appendChild(inner);
 
-    // create 10 tongues
-    const tongues = [];
-    for (let k=0;k<10;k++){
-      const angle = (-90 + k*36) * Math.PI/180; // start at top
-      const rMid = 175;
-      const tx = cx + rMid*Math.cos(angle);
-      const ty = cy + rMid*Math.sin(angle);
+  const tongues = [];
 
-      const g = document.createElementNS(svg.namespaceURI,"g");
-      g.classList.add("tongue");
-      g.dataset.idx = String(k);
+  // -------- Pad 1: center triangle tongue --------
+  {
+    const g = document.createElementNS(svg.namespaceURI,"g");
+    g.classList.add("tongue");
+    g.dataset.pad = "1";
 
-      // tongue shape = rounded capsule-like path, rotated
-      const w=70, h=130, rx=18;
-      const rect = document.createElementNS(svg.namespaceURI,"rect");
-      rect.setAttribute("x", -w/2);
-      rect.setAttribute("y", -h/2);
-      rect.setAttribute("width", w);
-      rect.setAttribute("height", h);
-      rect.setAttribute("rx", rx);
-      rect.setAttribute("fill", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke-width","1.2");
+    const tri = document.createElementNS(svg.namespaceURI,"path");
+    // nice triangle centered
+    tri.setAttribute("d", `M ${cx} ${cy-55} L ${cx-38} ${cy+45} L ${cx+38} ${cy+45} Z`);
+    tri.setAttribute("fill", "rgba(255,255,255,.10)");
+    tri.setAttribute("stroke", "rgba(255,255,255,.12)");
+    tri.setAttribute("stroke-width","1.4");
+    g.appendChild(tri);
 
-      const label = document.createElementNS(svg.namespaceURI,"text");
-      label.setAttribute("text-anchor","middle");
-      label.setAttribute("y","6");
-      label.setAttribute("class","labelMuted");
-      label.textContent = "";
+    const label = document.createElementNS(svg.namespaceURI,"text");
+    label.setAttribute("x", cx);
+    label.setAttribute("y", cy+10);
+    label.setAttribute("text-anchor","middle");
+    label.setAttribute("class","labelMuted");
+    label.textContent = "";
+    g.appendChild(label);
 
-      g.appendChild(rect);
-      g.appendChild(label);
+    g.addEventListener("pointerdown", (e)=>{
+      e.preventDefault();
+      playTongueByPad(1, g);
+    });
 
-      // transform: move to tx,ty, rotate so tongue points outward
-      const rot = (k*36);
-      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${rot})`);
-
-      g.addEventListener("pointerdown", (e)=>{
-        e.preventDefault();
-        const idx = Number(g.dataset.idx);
-        playTongue(idx, g);
-      });
-
-      svg.appendChild(g);
-      tongues.push({g, rect, label});
-    }
-
-    // center label
-    const centerText = document.createElementNS(svg.namespaceURI,"text");
-    centerText.setAttribute("x", cx);
-    centerText.setAttribute("y", cy+6);
-    centerText.setAttribute("text-anchor","middle");
-    centerText.setAttribute("class","labelMuted");
-    centerText.textContent = "Tongue Drum";
-    svg.appendChild(centerText);
-
-    drumHost.innerHTML = "";
-    drumHost.appendChild(svg);
-
-    return tongues;
+    svg.appendChild(g);
+    tongues.push({ pad:1, g, shape:tri, label });
   }
+
+  // -------- Pads 2–10: fixed locations to match your diagram --------
+  // Angles in degrees (0 = right, -90 = top). Tuned to be “spaced nicely”.
+  const padAngles = [
+    { pad: 2,  deg: 130 },  // bottom-left
+    { pad: 3,  deg:  90 },  // bottom
+    { pad: 4,  deg: 210 },  // left-lower
+    { pad: 5,  deg:  35 },  // right-lower
+    { pad: 6,  deg: 180 },  // left
+    { pad: 7,  deg:   5 },  // right
+    { pad: 8,  deg: -140 }, // top-left
+    { pad: 9,  deg:  -45 }, // top-right
+    { pad: 10, deg:  -90 }, // top
+  ];
+
+  const rMid = 185;      // how far from center
+  const w = 70, h = 130; // tongue size
+  const rx = 18;
+
+  padAngles.forEach(({pad, deg})=>{
+    const rad = deg * Math.PI/180;
+    const tx = cx + rMid*Math.cos(rad);
+    const ty = cy + rMid*Math.sin(rad);
+
+    const g = document.createElementNS(svg.namespaceURI,"g");
+    g.classList.add("tongue");
+    g.dataset.pad = String(pad);
+
+    const rect = document.createElementNS(svg.namespaceURI,"rect");
+    rect.setAttribute("x", -w/2);
+    rect.setAttribute("y", -h/2);
+    rect.setAttribute("width", w);
+    rect.setAttribute("height", h);
+    rect.setAttribute("rx", rx);
+    rect.setAttribute("fill", "rgba(255,255,255,.10)");
+    rect.setAttribute("stroke", "rgba(255,255,255,.10)");
+    rect.setAttribute("stroke-width","1.2");
+
+    const label = document.createElementNS(svg.namespaceURI,"text");
+    label.setAttribute("text-anchor","middle");
+    label.setAttribute("y","6");
+    label.setAttribute("class","labelMuted");
+    label.textContent = "";
+
+    g.appendChild(rect);
+    g.appendChild(label);
+
+    // rotate tongue so it points outward
+    g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${deg + 90})`);
+
+    g.addEventListener("pointerdown", (e)=>{
+      e.preventDefault();
+      playTongueByPad(pad, g);
+    });
+
+    svg.appendChild(g);
+    tongues.push({ pad, g, shape:rect, label });
+  });
+
+  drumHost.innerHTML = "";
+  drumHost.appendChild(svg);
+  return tongues;
+}
+
 
   let tongueEls = null;
 
   function syncDrum(){
-    if (!tongueEls) tongueEls = buildDrum();
+  if (!tongueEls) tongueEls = buildDrum();
 
-    tongueEls.forEach((t, idx)=>{
-      const note = selected[idx] || "";
-      const on = Boolean(note);
+  tongueEls.forEach(t=>{
+    // pad 1 uses selected[0], pad 2 uses selected[1], ..., pad 10 uses selected[9]
+    const note = selected[t.pad - 1] || "";
+    const on = Boolean(note);
 
-      t.g.classList.toggle("on", on);
-      t.g.classList.toggle("off", !on);
-      t.label.textContent = note ? note.replace("#","♯") : "";
-      t.label.setAttribute("class", note ? "label" : "labelMuted");
-    });
-  }
+    t.g.classList.toggle("on", on);
+    t.g.classList.toggle("off", !on);
+    t.label.textContent = note ? note.replace("#","♯") : "";
+    t.label.setAttribute("class", note ? "label" : "labelMuted");
+  });
+}
 
-  function playTongue(idx, gEl){
-    const note = selected[idx];
-    if (!note) return;
 
-    const midi = noteToMidi(note);
-    if (midi == null) return;
-    const freq = midiToFreq(midi);
+  function playTongueByPad(padNumber, gEl){
+  const note = selected[padNumber - 1];
+  if (!note) return;
 
-    gEl.classList.add("playing");
-    hitFreq(freq);
-    setTimeout(()=>gEl.classList.remove("playing"), 90);
-  }
+  const midi = noteToMidi(note);
+  if (midi == null) return;
+
+  gEl.classList.add("playing");
+  hitFreq(midiToFreq(midi));
+  setTimeout(()=>gEl.classList.remove("playing"), 90);
+}
+
 
   async function playSequence(){
     for (let i=0;i<selected.length;i++){
