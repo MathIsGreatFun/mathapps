@@ -265,21 +265,20 @@
     renderAll();
   }
 
-  // ---------- PLACEMENT (your angle system) ----------
-  // Your definition: 0° is straight up from center; angles increase clockwise.
-  // Tongue numbers at angles:
-  // 0: #10, 40: #9, 80: #7, 120: #5, 160: #3, 200: #2, 240: #4, 280: #6, 320: #8
-  const PAD_ANGLE_UP_CW = new Map([
-    [10,   0],
-    [ 9,  40],
-    [ 7,  80],
-    [ 5, 120],
-    [ 3, 160],
-    [ 2, 200],
-    [ 4, 240],
-    [ 6, 280],
-    [ 8, 320],
-  ]);
+  // Fill order for pads 2..10.
+// Angles are measured from "up" (0°) going COUNTER-CLOCKWISE.
+const PERIMETER_ANGLES_UP_CCW = [
+  200, // pad 2  (2nd note)
+  160, // pad 3
+  240, // pad 4
+  120, // pad 5
+  280, // pad 6
+   80, // pad 7
+  320, // pad 8
+   40, // pad 9
+    0, // pad 10 (last note)
+];
+
 
   function buildDrum(){
     const W=520, H=520, cx=W/2, cy=H/2;
@@ -336,42 +335,22 @@
     const rMid = 185;
     const w=70, h=130, rx=18;
 
-    for (let pad=2; pad<=10; pad++){
-      const userDeg = PAD_ANGLE_UP_CW.get(pad);
-      if (userDeg == null) continue;
+    for (let pad = 2; pad <= 10; pad++) {
+  const userCCW = PERIMETER_ANGLES_UP_CCW[pad - 2]; // pad2 uses index 0
+  if (userCCW == null) continue;
 
-      // Convert your system (0=up, clockwise) -> trig system (0=right, CCW)
-      const trigDeg = 90 - userDeg;
+  // Convert your system (0° = up, CCW+) -> trig (0° = right, CCW+)
+  const trigDeg = 90 + userCCW;
 
-      const rad = trigDeg * Math.PI/180;
-      const tx = cx + rMid*Math.cos(rad);
-      const ty = cy + rMid*Math.sin(rad);
+  const rad = trigDeg * Math.PI / 180;
+  const tx = cx + rMid * Math.cos(rad);
+  const ty = cy + rMid * Math.sin(rad);
 
-      const g = document.createElementNS(svg.namespaceURI,"g");
-      g.classList.add("tongue");
-      g.dataset.pad = String(pad);
+  ...
+  // Rotate tongue outward
+  g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
+}
 
-      const rect = document.createElementNS(svg.namespaceURI,"rect");
-      rect.setAttribute("x", -w/2);
-      rect.setAttribute("y", -h/2);
-      rect.setAttribute("width", w);
-      rect.setAttribute("height", h);
-      rect.setAttribute("rx", rx);
-      rect.setAttribute("fill", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke-width","1.2");
-
-      const label = document.createElementNS(svg.namespaceURI,"text");
-      label.setAttribute("text-anchor","middle");
-      label.setAttribute("y","6");
-      label.setAttribute("class","labelMuted");
-      label.textContent = "";
-
-      g.appendChild(rect);
-      g.appendChild(label);
-
-      // Rotate tongue so it points outward along trigDeg
-      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
 
       g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(pad, g); });
 
