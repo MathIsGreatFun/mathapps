@@ -1,463 +1,227 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tongue Drum Builder</title>
-  <style>
-    :root{
-      --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#aab4e6;
-      --line:rgba(255,255,255,.10); --hot:rgba(122,162,255,.55);
-    }
-    body{
-      margin:0; font-family:system-ui,Segoe UI,Roboto,Arial;
-      background:radial-gradient(1000px 600px at 20% 0%, #16204a 0%, var(--bg) 55%);
-      color:var(--text);
-    }
-    .wrap{max-width:1160px;margin:0 auto;padding:22px;}
-    h1{margin:0 0 8px;font-size:18px;font-weight:750}
-    p{margin:0 0 14px;color:var(--muted);line-height:1.35}
-    .grid{display:grid;grid-template-columns:1.3fr .9fr;gap:14px;align-items:start}
-    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
-    .card{background:rgba(18,26,51,.9);border:1px solid var(--line);border-radius:16px;padding:14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .pill{border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:12px}
-    .btn{border:1px solid var(--line);background:rgba(122,162,255,.14);color:var(--text);border-radius:12px;padding:9px 12px;cursor:pointer}
-    .btn:hover{background:rgba(122,162,255,.22)}
-    .small{font-size:12px;color:var(--muted)}
-    .sep{height:1px;background:var(--line);margin:12px 0}
-    .keys{display:grid;grid-template-columns:repeat(12, minmax(0,1fr));gap:8px}
-    .oct{margin:12px 0 8px;font-size:12px;color:var(--muted)}
-    .key{
-      user-select:none;touch-action:manipulation;
-      border:1px solid var(--line);border-radius:12px;padding:10px 8px;
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      cursor:pointer;
-    }
-    .key:hover{border-color:rgba(255,255,255,.18)}
-    .key.sel{border-color:var(--hot);box-shadow:0 0 0 2px rgba(122,162,255,.15) inset}
-    .key .n{font-weight:750}
-    .key .m{margin-top:2px;font-size:11px;color:var(--muted)}
-    .urlbox{
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-      font-size:12px;word-break:break-all;color:#cdd6ff
-    }
-    .drumWrap{display:flex;justify-content:center}
-    svg{max-width:100%;height:auto}
-    .tongue{cursor:pointer;transition:filter .08s ease, opacity .08s ease}
-    .tongue:active{filter:brightness(1.15)}
-    .tongue.off{opacity:.18;cursor:not-allowed}
-    .tongue.on{opacity:1}
-    .tongue.playing{filter:brightness(1.25)}
-    .label{font: 700 14px system-ui, Segoe UI, Roboto, Arial; fill:#e9eeff}
-    .labelMuted{font: 650 14px system-ui, Segoe UI, Roboto, Arial; fill:#aab4e6}
-    code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Tongue Drum Builder</title>
+
+<style>
+:root{
+  --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#aab4e6;
+  --line:rgba(255,255,255,.10); --hot:rgba(122,162,255,.55);
+}
+body{
+  margin:0; font-family:system-ui,Segoe UI,Roboto,Arial;
+  background:radial-gradient(1000px 600px at 20% 0%, #16204a 0%, var(--bg) 55%);
+  color:var(--text);
+}
+.wrap{max-width:1160px;margin:0 auto;padding:22px;}
+h1{margin:0 0 8px;font-size:18px;font-weight:750}
+p{margin:0 0 14px;color:var(--muted);line-height:1.35}
+.grid{display:grid;grid-template-columns:1.3fr .9fr;gap:14px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.card{background:rgba(18,26,51,.9);border:1px solid var(--line);border-radius:16px;padding:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:12px}
+.btn{border:1px solid var(--line);background:rgba(122,162,255,.14);color:var(--text);border-radius:12px;padding:9px 12px;cursor:pointer}
+.btn:hover{background:rgba(122,162,255,.22)}
+.sep{height:1px;background:var(--line);margin:12px 0}
+.keys{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}
+.oct{margin:12px 0 8px;font-size:12px;color:var(--muted)}
+.key{
+  user-select:none;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  cursor:pointer;
+  background:rgba(255,255,255,.05);
+}
+.key.sel{border-color:var(--hot)}
+.drumWrap{display:flex;justify-content:center}
+svg{max-width:100%}
+.tongue{cursor:pointer}
+.tongue.off{opacity:.2}
+.tongue.playing{filter:brightness(1.3)}
+.label{font:700 14px system-ui;fill:#e9eeff}
+.labelMuted{font:650 14px system-ui;fill:#aab4e6}
+</style>
 </head>
+
 <body>
 <div class="wrap">
-  <h1>Tongue Drum Builder (C3 → B5)</h1>
-  <p>
-    Click notes to select up to <b>10</b>. Pads <b>1→10</b> are always <b>ascending in frequency</b>.
-    Lowest note is pad 1 (center). Perimeter pads 2–10 are placed at
-    200°, 160°, 240°, 120°, 280°, 80°, 320°, 40°, 0°
-    (from <b>up = 0°</b>, going <b>counter-clockwise</b>).
-    Play by clicking tongues or pressing <b>1–9</b> and <b>0</b>.
-  </p>
+<h1>Tongue Drum Builder (C3 → B5)</h1>
+<p>
+Pads <b>1–10</b> are always <b>ascending in frequency</b>.
+Lowest note = center pad.
+</p>
 
-  <div class="grid">
-    <div class="card">
-      <div class="row">
-        <div class="pill" id="countPill">Selected: 0 / 10</div>
-        <div class="pill">Pads sorted by frequency</div>
-        <button class="btn" id="clear">Clear</button>
-        <button class="btn" id="playSeq">Play pads 1→10</button>
-      </div>
-
-      <div class="sep"></div>
-      <div class="small">Shareable URL:</div>
-      <div class="urlbox" id="urlbox"></div>
-
-      <div class="sep"></div>
-      <div id="picker"></div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <div class="pill" id="soundPill">Sound: ON</div>
-        <button class="btn" id="muteBtn">Mute</button>
-      </div>
-      <div class="sep"></div>
-      <div class="drumWrap" id="drumHost"></div>
-    </div>
+<div class="grid">
+<div class="card">
+  <div class="row">
+    <div class="pill" id="countPill">Selected: 0 / 10</div>
+    <button class="btn" id="clear">Clear</button>
+    <button class="btn" id="playSeq">Play 1→10</button>
   </div>
+  <div class="sep"></div>
+  <div id="picker"></div>
+</div>
+
+<div class="card">
+  <div class="drumWrap" id="drumHost"></div>
+</div>
+</div>
 </div>
 
 <script>
 (() => {
-  const MAX_NOTES = 10;
-  const MIN_OCT = 3, MAX_OCT = 5;
 
-  const CHROMA = [
-    {name:"C",  token:"C"},
-    {name:"C#", token:"C#"},
-    {name:"D",  token:"D"},
-    {name:"D#", token:"D#"},
-    {name:"E",  token:"E"},
-    {name:"F",  token:"F"},
-    {name:"F#", token:"F#"},
-    {name:"G",  token:"G"},
-    {name:"G#", token:"G#"},
-    {name:"A",  token:"A"},
-    {name:"A#", token:"A#"},
-    {name:"B",  token:"B"},
-  ];
+const MAX_NOTES=10;
+const CHROMA=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const SEMI={"C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,"F#":6,"G":7,"G#":8,"A":9,"A#":10,"B":11};
 
-  // Perimeter pad placement (pad2..pad10), in degrees from UP (0°), CCW+
-  const PERIMETER_ANGLES_UP_CCW = [
-    200, // pad 2
-    160, // pad 3
-    240, // pad 4
-    120, // pad 5
-    280, // pad 6
-     80, // pad 7
-    320, // pad 8
-     40, // pad 9
-      0, // pad 10
-  ];
+// Perimeter placement (pad 2 → pad 10)
+const PERIM_ANGLES=[200,160,240,120,280,80,320,40,0];
 
-  const SEMI = {
-    "C":0, "C#":1, "Db":1,
-    "D":2, "D#":3, "Eb":3,
-    "E":4,
-    "F":5, "F#":6, "Gb":6,
-    "G":7, "G#":8, "Ab":8,
-    "A":9, "A#":10, "Bb":10,
-    "B":11
-  };
+function noteToMidi(n){
+  const m=n.match(/^([A-G]#?)(\d)$/);
+  return m?((+m[2]+1)*12+SEMI[m[1]]):null;
+}
+function midiToFreq(m){return 440*Math.pow(2,(m-69)/12)}
 
-  function normalizeToken(tok){
-    tok = (tok||"").trim().replaceAll("♭","b").replaceAll("♯","#");
-    const m = tok.match(/^([A-Ga-g])([#b]?)(-?\d+)$/);
-    if (!m) return "";
-    return m[1].toUpperCase() + (m[2]||"") + m[3];
-  }
+let audio=null;
+function hit(freq){
+  if(!audio) audio=new AudioContext();
+  const o=audio.createOscillator();
+  const g=audio.createGain();
+  o.frequency.value=freq;
+  g.gain.setValueAtTime(0.001,audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.8,audio.currentTime+.01);
+  g.gain.exponentialRampToValueAtTime(0.001,audio.currentTime+1.6);
+  o.connect(g).connect(audio.destination);
+  o.start(); o.stop(audio.currentTime+1.7);
+}
 
-  function noteToMidi(note){
-    const m = note.match(/^([A-G])([#b]?)(-?\d+)$/);
-    if (!m) return null;
-    const name = m[1] + (m[2]||"");
-    const oct = Number(m[3]);
-    if (!(name in SEMI) || !Number.isFinite(oct)) return null;
-    return (oct + 1) * 12 + SEMI[name];
-  }
+const selectedSet=new Set();
+let padNotes=[];
 
-  function midiToFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+function recomputePads(){
+  padNotes=[...selectedSet].sort((a,b)=>noteToMidi(a)-noteToMidi(b)).slice(0,10);
+}
 
-  function isInRange(note){
-    const m = noteToMidi(note);
-    if (m == null) return false;
-    return m >= noteToMidi("C3") && m <= noteToMidi("B5");
-  }
+const picker=document.getElementById("picker");
+const drumHost=document.getElementById("drumHost");
+const countPill=document.getElementById("countPill");
 
-  // ----- Audio -----
-  let audio=null, master=null, muted=false;
-  function ensureAudio(){
-    if (audio) return;
-    audio = new (window.AudioContext || window.webkitAudioContext)();
-    master = audio.createGain();
-    master.gain.value = 0.9;
-    master.connect(audio.destination);
-  }
-  function hitFreq(freq){
-    ensureAudio();
-    if (audio.state === "suspended") audio.resume();
-    if (muted) return;
-
-    const now = audio.currentTime;
-    const out = audio.createGain();
-    out.gain.setValueAtTime(0.0001, now);
-    out.gain.exponentialRampToValueAtTime(0.9, now + 0.008);
-    out.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
-    out.connect(master);
-
-    const partials = [
-      { mult: 1.0, gain: 0.85 },
-      { mult: 2.01, gain: 0.18 },
-      { mult: 3.98, gain: 0.10 },
-      { mult: 6.02, gain: 0.06 }
-    ];
-
-    partials.forEach(p => {
-      const osc = audio.createOscillator();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq * p.mult, now);
-      const g = audio.createGain();
-      g.gain.setValueAtTime(p.gain, now);
-      osc.connect(g).connect(out);
-      osc.start(now);
-      osc.stop(now + 2.2);
+function buildPicker(){
+  picker.innerHTML="";
+  for(let oct=3;oct<=5;oct++){
+    const o=document.createElement("div");
+    o.className="oct"; o.textContent="Octave "+oct;
+    picker.appendChild(o);
+    const g=document.createElement("div");
+    g.className="keys";
+    CHROMA.forEach(n=>{
+      const note=n+oct;
+      const k=document.createElement("div");
+      k.className="key"+(selectedSet.has(note)?" sel":"");
+      k.textContent=note;
+      k.onclick=()=>{
+        selectedSet.has(note)?selectedSet.delete(note):
+        selectedSet.size<10&&selectedSet.add(note);
+        render();
+      };
+      g.appendChild(k);
     });
+    picker.appendChild(g);
   }
+}
 
-  // ----- State: selection set + derived sorted pad list -----
-  const selectedSet = new Set();
-  let padNotes = []; // sorted low->high, length <= 10
+function buildDrum(){
+  const W=520,c=W/2;
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 520 520");
 
-  function recomputePads(){
-    const arr = Array.from(selectedSet);
-    arr.sort((a,b) => (noteToMidi(a) ?? 1e9) - (noteToMidi(b) ?? 1e9));
-    padNotes = arr.slice(0, MAX_NOTES);
-  }
+  const base=document.createElementNS(svg.namespaceURI,"circle");
+  base.setAttribute("cx",c);base.setAttribute("cy",c);base.setAttribute("r",235);
+  base.setAttribute("fill","rgba(255,255,255,.06)");
+  svg.appendChild(base);
 
-  // ----- DOM -----
-  const picker = document.getElementById("picker");
-  const countPill = document.getElementById("countPill");
-  const urlbox = document.getElementById("urlbox");
-  const drumHost = document.getElementById("drumHost");
-  const soundPill = document.getElementById("soundPill");
+  const tongues=[];
 
-  function setURL(){
-    const u = new URL(location.href);
-    if (padNotes.length) u.searchParams.set("notes", padNotes.join("-"));
-    else u.searchParams.delete("notes");
-    history.replaceState({}, "", u);
-    urlbox.textContent = u.toString();
-  }
+  // center pad
+  tongues.push({pad:1,x:c,y:c});
 
-  // ----- Picker -----
-  function buildPicker(){
-    picker.innerHTML = "";
-    for (let oct = MIN_OCT; oct <= MAX_OCT; oct++){
-      const octLabel = document.createElement("div");
-      octLabel.className = "oct";
-      octLabel.textContent = `Octave ${oct}`;
-      picker.appendChild(octLabel);
-
-      const grid = document.createElement("div");
-      grid.className = "keys";
-
-      CHROMA.forEach(ch => {
-        const note = `${ch.token}${oct}`;
-        if (!isInRange(note)) { grid.appendChild(document.createElement("div")); return; }
-
-        const div = document.createElement("div");
-        div.className = "key";
-        if (selectedSet.has(note)) div.classList.add("sel");
-
-        div.innerHTML = `<div class="n">${ch.name}${oct}</div><div class="m">${noteToMidi(note) ?? ""}</div>`;
-        div.addEventListener("pointerdown", (e)=>{ e.preventDefault(); toggleNote(note); });
-        grid.appendChild(div);
-      });
-
-      picker.appendChild(grid);
-    }
-  }
-
-  function toggleNote(note){
-    if (selectedSet.has(note)) selectedSet.delete(note);
-    else {
-      if (selectedSet.size >= MAX_NOTES) return;
-      selectedSet.add(note);
-    }
-    renderAll();
-  }
-
-  // ----- Drum -----
-  function buildDrum(){
-    const W=520, H=520, cx=W/2, cy=H/2;
-
-    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("width","520");
-    svg.setAttribute("height","520");
-
-    const body = document.createElementNS(svg.namespaceURI,"circle");
-    body.setAttribute("cx", cx); body.setAttribute("cy", cy); body.setAttribute("r", 235);
-    body.setAttribute("fill", "rgba(255,255,255,.06)");
-    body.setAttribute("stroke", "rgba(255,255,255,.12)");
-    body.setAttribute("stroke-width","2");
-    svg.appendChild(body);
-
-    const inner = document.createElementNS(svg.namespaceURI,"circle");
-    inner.setAttribute("cx", cx); inner.setAttribute("cy", cy); inner.setAttribute("r", 125);
-    inner.setAttribute("fill", "rgba(0,0,0,.10)");
-    inner.setAttribute("stroke", "rgba(255,255,255,.08)");
-    inner.setAttribute("stroke-width","1");
-    svg.appendChild(inner);
-
-    const tongues = [];
-
-    // Pad 1: center triangle
-    {
-      const g = document.createElementNS(svg.namespaceURI,"g");
-      g.classList.add("tongue");
-      g.dataset.pad = "1";
-
-      const tri = document.createElementNS(svg.namespaceURI,"path");
-      tri.setAttribute("d", `M ${cx} ${cy-55} L ${cx-38} ${cy+45} L ${cx+38} ${cy+45} Z`);
-      tri.setAttribute("fill", "rgba(255,255,255,.10)");
-      tri.setAttribute("stroke", "rgba(255,255,255,.12)");
-      tri.setAttribute("stroke-width","1.4");
-      g.appendChild(tri);
-
-      const label = document.createElementNS(svg.namespaceURI,"text");
-      label.setAttribute("x", cx);
-      label.setAttribute("y", cy+12);
-      label.setAttribute("text-anchor","middle");
-      label.setAttribute("class","labelMuted");
-      g.appendChild(label);
-
-      g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(1, g); });
-      svg.appendChild(g);
-      tongues.push({ pad:1, g, label });
-    }
-
-    // Pads 2..10: perimeter tongues
-    const rMid = 185;
-    const w=70, h=130, rx=18;
-
-    for (let pad=2; pad<=10; pad++){
-      const degUpCCW = PERIMETER_ANGLES_UP_CCW[pad - 2]; // 2->index0 ... 10->index8
-      if (degUpCCW == null) continue;
-
-      // Use direct screen-safe placement:
-      // 0°=up: x = cx + r*sin(theta), y = cy - r*cos(theta)
-      const theta = degUpCCW * Math.PI / 180;
-      const tx = cx + rMid * Math.sin(theta);
-      const ty = cy - rMid * Math.cos(theta);
-
-      const g = document.createElementNS(svg.namespaceURI,"g");
-      g.classList.add("tongue");
-      g.dataset.pad = String(pad);
-
-      const rect = document.createElementNS(svg.namespaceURI,"rect");
-      rect.setAttribute("x", -w/2);
-      rect.setAttribute("y", -h/2);
-      rect.setAttribute("width", w);
-      rect.setAttribute("height", h);
-      rect.setAttribute("rx", rx);
-      rect.setAttribute("fill", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
-      rect.setAttribute("stroke-width","1.2");
-
-      const label = document.createElementNS(svg.namespaceURI,"text");
-      label.setAttribute("text-anchor","middle");
-      label.setAttribute("y","6");
-      label.setAttribute("class","labelMuted");
-
-      g.appendChild(rect);
-      g.appendChild(label);
-
-      // SVG positive rotation is clockwise (screen coords).
-      // We want the tongue to point outward along the radial direction.
-      // With 0°=up, CCW+; outward rotation in SVG is -degUpCCW.
-      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${-degUpCCW})`);
-
-      g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(pad, g); });
-
-      svg.appendChild(g);
-      tongues.push({ pad, g, label });
-    }
-
-    drumHost.innerHTML = "";
-    drumHost.appendChild(svg);
-    return tongues;
-  }
-
-  let tongueEls = null;
-
-  function syncDrum(){
-    if (!tongueEls) tongueEls = buildDrum();
-    tongueEls.forEach(t=>{
-      const note = padNotes[t.pad - 1] || "";
-      const on = Boolean(note);
-      t.g.classList.toggle("on", on);
-      t.g.classList.toggle("off", !on);
-      t.label.textContent = note ? note.replace("#","♯") : "";
-      t.label.setAttribute("class", note ? "label" : "labelMuted");
+  // perimeter pads
+  PERIM_ANGLES.forEach((deg,i)=>{
+    const rad=deg*Math.PI/180;
+    tongues.push({
+      pad:i+2,
+      x:c+185*Math.sin(rad),
+      y:c-185*Math.cos(rad)
     });
-  }
-
-  // ----- Play -----
-  function playPad(padNumber, gEl){
-    const note = padNotes[padNumber - 1];
-    if (!note) return;
-    const midi = noteToMidi(note);
-    if (midi == null) return;
-
-    if (gEl){
-      gEl.classList.add("playing");
-      setTimeout(()=>gEl.classList.remove("playing"), 90);
-    }
-    hitFreq(midiToFreq(midi));
-  }
-
-  async function playPadsInOrder(){
-    for (let pad=1; pad<=10; pad++){
-      const note = padNotes[pad - 1];
-      if (note){
-        const midi = noteToMidi(note);
-        if (midi != null) hitFreq(midiToFreq(midi));
-      }
-      await new Promise(r=>setTimeout(r, 220));
-    }
-  }
-
-  // ----- Init from URL -----
-  function initFromURL(){
-    const qs = new URLSearchParams(location.search);
-    const start = (qs.get("notes") || "").trim();
-    if (!start) return;
-
-    const toks = start.split("-").map(normalizeToken).filter(Boolean);
-    for (const t of toks){
-      if (!isInRange(t)) continue;
-      if (selectedSet.size >= MAX_NOTES) break;
-      selectedSet.add(t);
-    }
-  }
-
-  // ----- Render -----
-  function renderAll(){
-    recomputePads();
-    countPill.textContent = `Selected: ${selectedSet.size} / 10`;
-    setURL();
-    buildPicker();
-    syncDrum();
-  }
-
-  // ----- Controls -----
-  document.getElementById("clear").addEventListener("click", ()=>{
-    selectedSet.clear();
-    renderAll();
   });
 
-  document.getElementById("playSeq").addEventListener("click", playPadsInOrder);
+  tongues.forEach(t=>{
+    const g=document.createElementNS(svg.namespaceURI,"g");
+    g.classList.add("tongue");
 
-  document.getElementById("muteBtn").addEventListener("click", ()=>{
-    muted = !muted;
-    soundPill.textContent = `Sound: ${muted ? "OFF" : "ON"}`;
+    const circ=document.createElementNS(svg.namespaceURI,"circle");
+    circ.setAttribute("cx",t.x);
+    circ.setAttribute("cy",t.y);
+    circ.setAttribute("r",t.pad===1?50:38);
+    circ.setAttribute("fill","rgba(255,255,255,.12)");
+    g.appendChild(circ);
+
+    const lab=document.createElementNS(svg.namespaceURI,"text");
+    lab.setAttribute("x",t.x);
+    lab.setAttribute("y",t.y+5);
+    lab.setAttribute("text-anchor","middle");
+    lab.classList.add("labelMuted");
+    g.appendChild(lab);
+
+    g.onclick=()=>{
+      const n=padNotes[t.pad-1];
+      if(n) hit(midiToFreq(noteToMidi(n)));
+    };
+
+    t.el=g; t.lab=lab;
+    svg.appendChild(g);
   });
 
-  // Keyboard: 1..9 => pads 1..9, 0 => pad 10
-  window.addEventListener("keydown", (e)=>{
-    const tag = (e.target && e.target.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "textarea") return;
+  drumHost.innerHTML="";
+  drumHost.appendChild(svg);
+  return tongues;
+}
 
-    const k = e.key;
-    if (k >= "1" && k <= "9") {
-      const pad = Number(k);
-      const t = tongueEls?.find(x => x.pad === pad);
-      playPad(pad, t?.g);
-    } else if (k === "0") {
-      const t = tongueEls?.find(x => x.pad === 10);
-      playPad(10, t?.g);
-    }
+let tongues=null;
+
+function syncDrum(){
+  if(!tongues) tongues=buildDrum();
+  tongues.forEach(t=>{
+    const n=padNotes[t.pad-1];
+    t.lab.textContent=n||"";
+    t.lab.setAttribute("class",n?"label":"labelMuted");
   });
+}
 
-  initFromURL();
-  renderAll();
+function render(){
+  recomputePads();
+  countPill.textContent=`Selected: ${selectedSet.size} / 10`;
+  buildPicker();
+  syncDrum();
+}
+
+document.getElementById("clear").onclick=()=>{
+  selectedSet.clear(); render();
+};
+document.getElementById("playSeq").onclick=async()=>{
+  for(const n of padNotes){
+    hit(midiToFreq(noteToMidi(n)));
+    await new Promise(r=>setTimeout(r,220));
+  }
+};
+
+render();
 })();
 </script>
 </body>
