@@ -3,14 +3,21 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Chromatic Tongue Drum Builder</title>
+  <title>Custom Tongue Drum Builder</title>
   <style>
-    :root{--bg:#0b1020;--card:#121a33;--text:#e9eeff;--muted:#aab4e6;--line:rgba(255,255,255,.10);--hot:rgba(122,162,255,.55);}
-    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(1000px 600px at 20% 0%,#16204a 0%,var(--bg) 55%);color:var(--text);}
-    .wrap{max-width:1100px;margin:0 auto;padding:22px;}
-    h1{margin:0 0 8px;font-size:18px;font-weight:700}
+    :root{
+      --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#aab4e6;
+      --line:rgba(255,255,255,.10); --hot:rgba(122,162,255,.55);
+    }
+    body{
+      margin:0; font-family:system-ui,Segoe UI,Roboto,Arial;
+      background:radial-gradient(1000px 600px at 20% 0%, #16204a 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    .wrap{max-width:1160px;margin:0 auto;padding:22px;}
+    h1{margin:0 0 8px;font-size:18px;font-weight:750}
     p{margin:0 0 14px;color:var(--muted);line-height:1.35}
-    .grid{display:grid;grid-template-columns:1.25fr .9fr;gap:14px;align-items:start}
+    .grid{display:grid;grid-template-columns:1.3fr .9fr;gap:14px;align-items:start}
     @media (max-width: 980px){.grid{grid-template-columns:1fr}}
     .card{background:rgba(18,26,51,.9);border:1px solid var(--line);border-radius:16px;padding:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -20,7 +27,7 @@
     .small{font-size:12px;color:var(--muted)}
     .sep{height:1px;background:var(--line);margin:12px 0}
     .keys{display:grid;grid-template-columns:repeat(12, minmax(0,1fr));gap:8px}
-    .oct{margin:10px 0 8px;font-size:12px;color:var(--muted)}
+    .oct{margin:12px 0 8px;font-size:12px;color:var(--muted)}
     .key{
       user-select:none;touch-action:manipulation;
       border:1px solid var(--line);border-radius:12px;padding:10px 8px;
@@ -29,8 +36,12 @@
     }
     .key:hover{border-color:rgba(255,255,255,.18)}
     .key.sel{border-color:var(--hot);box-shadow:0 0 0 2px rgba(122,162,255,.15) inset}
-    .key .n{font-weight:700}
+    .key .n{font-weight:750}
     .key .m{margin-top:2px;font-size:11px;color:var(--muted)}
+    .urlbox{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;word-break:break-all;color:#cdd6ff
+    }
     .drumWrap{display:flex;justify-content:center}
     svg{max-width:100%;height:auto}
     .tongue{cursor:pointer;transition:filter .08s ease, opacity .08s ease}
@@ -38,44 +49,45 @@
     .tongue.off{opacity:.18;cursor:not-allowed}
     .tongue.on{opacity:1}
     .tongue.playing{filter:brightness(1.25)}
-    .label{font: 600 14px system-ui, Segoe UI, Roboto, Arial; fill:#e9eeff}
-    .labelMuted{font: 600 14px system-ui, Segoe UI, Roboto, Arial; fill:#aab4e6}
-    .urlbox{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;word-break:break-all;color:#cdd6ff}
+    .label{font: 700 14px system-ui, Segoe UI, Roboto, Arial; fill:#e9eeff}
+    .labelMuted{font: 650 14px system-ui, Segoe UI, Roboto, Arial; fill:#aab4e6}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Build your scale (C3 → B5) and play it on a “tongue drum”</h1>
-  <p>Click notes to select up to <b>10</b>. The drum updates automatically, and the URL updates to <code>?notes=...</code>.</p>
+  <h1>Tongue Drum Builder (C3 → B5)</h1>
+  <p>
+    Click notes to select up to <b>10</b>. Pads <b>1–10</b> are always assigned in <b>ascending frequency</b>.
+    Play by clicking tongues or pressing keys <b>1–9</b> and <b>0</b> (0 = pad 10).
+  </p>
 
   <div class="grid">
     <div class="card">
       <div class="row">
         <div class="pill" id="countPill">Selected: 0 / 10</div>
+        <div class="pill" id="sortedPill">Pads are sorted low → high</div>
         <button class="btn" id="clear">Clear</button>
-        <button class="btn" id="playSeq">Play sequence</button>
-        <div class="small">Tip: click tongues to play too.</div>
+        <button class="btn" id="playSeq">Play pads 1→10</button>
       </div>
 
       <div class="sep"></div>
-
       <div class="small">Shareable URL:</div>
       <div class="urlbox" id="urlbox"></div>
 
       <div class="sep"></div>
-
       <div id="picker"></div>
     </div>
 
     <div class="card">
       <div class="row" style="justify-content:space-between">
-        <div class="pill" id="mutePill">Sound: ON</div>
-        <button class="btn" id="mute">Mute</button>
+        <div class="pill" id="soundPill">Sound: ON</div>
+        <button class="btn" id="muteBtn">Mute</button>
       </div>
       <div class="sep"></div>
       <div class="drumWrap" id="drumHost"></div>
       <div class="small" style="margin-top:10px;">
-        This is an original SVG “drum” (not copied artwork). We can later swap it for a nicer skin (wood/metal textures, shadows, etc.).
+        Perimeter tongues are placed on 36° slots (one slot left empty since pad #1 is center).
       </div>
     </div>
   </div>
@@ -83,11 +95,10 @@
 
 <script>
 (() => {
-  // ------- config -------
-  const MIN_OCT = 3, MAX_OCT = 5;
+  // ---------- CONFIG ----------
   const MAX_NOTES = 10;
+  const MIN_OCT = 3, MAX_OCT = 5;
 
-  // note names (display + url token)
   const CHROMA = [
     {name:"C",  token:"C"},
     {name:"C#", token:"C#"},
@@ -103,93 +114,120 @@
     {name:"B",  token:"B"},
   ];
 
-  // WebAudio synth (placeholder; you can replace with samples later)
+  // ---------- NOTE/MIDI ----------
+  const SEMI = {
+    "C":0, "C#":1, "Db":1,
+    "D":2, "D#":3, "Eb":3,
+    "E":4,
+    "F":5, "F#":6, "Gb":6,
+    "G":7, "G#":8, "Ab":8,
+    "A":9, "A#":10, "Bb":10,
+    "B":11
+  };
+
+  function normalizeToken(tok){
+    tok = (tok||"").trim()
+      .replaceAll("♭","b")
+      .replaceAll("♯","#");
+    const m = tok.match(/^([A-Ga-g])([#b]?)(-?\d+)$/);
+    if (!m) return "";
+    return m[1].toUpperCase() + (m[2]||"") + m[3];
+  }
+
+  function noteToMidi(note){
+    const m = note.match(/^([A-G])([#b]?)(-?\d+)$/);
+    if (!m) return null;
+    const name = m[1] + (m[2]||"");
+    const oct = Number(m[3]);
+    if (!(name in SEMI) || !Number.isFinite(oct)) return null;
+    return (oct + 1) * 12 + SEMI[name]; // C4 = 60
+  }
+
+  function midiToFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
+
+  // ---------- AUDIO (simple synth placeholder; easy to swap to samples later) ----------
   let audio=null, master=null, muted=false;
+
   function ensureAudio(){
     if (audio) return;
-    audio = new (window.AudioContext||window.webkitAudioContext)();
+    audio = new (window.AudioContext || window.webkitAudioContext)();
     master = audio.createGain();
     master.gain.value = 0.9;
     master.connect(audio.destination);
   }
-  function midiToFreq(m){ return 440*Math.pow(2,(m-69)/12); }
-
-  function noteToMidi(note){ // "C#4"
-    const m = note.match(/^([A-G])([#b]?)(-?\d+)$/);
-    if(!m) return null;
-    const n=m[1]+(m[2]||"");
-    const oct=Number(m[3]);
-    const SEMI={"C":0,"C#":1,"Db":1,"D":2,"D#":3,"Eb":3,"E":4,"F":5,"F#":6,"Gb":6,"G":7,"G#":8,"Ab":8,"A":9,"A#":10,"Bb":10,"B":11};
-    if(!(n in SEMI)) return null;
-    return (oct+1)*12 + SEMI[n];
-  }
 
   function hitFreq(freq){
     ensureAudio();
-    if (audio.state==="suspended") audio.resume();
+    if (audio.state === "suspended") audio.resume();
     if (muted) return;
 
     const now = audio.currentTime;
+
     const out = audio.createGain();
     out.gain.setValueAtTime(0.0001, now);
-    out.gain.exponentialRampToValueAtTime(0.9, now+0.008);
-    out.gain.exponentialRampToValueAtTime(0.0001, now+2.0);
+    out.gain.exponentialRampToValueAtTime(0.9, now + 0.008);
+    out.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
     out.connect(master);
 
     const partials = [
-      {mult:1.0,gain:0.85},
-      {mult:2.01,gain:0.18},
-      {mult:3.98,gain:0.10},
-      {mult:6.02,gain:0.06},
+      { mult: 1.0, gain: 0.85 },
+      { mult: 2.01, gain: 0.18 },
+      { mult: 3.98, gain: 0.10 },
+      { mult: 6.02, gain: 0.06 }
     ];
-    partials.forEach(p=>{
+
+    partials.forEach(p => {
       const osc = audio.createOscillator();
-      osc.type="sine";
-      osc.frequency.setValueAtTime(freq*p.mult, now);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq * p.mult, now);
       const g = audio.createGain();
       g.gain.setValueAtTime(p.gain, now);
       osc.connect(g).connect(out);
       osc.start(now);
-      osc.stop(now+2.2);
+      osc.stop(now + 2.2);
     });
   }
 
-  // ------- state -------
-  const selected = []; // array of note tokens e.g. ["D3","F#3",...]
+  // ---------- STATE ----------
+  // We'll store selected notes as a Set (order irrelevant), then derive pad assignments by sorting by MIDI.
+  const selectedSet = new Set(); // e.g. "C3", "F#4"
+  let padNotes = [];            // sorted array length <= 10 (ascending by frequency)
+
+  // ---------- DOM ----------
   const picker = document.getElementById("picker");
   const countPill = document.getElementById("countPill");
   const urlbox = document.getElementById("urlbox");
   const drumHost = document.getElementById("drumHost");
+  const soundPill = document.getElementById("soundPill");
 
-  // ------- URL init (supports ?notes=...) -------
-  const qs = new URLSearchParams(location.search);
-  const start = (qs.get("notes")||"").trim();
-  if (start){
-    start.split("-").forEach(tok=>{
-      const t = tok.replaceAll("♭","b").replaceAll("♯","#").trim();
-      if (/^[A-Ga-g][#b]?-?\d+$/.test(t)){
-        const norm = t[0].toUpperCase() + t.slice(1);
-        if (!selected.includes(norm) && selected.length < MAX_NOTES) selected.push(norm);
-      }
-    });
+  // ---------- PAD ASSIGNMENT (ascending frequency) ----------
+  function recomputePads(){
+    const arr = Array.from(selectedSet);
+    arr.sort((a,b) => (noteToMidi(a) ?? 1e9) - (noteToMidi(b) ?? 1e9));
+    padNotes = arr.slice(0, MAX_NOTES);
   }
 
+  // ---------- URL (store pads in ascending order) ----------
   function setURL(){
     const u = new URL(location.href);
-    u.searchParams.set("notes", selected.join("-"));
+    if (padNotes.length) u.searchParams.set("notes", padNotes.join("-"));
+    else u.searchParams.delete("notes");
     history.replaceState({}, "", u);
     urlbox.textContent = u.toString();
   }
 
-  function updateCount(){
-    countPill.textContent = `Selected: ${selected.length} / ${MAX_NOTES}`;
+  // ---------- PICKER UI ----------
+  function isInRange(note){
+    const m = noteToMidi(note);
+    if (m == null) return false;
+    const min = noteToMidi("C3");
+    const max = noteToMidi("B5");
+    return m >= min && m <= max;
   }
 
-  // ------- build picker -------
   function buildPicker(){
     picker.innerHTML = "";
 
-    // C3..B5 inclusive: octaves 3,4,5 (but for 5 we only show up to B5 anyway)
     for (let oct = MIN_OCT; oct <= MAX_OCT; oct++){
       const octLabel = document.createElement("div");
       octLabel.className = "oct";
@@ -201,11 +239,19 @@
 
       CHROMA.forEach(ch => {
         const note = `${ch.token}${oct}`;
+        // guard range (only matters on edges; here it's all valid for 3..5)
+        if (!isInRange(note)) {
+          const spacer = document.createElement("div");
+          grid.appendChild(spacer);
+          return;
+        }
+
         const div = document.createElement("div");
         div.className = "key";
-        if (selected.includes(note)) div.classList.add("sel");
+        if (selectedSet.has(note)) div.classList.add("sel");
 
-        div.innerHTML = `<div class="n">${ch.name}${oct}</div><div class="m">${noteToMidi(note) ?? ""}</div>`;
+        const midi = noteToMidi(note);
+        div.innerHTML = `<div class="n">${ch.name}${oct}</div><div class="m">${midi ?? ""}</div>`;
 
         div.addEventListener("pointerdown", (e) => {
           e.preventDefault();
@@ -220,199 +266,253 @@
   }
 
   function toggleNote(note){
-    const i = selected.indexOf(note);
-    if (i >= 0){
-      selected.splice(i,1);
+    if (selectedSet.has(note)) {
+      selectedSet.delete(note);
     } else {
-      if (selected.length >= MAX_NOTES) return;
-      selected.push(note);
+      if (selectedSet.size >= MAX_NOTES) return; // hard cap
+      selectedSet.add(note);
     }
     renderAll();
   }
 
-  // ------- drum SVG (10 tongues) -------
+  // ---------- DRUM SVG ----------
+  // Layout:
+  // pad #1 center triangle
+  // pads #2–#10 around the perimeter, placed on 10 slots of 36°, with one slot intentionally empty.
+  //
+  // We want the numbering to feel like your diagram: pad10 near the top, pad2 bottom-left, etc.
+  // We'll use these slot angles (degrees): 90, 54, 18, -18, -54, -90, -126, -162, -198, -234
+  // and we will SKIP the -90 slot (straight bottom) to create the “missing” perimeter tongue.
+  const PERIMETER_SLOTS = [90, 54, 18, -18, -54, -90, -126, -162, -198, -234];
+  const SKIP_ANGLE = -90; // empty slot
+
+  // Pad-to-angle mapping using 9 remaining slots, in a visually “nice” order similar to your picture:
+  // 10(top), 9(top-right), 7(right-upper), 5(right-lower), 3(bottom-right),
+  // 2(bottom-left), 4(left-lower), 6(left), 8(top-left)
+  const PAD_ANGLE = new Map([
+    [10,  90],
+    [ 9,  54],
+    [ 7,  18],
+    [ 5, -18],
+    [ 3, -54],
+    [ 2, -126],
+    [ 4, -162],
+    [ 6, -198],
+    [ 8, -234],
+  ]);
+
   function buildDrum(){
-  const W=520, H=520, cx=W/2, cy=H/2;
+    const W=520, H=520, cx=W/2, cy=H/2;
 
-  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  svg.setAttribute("width","520");
-  svg.setAttribute("height","520");
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width","520");
+    svg.setAttribute("height","520");
 
-  // drum body
-  const body = document.createElementNS(svg.namespaceURI,"circle");
-  body.setAttribute("cx", cx); body.setAttribute("cy", cy); body.setAttribute("r", 235);
-  body.setAttribute("fill", "rgba(255,255,255,.06)");
-  body.setAttribute("stroke", "rgba(255,255,255,.12)");
-  body.setAttribute("stroke-width","2");
-  svg.appendChild(body);
+    const body = document.createElementNS(svg.namespaceURI,"circle");
+    body.setAttribute("cx", cx); body.setAttribute("cy", cy); body.setAttribute("r", 235);
+    body.setAttribute("fill", "rgba(255,255,255,.06)");
+    body.setAttribute("stroke", "rgba(255,255,255,.12)");
+    body.setAttribute("stroke-width","2");
+    svg.appendChild(body);
 
-  // subtle inner circle
-  const inner = document.createElementNS(svg.namespaceURI,"circle");
-  inner.setAttribute("cx", cx); inner.setAttribute("cy", cy); inner.setAttribute("r", 125);
-  inner.setAttribute("fill", "rgba(0,0,0,.10)");
-  inner.setAttribute("stroke", "rgba(255,255,255,.08)");
-  inner.setAttribute("stroke-width","1");
-  svg.appendChild(inner);
+    const inner = document.createElementNS(svg.namespaceURI,"circle");
+    inner.setAttribute("cx", cx); inner.setAttribute("cy", cy); inner.setAttribute("r", 125);
+    inner.setAttribute("fill", "rgba(0,0,0,.10)");
+    inner.setAttribute("stroke", "rgba(255,255,255,.08)");
+    inner.setAttribute("stroke-width","1");
+    svg.appendChild(inner);
 
-  const tongues = [];
+    const tongues = [];
 
-  // -------- Pad 1: center triangle tongue --------
-  {
-    const g = document.createElementNS(svg.namespaceURI,"g");
-    g.classList.add("tongue");
-    g.dataset.pad = "1";
+    // --- Pad 1: center triangle ---
+    {
+      const g = document.createElementNS(svg.namespaceURI,"g");
+      g.classList.add("tongue");
+      g.dataset.pad = "1";
 
-    const tri = document.createElementNS(svg.namespaceURI,"path");
-    // nice triangle centered
-    tri.setAttribute("d", `M ${cx} ${cy-55} L ${cx-38} ${cy+45} L ${cx+38} ${cy+45} Z`);
-    tri.setAttribute("fill", "rgba(255,255,255,.10)");
-    tri.setAttribute("stroke", "rgba(255,255,255,.12)");
-    tri.setAttribute("stroke-width","1.4");
-    g.appendChild(tri);
+      const tri = document.createElementNS(svg.namespaceURI,"path");
+      tri.setAttribute("d", `M ${cx} ${cy-55} L ${cx-38} ${cy+45} L ${cx+38} ${cy+45} Z`);
+      tri.setAttribute("fill", "rgba(255,255,255,.10)");
+      tri.setAttribute("stroke", "rgba(255,255,255,.12)");
+      tri.setAttribute("stroke-width","1.4");
+      g.appendChild(tri);
 
-    const label = document.createElementNS(svg.namespaceURI,"text");
-    label.setAttribute("x", cx);
-    label.setAttribute("y", cy+10);
-    label.setAttribute("text-anchor","middle");
-    label.setAttribute("class","labelMuted");
-    label.textContent = "";
-    g.appendChild(label);
+      const label = document.createElementNS(svg.namespaceURI,"text");
+      label.setAttribute("x", cx);
+      label.setAttribute("y", cy+12);
+      label.setAttribute("text-anchor","middle");
+      label.setAttribute("class","labelMuted");
+      label.textContent = "";
+      g.appendChild(label);
 
-    g.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      playTongueByPad(1, g);
-    });
+      g.addEventListener("pointerdown",(e)=>{
+        e.preventDefault();
+        playPad(1, g);
+      });
 
-    svg.appendChild(g);
-    tongues.push({ pad:1, g, shape:tri, label });
+      svg.appendChild(g);
+      tongues.push({ pad:1, g, label });
+    }
+
+    // --- Pads 2–10: perimeter tongues ---
+    const rMid = 185;
+    const w=70, h=130, rx=18;
+
+    for (let pad=2; pad<=10; pad++){
+      const deg = PAD_ANGLE.get(pad);
+      if (deg == null) continue;
+
+      const rad = deg * Math.PI/180;
+      const tx = cx + rMid*Math.cos(rad);
+      const ty = cy + rMid*Math.sin(rad);
+
+      const g = document.createElementNS(svg.namespaceURI,"g");
+      g.classList.add("tongue");
+      g.dataset.pad = String(pad);
+
+      const rect = document.createElementNS(svg.namespaceURI,"rect");
+      rect.setAttribute("x", -w/2);
+      rect.setAttribute("y", -h/2);
+      rect.setAttribute("width", w);
+      rect.setAttribute("height", h);
+      rect.setAttribute("rx", rx);
+      rect.setAttribute("fill", "rgba(255,255,255,.10)");
+      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
+      rect.setAttribute("stroke-width","1.2");
+
+      const label = document.createElementNS(svg.namespaceURI,"text");
+      label.setAttribute("text-anchor","middle");
+      label.setAttribute("y","6");
+      label.setAttribute("class","labelMuted");
+      label.textContent = "";
+
+      g.appendChild(rect);
+      g.appendChild(label);
+
+      // rotate outward (deg is from +x axis; add 90 so "up" in local coordinates points outward)
+      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${deg + 90})`);
+
+      g.addEventListener("pointerdown",(e)=>{
+        e.preventDefault();
+        playPad(pad, g);
+      });
+
+      svg.appendChild(g);
+      tongues.push({ pad, g, label });
+    }
+
+    // tiny center title
+    const centerText = document.createElementNS(svg.namespaceURI,"text");
+    centerText.setAttribute("x", cx);
+    centerText.setAttribute("y", cy + 95);
+    centerText.setAttribute("text-anchor","middle");
+    centerText.setAttribute("class","labelMuted");
+    centerText.textContent = "Pads 1–10";
+    svg.appendChild(centerText);
+
+    drumHost.innerHTML = "";
+    drumHost.appendChild(svg);
+    return tongues;
   }
-
-  // -------- Pads 2–10: fixed locations to match your diagram --------
-  // Angles in degrees (0 = right, -90 = top). Tuned to be “spaced nicely”.
-  const padAngles = [
-    { pad: 2,  deg: 130 },  // bottom-left
-    { pad: 3,  deg:  90 },  // bottom
-    { pad: 4,  deg: 210 },  // left-lower
-    { pad: 5,  deg:  35 },  // right-lower
-    { pad: 6,  deg: 180 },  // left
-    { pad: 7,  deg:   5 },  // right
-    { pad: 8,  deg: -140 }, // top-left
-    { pad: 9,  deg:  -45 }, // top-right
-    { pad: 10, deg:  -90 }, // top
-  ];
-
-  const rMid = 185;      // how far from center
-  const w = 70, h = 130; // tongue size
-  const rx = 18;
-
-  padAngles.forEach(({pad, deg})=>{
-    const rad = deg * Math.PI/180;
-    const tx = cx + rMid*Math.cos(rad);
-    const ty = cy + rMid*Math.sin(rad);
-
-    const g = document.createElementNS(svg.namespaceURI,"g");
-    g.classList.add("tongue");
-    g.dataset.pad = String(pad);
-
-    const rect = document.createElementNS(svg.namespaceURI,"rect");
-    rect.setAttribute("x", -w/2);
-    rect.setAttribute("y", -h/2);
-    rect.setAttribute("width", w);
-    rect.setAttribute("height", h);
-    rect.setAttribute("rx", rx);
-    rect.setAttribute("fill", "rgba(255,255,255,.10)");
-    rect.setAttribute("stroke", "rgba(255,255,255,.10)");
-    rect.setAttribute("stroke-width","1.2");
-
-    const label = document.createElementNS(svg.namespaceURI,"text");
-    label.setAttribute("text-anchor","middle");
-    label.setAttribute("y","6");
-    label.setAttribute("class","labelMuted");
-    label.textContent = "";
-
-    g.appendChild(rect);
-    g.appendChild(label);
-
-    // rotate tongue so it points outward
-    g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${deg + 90})`);
-
-    g.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      playTongueByPad(pad, g);
-    });
-
-    svg.appendChild(g);
-    tongues.push({ pad, g, shape:rect, label });
-  });
-
-  drumHost.innerHTML = "";
-  drumHost.appendChild(svg);
-  return tongues;
-}
-
 
   let tongueEls = null;
 
   function syncDrum(){
-  if (!tongueEls) tongueEls = buildDrum();
+    if (!tongueEls) tongueEls = buildDrum();
 
-  tongueEls.forEach(t=>{
-    // pad 1 uses selected[0], pad 2 uses selected[1], ..., pad 10 uses selected[9]
-    const note = selected[t.pad - 1] || "";
-    const on = Boolean(note);
+    tongueEls.forEach(t=>{
+      const note = padNotes[t.pad - 1] || "";
+      const on = Boolean(note);
+      t.g.classList.toggle("on", on);
+      t.g.classList.toggle("off", !on);
+      t.label.textContent = note ? note.replace("#","♯") : "";
+      t.label.setAttribute("class", note ? "label" : "labelMuted");
+    });
+  }
 
-    t.g.classList.toggle("on", on);
-    t.g.classList.toggle("off", !on);
-    t.label.textContent = note ? note.replace("#","♯") : "";
-    t.label.setAttribute("class", note ? "label" : "labelMuted");
-  });
-}
+  // ---------- PLAY ----------
+  function playPad(padNumber, gEl){
+    const note = padNotes[padNumber - 1];
+    if (!note) return;
 
+    const midi = noteToMidi(note);
+    if (midi == null) return;
 
-  function playTongueByPad(padNumber, gEl){
-  const note = selected[padNumber - 1];
-  if (!note) return;
+    if (gEl){
+      gEl.classList.add("playing");
+      setTimeout(()=>gEl.classList.remove("playing"), 90);
+    }
+    hitFreq(midiToFreq(midi));
+  }
 
-  const midi = noteToMidi(note);
-  if (midi == null) return;
-
-  gEl.classList.add("playing");
-  hitFreq(midiToFreq(midi));
-  setTimeout(()=>gEl.classList.remove("playing"), 90);
-}
-
-
-  async function playSequence(){
-    for (let i=0;i<selected.length;i++){
-      const note = selected[i];
-      const midi = noteToMidi(note);
-      if (midi != null) hitFreq(midiToFreq(midi));
+  async function playPadsInOrder(){
+    // play pads 1..10 in frequency order (pad order)
+    for (let pad=1; pad<=10; pad++){
+      const note = padNotes[pad - 1];
+      if (note){
+        hitFreq(midiToFreq(noteToMidi(note)));
+      }
       await new Promise(r=>setTimeout(r, 220));
     }
   }
 
+  // ---------- RENDER ----------
   function renderAll(){
-    updateCount();
+    recomputePads();
+    countPill.textContent = `Selected: ${selectedSet.size} / ${MAX_NOTES}`;
     setURL();
     buildPicker();
     syncDrum();
   }
 
-  // buttons
+  // ---------- INIT FROM URL ----------
+  function initFromURL(){
+    const qs = new URLSearchParams(location.search);
+    const start = (qs.get("notes") || "").trim();
+    if (!start) return;
+
+    const toks = start.split("-").map(normalizeToken).filter(Boolean);
+    for (const t of toks){
+      if (!isInRange(t)) continue;
+      if (selectedSet.size >= MAX_NOTES) break;
+      selectedSet.add(t);
+    }
+  }
+
+  // ---------- CONTROLS ----------
   document.getElementById("clear").addEventListener("click", ()=>{
-    selected.length = 0;
+    selectedSet.clear();
     renderAll();
   });
-  document.getElementById("playSeq").addEventListener("click", playSequence);
 
-  const muteBtn = document.getElementById("mute");
-  const mutePill = document.getElementById("mutePill");
-  muteBtn.addEventListener("click", ()=>{
+  document.getElementById("playSeq").addEventListener("click", playPadsInOrder);
+
+  document.getElementById("muteBtn").addEventListener("click", ()=>{
     muted = !muted;
-    mutePill.textContent = `Sound: ${muted ? "OFF" : "ON"}`;
+    soundPill.textContent = `Sound: ${muted ? "OFF" : "ON"}`;
   });
 
+  // Keyboard: 1..9 => pads 1..9, 0 => pad 10
+  window.addEventListener("keydown", (e)=>{
+    // don't hijack when typing in any input (we don't have one, but safe)
+    const tag = (e.target && e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea") return;
+
+    const k = e.key;
+    if (k >= "1" && k <= "9") {
+      const pad = Number(k);
+      // find matching tongue element (for highlight)
+      const t = tongueEls?.find(x => x.pad === pad);
+      playPad(pad, t?.g);
+    } else if (k === "0") {
+      const t = tongueEls?.find(x => x.pad === 10);
+      playPad(10, t?.g);
+    }
+  });
+
+  // go
+  initFromURL();
   renderAll();
 })();
 </script>
