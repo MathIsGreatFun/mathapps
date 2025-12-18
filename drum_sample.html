@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Custom Tongue Drum Builder</title>
+  <title>Tongue Drum Builder</title>
   <style>
     :root{
       --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#aab4e6;
@@ -58,17 +58,21 @@
 <div class="wrap">
   <h1>Tongue Drum Builder (C3 → B5)</h1>
   <p>
-    Click notes to select up to <b>10</b>. Pads <b>1–10</b> are always assigned in <b>ascending frequency</b>.
-    Play by clicking tongues or pressing keys <b>1–9</b> and <b>0</b> (0 = pad 10).
+    Click notes to select up to <b>10</b>.
+    The <b>first</b> selected note goes to the <b>center</b>.
+    Notes #2–#10 populate around the perimeter in your requested order:
+    200°, 160°, 240°, 120°, 280°, 80°, 320°, 40°, 0°
+    (angles measured from <b>up</b>, going <b>counter-clockwise</b>).
+    Play by clicking tongues or pressing <b>1–9</b> and <b>0</b>.
   </p>
 
   <div class="grid">
     <div class="card">
       <div class="row">
         <div class="pill" id="countPill">Selected: 0 / 10</div>
-        <div class="pill">Perimeter: 9 tongues @ 40°</div>
+        <div class="pill">Fill order preserved (no sorting)</div>
         <button class="btn" id="clear">Clear</button>
-        <button class="btn" id="playSeq">Play pads 1→10</button>
+        <button class="btn" id="playSeq">Play in chosen order</button>
       </div>
 
       <div class="sep"></div>
@@ -87,7 +91,7 @@
       <div class="sep"></div>
       <div class="drumWrap" id="drumHost"></div>
       <div class="small" style="margin-top:10px;">
-        Perimeter numbering uses your angle system (0° = up, clockwise).
+        Perimeter tongues are spaced evenly by index (using your custom angle order).
       </div>
     </div>
   </div>
@@ -112,6 +116,21 @@
     {name:"A",  token:"A"},
     {name:"A#", token:"A#"},
     {name:"B",  token:"B"},
+  ];
+
+  // NOTE: user fill order for perimeter pads 2..10
+  // Angles measured from "up" (0°) going COUNTER-CLOCKWISE.
+  // pad2 uses first angle, pad3 uses second angle, ..., pad10 uses last angle.
+  const PERIMETER_ANGLES_UP_CCW = [
+    200, // pad 2 (2nd selected note)
+    160, // pad 3
+    240, // pad 4
+    120, // pad 5
+    280, // pad 6
+     80, // pad 7
+    320, // pad 8
+     40, // pad 9
+      0, // pad 10 (10th selected note)
   ];
 
   // ---------- NOTE/MIDI ----------
@@ -197,14 +216,10 @@
   }
 
   // ---------- STATE ----------
-  const selectedSet = new Set();
-  let padNotes = []; // ascending by MIDI
+  // IMPORTANT: we preserve selection order (first click is pad1, second is pad2, etc.)
+  const selected = []; // array of note strings in chosen order (max 10)
 
-  function recomputePads(){
-    const arr = Array.from(selectedSet);
-    arr.sort((a,b) => (noteToMidi(a) ?? 1e9) - (noteToMidi(b) ?? 1e9));
-    padNotes = arr.slice(0, MAX_NOTES);
-  }
+  function hasNote(n){ return selected.includes(n); }
 
   // ---------- DOM ----------
   const picker = document.getElementById("picker");
@@ -215,7 +230,7 @@
 
   function setURL(){
     const u = new URL(location.href);
-    if (padNotes.length) u.searchParams.set("notes", padNotes.join("-"));
+    if (selected.length) u.searchParams.set("notes", selected.join("-"));
     else u.searchParams.delete("notes");
     history.replaceState({}, "", u);
     urlbox.textContent = u.toString();
@@ -239,10 +254,12 @@
 
         const div = document.createElement("div");
         div.className = "key";
-        if (selectedSet.has(note)) div.classList.add("sel");
+        if (hasNote(note)) div.classList.add("sel");
 
         const midi = noteToMidi(note);
-        div.innerHTML = `<div class="n">${ch.name}${oct}</div><div class="m">${midi ?? ""}</div>`;
+        const idx = selected.indexOf(note);
+        const tag = idx >= 0 ? ` (pad ${idx+1})` : "";
+        div.innerHTML = `<div class="n">${ch.name}${oct}${tag}</div><div class="m">${midi ?? ""}</div>`;
 
         div.addEventListener("pointerdown", (e)=>{
           e.preventDefault();
@@ -257,29 +274,17 @@
   }
 
   function toggleNote(note){
-    if (selectedSet.has(note)) selectedSet.delete(note);
-    else {
-      if (selectedSet.size >= MAX_NOTES) return;
-      selectedSet.add(note);
+    const i = selected.indexOf(note);
+    if (i >= 0) {
+      selected.splice(i, 1); // remove; later pads shift down automatically
+    } else {
+      if (selected.length >= MAX_NOTES) return;
+      selected.push(note);
     }
     renderAll();
   }
 
-  // Fill order for pads 2..10.
-// Angles are measured from "up" (0°) going COUNTER-CLOCKWISE.
-const PERIMETER_ANGLES_UP_CCW = [
-  200, // pad 2  (2nd note)
-  160, // pad 3
-  240, // pad 4
-  120, // pad 5
-  280, // pad 6
-   80, // pad 7
-  320, // pad 8
-   40, // pad 9
-    0, // pad 10 (last note)
-];
-
-
+  // ---------- DRUM ----------
   function buildDrum(){
     const W=520, H=520, cx=W/2, cy=H/2;
 
@@ -331,26 +336,46 @@ const PERIMETER_ANGLES_UP_CCW = [
       tongues.push({ pad:1, g, label });
     }
 
-    // Pads 2–10 perimeter tongues (9 total)
+    // Pads 2–10 perimeter tongues
     const rMid = 185;
     const w=70, h=130, rx=18;
 
-    for (let pad = 2; pad <= 10; pad++) {
-  const userCCW = PERIMETER_ANGLES_UP_CCW[pad - 2]; // pad2 uses index 0
-  if (userCCW == null) continue;
+    for (let pad=2; pad<=10; pad++){
+      const userCCW = PERIMETER_ANGLES_UP_CCW[pad - 2];
+      if (userCCW == null) continue;
 
-  // Convert your system (0° = up, CCW+) -> trig (0° = right, CCW+)
-  const trigDeg = 90 + userCCW;
+      // Convert: (0=up, CCW+) -> trig (0=right, CCW+)
+      const trigDeg = 90 + userCCW;
 
-  const rad = trigDeg * Math.PI / 180;
-  const tx = cx + rMid * Math.cos(rad);
-  const ty = cy + rMid * Math.sin(rad);
+      const rad = trigDeg * Math.PI/180;
+      const tx = cx + rMid*Math.cos(rad);
+      const ty = cy + rMid*Math.sin(rad);
 
-  ...
-  // Rotate tongue outward
-  g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
-}
+      const g = document.createElementNS(svg.namespaceURI,"g");
+      g.classList.add("tongue");
+      g.dataset.pad = String(pad);
 
+      const rect = document.createElementNS(svg.namespaceURI,"rect");
+      rect.setAttribute("x", -w/2);
+      rect.setAttribute("y", -h/2);
+      rect.setAttribute("width", w);
+      rect.setAttribute("height", h);
+      rect.setAttribute("rx", rx);
+      rect.setAttribute("fill", "rgba(255,255,255,.10)");
+      rect.setAttribute("stroke", "rgba(255,255,255,.10)");
+      rect.setAttribute("stroke-width","1.2");
+
+      const label = document.createElementNS(svg.namespaceURI,"text");
+      label.setAttribute("text-anchor","middle");
+      label.setAttribute("y","6");
+      label.setAttribute("class","labelMuted");
+      label.textContent = "";
+
+      g.appendChild(rect);
+      g.appendChild(label);
+
+      // Rotate tongue outward
+      g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${trigDeg + 90})`);
 
       g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(pad, g); });
 
@@ -368,7 +393,7 @@ const PERIMETER_ANGLES_UP_CCW = [
   function syncDrum(){
     if (!tongueEls) tongueEls = buildDrum();
     tongueEls.forEach(t=>{
-      const note = padNotes[t.pad - 1] || "";
+      const note = selected[t.pad - 1] || "";
       const on = Boolean(note);
       t.g.classList.toggle("on", on);
       t.g.classList.toggle("off", !on);
@@ -379,7 +404,7 @@ const PERIMETER_ANGLES_UP_CCW = [
 
   // ---------- PLAY ----------
   function playPad(padNumber, gEl){
-    const note = padNotes[padNumber - 1];
+    const note = selected[padNumber - 1];
     if (!note) return;
     const midi = noteToMidi(note);
     if (midi == null) return;
@@ -391,13 +416,11 @@ const PERIMETER_ANGLES_UP_CCW = [
     hitFreq(midiToFreq(midi));
   }
 
-  async function playPadsInOrder(){
-    for (let pad=1; pad<=10; pad++){
-      const note = padNotes[pad - 1];
-      if (note){
-        const midi = noteToMidi(note);
-        if (midi != null) hitFreq(midiToFreq(midi));
-      }
+  async function playInChosenOrder(){
+    for (let i=0;i<selected.length;i++){
+      const note = selected[i];
+      const midi = noteToMidi(note);
+      if (midi != null) hitFreq(midiToFreq(midi));
       await new Promise(r=>setTimeout(r, 220));
     }
   }
@@ -411,15 +434,14 @@ const PERIMETER_ANGLES_UP_CCW = [
     const toks = start.split("-").map(normalizeToken).filter(Boolean);
     for (const t of toks){
       if (!isInRange(t)) continue;
-      if (selectedSet.size >= MAX_NOTES) break;
-      selectedSet.add(t);
+      if (selected.length >= MAX_NOTES) break;
+      if (!selected.includes(t)) selected.push(t);
     }
   }
 
   // ---------- RENDER ----------
   function renderAll(){
-    recomputePads();
-    countPill.textContent = `Selected: ${selectedSet.size} / 10`;
+    countPill.textContent = `Selected: ${selected.length} / 10`;
     setURL();
     buildPicker();
     syncDrum();
@@ -427,11 +449,11 @@ const PERIMETER_ANGLES_UP_CCW = [
 
   // ---------- CONTROLS ----------
   document.getElementById("clear").addEventListener("click", ()=>{
-    selectedSet.clear();
+    selected.length = 0;
     renderAll();
   });
 
-  document.getElementById("playSeq").addEventListener("click", playPadsInOrder);
+  document.getElementById("playSeq").addEventListener("click", playInChosenOrder);
 
   document.getElementById("muteBtn").addEventListener("click", ()=>{
     muted = !muted;
