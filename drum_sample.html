@@ -66,7 +66,7 @@
     <div class="card">
       <div class="row">
         <div class="pill" id="countPill">Selected: 0 / 10</div>
-        <div class="pill" id="sortedPill">Pads are sorted low → high</div>
+        <div class="pill">Perimeter spacing: 40° (9 tongues)</div>
         <button class="btn" id="clear">Clear</button>
         <button class="btn" id="playSeq">Play pads 1→10</button>
       </div>
@@ -87,7 +87,7 @@
       <div class="sep"></div>
       <div class="drumWrap" id="drumHost"></div>
       <div class="small" style="margin-top:10px;">
-        Perimeter tongues are placed on 36° slots (one slot left empty since pad #1 is center).
+        Numbering matches your diagram: #2 bottom-left, #3 bottom-right, then left→right bottom→top, with #10 at top.
       </div>
     </div>
   </div>
@@ -145,7 +145,15 @@
 
   function midiToFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
 
-  // ---------- AUDIO (simple synth placeholder; easy to swap to samples later) ----------
+  function isInRange(note){
+    const m = noteToMidi(note);
+    if (m == null) return false;
+    const min = noteToMidi("C3");
+    const max = noteToMidi("B5");
+    return m >= min && m <= max;
+  }
+
+  // ---------- AUDIO (placeholder synth) ----------
   let audio=null, master=null, muted=false;
 
   function ensureAudio(){
@@ -189,9 +197,14 @@
   }
 
   // ---------- STATE ----------
-  // We'll store selected notes as a Set (order irrelevant), then derive pad assignments by sorting by MIDI.
-  const selectedSet = new Set(); // e.g. "C3", "F#4"
-  let padNotes = [];            // sorted array length <= 10 (ascending by frequency)
+  const selectedSet = new Set();
+  let padNotes = []; // ascending by MIDI
+
+  function recomputePads(){
+    const arr = Array.from(selectedSet);
+    arr.sort((a,b) => (noteToMidi(a) ?? 1e9) - (noteToMidi(b) ?? 1e9));
+    padNotes = arr.slice(0, MAX_NOTES);
+  }
 
   // ---------- DOM ----------
   const picker = document.getElementById("picker");
@@ -200,14 +213,6 @@
   const drumHost = document.getElementById("drumHost");
   const soundPill = document.getElementById("soundPill");
 
-  // ---------- PAD ASSIGNMENT (ascending frequency) ----------
-  function recomputePads(){
-    const arr = Array.from(selectedSet);
-    arr.sort((a,b) => (noteToMidi(a) ?? 1e9) - (noteToMidi(b) ?? 1e9));
-    padNotes = arr.slice(0, MAX_NOTES);
-  }
-
-  // ---------- URL (store pads in ascending order) ----------
   function setURL(){
     const u = new URL(location.href);
     if (padNotes.length) u.searchParams.set("notes", padNotes.join("-"));
@@ -216,18 +221,9 @@
     urlbox.textContent = u.toString();
   }
 
-  // ---------- PICKER UI ----------
-  function isInRange(note){
-    const m = noteToMidi(note);
-    if (m == null) return false;
-    const min = noteToMidi("C3");
-    const max = noteToMidi("B5");
-    return m >= min && m <= max;
-  }
-
+  // ---------- PICKER ----------
   function buildPicker(){
     picker.innerHTML = "";
-
     for (let oct = MIN_OCT; oct <= MAX_OCT; oct++){
       const octLabel = document.createElement("div");
       octLabel.className = "oct";
@@ -239,12 +235,7 @@
 
       CHROMA.forEach(ch => {
         const note = `${ch.token}${oct}`;
-        // guard range (only matters on edges; here it's all valid for 3..5)
-        if (!isInRange(note)) {
-          const spacer = document.createElement("div");
-          grid.appendChild(spacer);
-          return;
-        }
+        if (!isInRange(note)) { grid.appendChild(document.createElement("div")); return; }
 
         const div = document.createElement("div");
         div.className = "key";
@@ -253,7 +244,7 @@
         const midi = noteToMidi(note);
         div.innerHTML = `<div class="n">${ch.name}${oct}</div><div class="m">${midi ?? ""}</div>`;
 
-        div.addEventListener("pointerdown", (e) => {
+        div.addEventListener("pointerdown", (e)=>{
           e.preventDefault();
           toggleNote(note);
         });
@@ -266,39 +257,42 @@
   }
 
   function toggleNote(note){
-    if (selectedSet.has(note)) {
-      selectedSet.delete(note);
-    } else {
-      if (selectedSet.size >= MAX_NOTES) return; // hard cap
+    if (selectedSet.has(note)) selectedSet.delete(note);
+    else {
+      if (selectedSet.size >= MAX_NOTES) return;
       selectedSet.add(note);
     }
     renderAll();
   }
 
-  // ---------- DRUM SVG ----------
-  // Layout:
-  // pad #1 center triangle
-  // pads #2–#10 around the perimeter, placed on 10 slots of 36°, with one slot intentionally empty.
+  // ---------- DRUM GEOMETRY ----------
+  // 9 perimeter tongues => equal spacing 40°.
+  // We assign those equally spaced slots to pad numbers to match your diagram ordering:
+  // bottom row: 2 (bottom-left), 3 (bottom-right)
+  // then 4/5, 6/7, 8/9, and 10 at top.
   //
-  // We want the numbering to feel like your diagram: pad10 near the top, pad2 bottom-left, etc.
-  // We'll use these slot angles (degrees): 90, 54, 18, -18, -54, -90, -126, -162, -198, -234
-  // and we will SKIP the -90 slot (straight bottom) to create the “missing” perimeter tongue.
-  const PERIMETER_SLOTS = [90, 54, 18, -18, -54, -90, -126, -162, -198, -234];
-  const SKIP_ANGLE = -90; // empty slot
-
-  // Pad-to-angle mapping using 9 remaining slots, in a visually “nice” order similar to your picture:
-  // 10(top), 9(top-right), 7(right-upper), 5(right-lower), 3(bottom-right),
-  // 2(bottom-left), 4(left-lower), 6(left), 8(top-left)
+  // We pick 10 at top (90°) and step clockwise by 40°.
+  // Clockwise angles from 90° are: 90, 50, 10, -30, -70, -110, -150, -190, -230
+  // Then map them to pad numbers in your desired visual pattern around the circle:
+  // 10(top)=90
+  // 9(top-right)=50
+  // 7(right)=10
+  // 5(right-lower)=-30
+  // 3(bottom-right)=-70
+  // 2(bottom-left)=-110
+  // 4(left-lower)=-150
+  // 6(left)=-190
+  // 8(top-left)=-230
   const PAD_ANGLE = new Map([
     [10,  90],
-    [ 9,  54],
-    [ 7,  18],
-    [ 5, -18],
-    [ 3, -54],
-    [ 2, -126],
-    [ 4, -162],
-    [ 6, -198],
-    [ 8, -234],
+    [ 9,  50],
+    [ 7,  10],
+    [ 5, -30],
+    [ 3, -70],
+    [ 2, -110],
+    [ 4, -150],
+    [ 6, -190],
+    [ 8, -230],
   ]);
 
   function buildDrum(){
@@ -325,7 +319,7 @@
 
     const tongues = [];
 
-    // --- Pad 1: center triangle ---
+    // Pad 1 center triangle
     {
       const g = document.createElementNS(svg.namespaceURI,"g");
       g.classList.add("tongue");
@@ -346,16 +340,13 @@
       label.textContent = "";
       g.appendChild(label);
 
-      g.addEventListener("pointerdown",(e)=>{
-        e.preventDefault();
-        playPad(1, g);
-      });
+      g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(1, g); });
 
       svg.appendChild(g);
       tongues.push({ pad:1, g, label });
     }
 
-    // --- Pads 2–10: perimeter tongues ---
+    // Pads 2–10 perimeter tongues (9 total)
     const rMid = 185;
     const w=70, h=130, rx=18;
 
@@ -390,26 +381,14 @@
       g.appendChild(rect);
       g.appendChild(label);
 
-      // rotate outward (deg is from +x axis; add 90 so "up" in local coordinates points outward)
+      // rotate outward
       g.setAttribute("transform", `translate(${tx} ${ty}) rotate(${deg + 90})`);
 
-      g.addEventListener("pointerdown",(e)=>{
-        e.preventDefault();
-        playPad(pad, g);
-      });
+      g.addEventListener("pointerdown",(e)=>{ e.preventDefault(); playPad(pad, g); });
 
       svg.appendChild(g);
       tongues.push({ pad, g, label });
     }
-
-    // tiny center title
-    const centerText = document.createElementNS(svg.namespaceURI,"text");
-    centerText.setAttribute("x", cx);
-    centerText.setAttribute("y", cy + 95);
-    centerText.setAttribute("text-anchor","middle");
-    centerText.setAttribute("class","labelMuted");
-    centerText.textContent = "Pads 1–10";
-    svg.appendChild(centerText);
 
     drumHost.innerHTML = "";
     drumHost.appendChild(svg);
@@ -420,7 +399,6 @@
 
   function syncDrum(){
     if (!tongueEls) tongueEls = buildDrum();
-
     tongueEls.forEach(t=>{
       const note = padNotes[t.pad - 1] || "";
       const on = Boolean(note);
@@ -435,7 +413,6 @@
   function playPad(padNumber, gEl){
     const note = padNotes[padNumber - 1];
     if (!note) return;
-
     const midi = noteToMidi(note);
     if (midi == null) return;
 
@@ -447,23 +424,14 @@
   }
 
   async function playPadsInOrder(){
-    // play pads 1..10 in frequency order (pad order)
     for (let pad=1; pad<=10; pad++){
       const note = padNotes[pad - 1];
       if (note){
-        hitFreq(midiToFreq(noteToMidi(note)));
+        const midi = noteToMidi(note);
+        if (midi != null) hitFreq(midiToFreq(midi));
       }
       await new Promise(r=>setTimeout(r, 220));
     }
-  }
-
-  // ---------- RENDER ----------
-  function renderAll(){
-    recomputePads();
-    countPill.textContent = `Selected: ${selectedSet.size} / ${MAX_NOTES}`;
-    setURL();
-    buildPicker();
-    syncDrum();
   }
 
   // ---------- INIT FROM URL ----------
@@ -478,6 +446,15 @@
       if (selectedSet.size >= MAX_NOTES) break;
       selectedSet.add(t);
     }
+  }
+
+  // ---------- RENDER ----------
+  function renderAll(){
+    recomputePads();
+    countPill.textContent = `Selected: ${selectedSet.size} / ${MAX_NOTES}`;
+    setURL();
+    buildPicker();
+    syncDrum();
   }
 
   // ---------- CONTROLS ----------
@@ -495,14 +472,12 @@
 
   // Keyboard: 1..9 => pads 1..9, 0 => pad 10
   window.addEventListener("keydown", (e)=>{
-    // don't hijack when typing in any input (we don't have one, but safe)
     const tag = (e.target && e.target.tagName || "").toLowerCase();
     if (tag === "input" || tag === "textarea") return;
 
     const k = e.key;
     if (k >= "1" && k <= "9") {
       const pad = Number(k);
-      // find matching tongue element (for highlight)
       const t = tongueEls?.find(x => x.pad === pad);
       playPad(pad, t?.g);
     } else if (k === "0") {
