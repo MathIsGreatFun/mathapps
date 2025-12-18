@@ -283,17 +283,20 @@
   // 4(left-lower)=-150
   // 6(left)=-190
   // 8(top-left)=-230
-  const PAD_ANGLE = new Map([
-    [10,  90],
-    [ 9,  50],
-    [ 7,  10],
-    [ 5, -30],
-    [ 3, -70],
-    [ 2, -110],
-    [ 4, -150],
-    [ 6, -190],
-    [ 8, -230],
-  ]);
+  // User-defined angles: 0° is up, increasing clockwise.
+// We'll store those user angles, then convert when placing.
+const PAD_ANGLE_UP_CW = new Map([
+  [10,   0],
+  [ 9,  40],
+  [ 7,  80],
+  [ 5, 120],
+  [ 3, 160],
+  [ 2, 200],
+  [ 4, 240],
+  [ 6, 280],
+  [ 8, 320],
+]);
+
 
   function buildDrum(){
     const W=520, H=520, cx=W/2, cy=H/2;
