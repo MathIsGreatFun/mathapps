@@ -25,6 +25,7 @@ p{margin:0 0 18px;color:var(--muted);line-height:1.35;text-align:center}
 .pill{border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:12px}
 .btn{border:1px solid var(--line);background:rgba(122,162,255,.14);color:var(--text);border-radius:12px;padding:9px 12px;cursor:pointer}
 .btn:hover{background:rgba(122,162,255,.22)}
+.btn:active{transform:translateY(1px)}
 .sep{height:1px;background:var(--line);margin:12px 0}
 .keys{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}
 .oct{margin:12px 0 8px;font-size:12px;color:var(--muted)}
@@ -44,6 +45,14 @@ svg{max-width:100%}
 .tongue.playing{filter:brightness(1.25)}
 .label{font:700 14px system-ui;fill:#e9eeff}
 .labelMuted{font:650 14px system-ui;fill:#aab4e6}
+.toast{
+  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+  background:rgba(18,26,51,.96); border:1px solid var(--line);
+  padding:10px 12px; border-radius:12px; color:var(--text);
+  font-size:13px; opacity:0; pointer-events:none;
+  transition:opacity .18s ease;
+}
+.toast.show{opacity:1}
 </style>
 </head>
 
@@ -58,6 +67,7 @@ svg{max-width:100%}
         <div class="pill" id="countPill">Selected: 0 / 10</div>
         <button class="btn" id="clear">Clear</button>
         <button class="btn" id="playSeq">Play 1→10</button>
+        <button class="btn" id="copyLink">Copy share link</button>
       </div>
       <div class="sep"></div>
       <div id="picker"></div>
@@ -68,6 +78,8 @@ svg{max-width:100%}
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast">Copied!</div>
 
 <script>
 (() => {
@@ -126,14 +138,14 @@ svg{max-width:100%}
     src.buffer = buf;
 
     const g = audio.createGain();
-    g.gain.value = 1.0; // adjust volume if needed
+    g.gain.value = 1.0;
 
     src.connect(g).connect(audio.destination);
     src.start();
   }
 
   // -----------------------------
-  // State: selected notes (set) + pad assignment sorted by frequency
+  // State: selection set + pad assignment sorted by frequency
   // -----------------------------
   const selectedSet = new Set();
   let padNotes = []; // sorted ascending frequency
@@ -142,6 +154,57 @@ svg{max-width:100%}
     padNotes = [...selectedSet]
       .sort((a,b) => (noteToMidi(a) ?? 1e9) - (noteToMidi(b) ?? 1e9))
       .slice(0, MAX_NOTES);
+  }
+
+  // -----------------------------
+  // Share link helpers
+  // -----------------------------
+  function currentShareURL(){
+    recomputePads();
+    const u = new URL(location.href);
+    if (padNotes.length) u.searchParams.set("notes", padNotes.join("-"));
+    else u.searchParams.delete("notes");
+    return u.toString();
+  }
+
+  function showToast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(() => t.classList.remove("show"), 1200);
+  }
+
+  async function copyShareLink(){
+    const link = currentShareURL();
+    try{
+      await navigator.clipboard.writeText(link);
+      showToast("Copied share link!");
+    } catch {
+      // Fallback prompt if clipboard not available
+      window.prompt("Copy this link:", link);
+    }
+  }
+
+  // -----------------------------
+  // Init from URL ?notes=...
+  // -----------------------------
+  function initFromURL(){
+    const qs = new URLSearchParams(location.search);
+    const raw = qs.get("notes");
+    if (!raw) return;
+
+    // Accept: C3-D3-F3 ... or comma separated
+    const parts = raw.split(/[-,]/).map(s => s.trim()).filter(Boolean);
+
+    selectedSet.clear();
+    for (const n of parts){
+      const m = noteToMidi(n);
+      if (m == null) continue;
+      if (m < noteToMidi("C3") || m > noteToMidi("B5")) continue;
+      selectedSet.add(n);
+      if (selectedSet.size >= MAX_NOTES) break;
+    }
   }
 
   // -----------------------------
@@ -165,11 +228,10 @@ svg{max-width:100%}
       CHROMA.forEach(n => {
         const note = n + oct;
 
-        // keep within C3..B5
+        // Keep within C3..B5
         const m = noteToMidi(note);
         if (m == null || m < noteToMidi("C3") || m > noteToMidi("B5")) {
-          const blank = document.createElement("div");
-          grid.appendChild(blank);
+          grid.appendChild(document.createElement("div"));
           return;
         }
 
@@ -177,7 +239,7 @@ svg{max-width:100%}
         k.className = "key" + (selectedSet.has(note) ? " sel" : "");
         k.textContent = note;
         k.onclick = () => {
-          ensureAudio(); // helps iOS/Safari unlock audio on first interaction
+          ensureAudio(); // unlock audio on first interaction for iOS/Safari
           if (selectedSet.has(note)) selectedSet.delete(note);
           else if (selectedSet.size < MAX_NOTES) selectedSet.add(note);
           render();
@@ -201,6 +263,8 @@ svg{max-width:100%}
     const base = document.createElementNS(svg.namespaceURI,"circle");
     base.setAttribute("cx",cx); base.setAttribute("cy",cy); base.setAttribute("r",235);
     base.setAttribute("fill","rgba(255,255,255,.06)");
+    base.setAttribute("stroke","rgba(255,255,255,.10)");
+    base.setAttribute("stroke-width","1.2");
     svg.appendChild(base);
 
     const tongues = [];
@@ -226,7 +290,7 @@ svg{max-width:100%}
       circ.setAttribute("cy", t.y);
       circ.setAttribute("r", t.pad === 1 ? 50 : 38);
       circ.setAttribute("fill","rgba(255,255,255,.12)");
-      circ.setAttribute("stroke","rgba(255,255,255,.12)");
+      circ.setAttribute("stroke","rgba(255,255,255,.14)");
       circ.setAttribute("stroke-width","1.2");
       g.appendChild(circ);
 
@@ -304,6 +368,11 @@ svg{max-width:100%}
     }
   };
 
+  document.getElementById("copyLink").onclick = async () => {
+    ensureAudio(); // not required, but harmless; keeps behavior consistent on iOS
+    await copyShareLink();
+  };
+
   function render(){
     recomputePads();
     countPill.textContent = `Selected: ${selectedSet.size} / 10`;
@@ -311,7 +380,10 @@ svg{max-width:100%}
     syncDrum();
   }
 
+  // Boot: read scale from URL first, then render
+  initFromURL();
   render();
+
 })();
 </script>
 </body>
