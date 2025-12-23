@@ -99,7 +99,7 @@ svg{max-width:100%}
   }
 
   // -----------------------------
-  // Sample playback (.m4a files)
+  // Sample playback (.m4a files) + anti-distortion chain + polyphony limit
   // -----------------------------
   let audio = null;
   let masterGain = null;
@@ -107,29 +107,36 @@ svg{max-width:100%}
 
   const sampleCache = new Map(); // note -> AudioBuffer
 
+  // Polyphony cap (prevents CPU spikes and helps avoid harsh limiting)
+  const MAX_VOICES = 8;
+  const activeVoices = []; // holds currently playing BufferSource nodes
 
   function ensureAudio(){
-  if (!audio) {
-    audio = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audio) {
+      audio = new (window.AudioContext || window.webkitAudioContext)();
 
-    // Master chain: voices → masterGain → compressor → speakers
-    masterGain = audio.createGain();
-    masterGain.gain.value = 0.5;   // overall volume (lower = less distortion)
+      // Master chain: voices -> masterGain -> compressor -> destination
+      masterGain = audio.createGain();
+      masterGain.gain.value = 0.45;  // lower if you still hear clipping
 
-    compressor = audio.createDynamicsCompressor();
-    compressor.threshold.value = -18;
-    compressor.knee.value = 24;
-    compressor.ratio.value = 8;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.15;
+      compressor = audio.createDynamicsCompressor();
+      compressor.threshold.value = -18;
+      compressor.knee.value = 24;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.15;
 
-    masterGain.connect(compressor);
-    compressor.connect(audio.destination);
+      masterGain.connect(compressor);
+      compressor.connect(audio.destination);
+    }
+    if (audio.state === "suspended") audio.resume();
   }
 
-  if (audio.state === "suspended") audio.resume();
-}
-
+  // Your files are named exactly like: "C#3.m4a"
+  // IMPORTANT: '#' must be URL-encoded or the browser treats it as a fragment.
+  function sampleUrl(note){
+    return "samples/" + encodeURIComponent(note) + ".m4a"; // C#3 -> C%233.m4a
+  }
 
   async function loadSample(note){
     if (sampleCache.has(note)) return sampleCache.get(note);
@@ -146,29 +153,39 @@ svg{max-width:100%}
   }
 
   async function playNote(note){
-  if (!note) return;
-  ensureAudio();
+    if (!note) return;
+    ensureAudio();
 
-  const buf = await loadSample(note);
+    const buf = await loadSample(note);
+    const now = audio.currentTime;
 
-  const src = audio.createBufferSource();
-  src.buffer = buf;
+    // Voice node
+    const src = audio.createBufferSource();
+    src.buffer = buf;
 
-  const g = audio.createGain();
-  const now = audio.currentTime;
+    // Per-voice gain envelope (reduces clicks + peaks)
+    const g = audio.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(1.0, now + 0.008);
+    g.gain.linearRampToValueAtTime(0.0001, now + Math.min(1.8, buf.duration));
 
-  // Soft attack + release = less harsh transients
-  g.gain.setValueAtTime(0.0001, now);
-  g.gain.linearRampToValueAtTime(1.0, now + 0.008);
-  g.gain.linearRampToValueAtTime(0.0001, now + Math.min(1.8, buf.duration));
+    src.connect(g);
+    g.connect(masterGain);
 
-  src.connect(g);
-  g.connect(masterGain);   // 🔑 THIS LINE FIXES CLIPPING
+    // Polyphony limit: stop oldest voices if too many
+    activeVoices.push(src);
+    src.onended = () => {
+      const i = activeVoices.indexOf(src);
+      if (i >= 0) activeVoices.splice(i, 1);
+    };
+    while (activeVoices.length > MAX_VOICES) {
+      const oldest = activeVoices.shift();
+      try { oldest.stop(); } catch {}
+    }
 
-  src.start(now);
-  src.stop(now + buf.duration + 0.05);
-}
-
+    src.start(now);
+    src.stop(now + buf.duration + 0.05);
+  }
 
   // -----------------------------
   // State: selection set + pad assignment sorted by frequency
@@ -207,7 +224,6 @@ svg{max-width:100%}
       await navigator.clipboard.writeText(link);
       showToast("Copied share link!");
     } catch {
-      // Fallback prompt if clipboard not available
       window.prompt("Copy this link:", link);
     }
   }
@@ -220,7 +236,6 @@ svg{max-width:100%}
     const raw = qs.get("notes");
     if (!raw) return;
 
-    // Accept: C3-D3-F3 ... or comma separated
     const parts = raw.split(/[-,]/).map(s => s.trim()).filter(Boolean);
 
     selectedSet.clear();
@@ -395,7 +410,6 @@ svg{max-width:100%}
   };
 
   document.getElementById("copyLink").onclick = async () => {
-    ensureAudio(); // not required, but harmless; keeps behavior consistent on iOS
     await copyShareLink();
   };
 
@@ -409,7 +423,6 @@ svg{max-width:100%}
   // Boot: read scale from URL first, then render
   initFromURL();
   render();
-
 })();
 </script>
 </body>
