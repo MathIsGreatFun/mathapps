@@ -102,18 +102,34 @@ svg{max-width:100%}
   // Sample playback (.m4a files)
   // -----------------------------
   let audio = null;
+  let masterGain = null;
+  let compressor = null;
+
   const sampleCache = new Map(); // note -> AudioBuffer
 
+
   function ensureAudio(){
-    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
-    if (audio.state === "suspended") audio.resume();
+  if (!audio) {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Master chain: voices → masterGain → compressor → speakers
+    masterGain = audio.createGain();
+    masterGain.gain.value = 0.5;   // overall volume (lower = less distortion)
+
+    compressor = audio.createDynamicsCompressor();
+    compressor.threshold.value = -18;
+    compressor.knee.value = 24;
+    compressor.ratio.value = 8;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.15;
+
+    masterGain.connect(compressor);
+    compressor.connect(audio.destination);
   }
 
-  // Your files are named exactly like: "C#3.m4a"
-  // IMPORTANT: '#' must be URL-encoded or the browser treats it as a fragment.
-  function sampleUrl(note){
-    return "samples/" + encodeURIComponent(note) + ".m4a"; // C#3 -> C%233.m4a
-  }
+  if (audio.state === "suspended") audio.resume();
+}
+
 
   async function loadSample(note){
     if (sampleCache.has(note)) return sampleCache.get(note);
@@ -130,19 +146,29 @@ svg{max-width:100%}
   }
 
   async function playNote(note){
-    if (!note) return;
-    ensureAudio();
-    const buf = await loadSample(note);
+  if (!note) return;
+  ensureAudio();
 
-    const src = audio.createBufferSource();
-    src.buffer = buf;
+  const buf = await loadSample(note);
 
-    const g = audio.createGain();
-    g.gain.value = 1.0;
+  const src = audio.createBufferSource();
+  src.buffer = buf;
 
-    src.connect(g).connect(audio.destination);
-    src.start();
-  }
+  const g = audio.createGain();
+  const now = audio.currentTime;
+
+  // Soft attack + release = less harsh transients
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.linearRampToValueAtTime(1.0, now + 0.008);
+  g.gain.linearRampToValueAtTime(0.0001, now + Math.min(1.8, buf.duration));
+
+  src.connect(g);
+  g.connect(masterGain);   // 🔑 THIS LINE FIXES CLIPPING
+
+  src.start(now);
+  src.stop(now + buf.duration + 0.05);
+}
+
 
   // -----------------------------
   // State: selection set + pad assignment sorted by frequency
