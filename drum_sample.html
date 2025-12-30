@@ -67,6 +67,8 @@ svg{max-width:100%}
         <div class="pill" id="countPill">Selected: 0 / 10</div>
         <button class="btn" id="clear">Clear</button>
         <button class="btn" id="playSeq">Play 1→10</button>
+        <button class="btn" id="transposeDown">Transpose -1</button>
+        <button class="btn" id="transposeUp">Transpose +1</button>
         <button class="btn" id="copyLink">Copy share link</button>
       </div>
       <div class="sep"></div>
@@ -85,9 +87,13 @@ svg{max-width:100%}
 (() => {
   const MAX_NOTES = 10;
 
-  // Chromatic notes
+  // Chromatic notes (sharps only)
   const CHROMA = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const SEMI = {"C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,"F#":6,"G":7,"G#":8,"A":9,"A#":10,"B":11};
+  const SEMI   = {"C":0,"C#":1,"D":2,"D#":3,"E":4,"F":5,"F#":6,"G":7,"G#":8,"A":9,"A#":10,"B":11};
+
+  // NEW RANGE: D3 .. B5  (C3 and C#3 are no longer valid)
+  const MIN_NOTE = "D3";
+  const MAX_NOTE = "B5";
 
   // Perimeter placement (pad 2 → pad 10)
   // Angles measured from UP (0°) going COUNTER-CLOCKWISE.
@@ -98,8 +104,17 @@ svg{max-width:100%}
     return m ? ((Number(m[2])+1)*12 + SEMI[m[1]]) : null;
   }
 
+  function midiToNote(m){
+    const name = CHROMA[m % 12];
+    const oct  = Math.floor(m / 12) - 1;
+    return name + oct;
+  }
+
+  function minMidi(){ return noteToMidi(MIN_NOTE); }
+  function maxMidi(){ return noteToMidi(MAX_NOTE); }
+
   // -----------------------------
-  // Sample playback (.m4a files) + anti-distortion chain + polyphony limit
+  // Sample playback (.mp3) + anti-distortion chain + polyphony limit
   // -----------------------------
   let audio = null;
   let masterGain = null;
@@ -107,9 +122,8 @@ svg{max-width:100%}
 
   const sampleCache = new Map(); // note -> AudioBuffer
 
-  // Polyphony cap (prevents CPU spikes and helps avoid harsh limiting)
   const MAX_VOICES = 8;
-  const activeVoices = []; // holds currently playing BufferSource nodes
+  const activeVoices = []; // currently playing BufferSource nodes
 
   function ensureAudio(){
     if (!audio) {
@@ -117,7 +131,7 @@ svg{max-width:100%}
 
       // Master chain: voices -> masterGain -> compressor -> destination
       masterGain = audio.createGain();
-      masterGain.gain.value = 0.45;  // lower if you still hear clipping
+      masterGain.gain.value = 0.45;  // tweak if needed
 
       compressor = audio.createDynamicsCompressor();
       compressor.threshold.value = -18;
@@ -132,10 +146,9 @@ svg{max-width:100%}
     if (audio.state === "suspended") audio.resume();
   }
 
-  // Your files are named exactly like: "C#3.m4a"
-  // IMPORTANT: '#' must be URL-encoded or the browser treats it as a fragment.
+  // Files now .mp3, one per note, e.g., "D3.mp3", "F#4.mp3"
   function sampleUrl(note){
-    return "samples/" + encodeURIComponent(note) + ".mp3"; // C#3 -> C%233.m4a
+    return "samples/" + encodeURIComponent(note) + ".mp3";
   }
 
   async function loadSample(note){
@@ -159,11 +172,9 @@ svg{max-width:100%}
     const buf = await loadSample(note);
     const now = audio.currentTime;
 
-    // Voice node
     const src = audio.createBufferSource();
     src.buffer = buf;
 
-    // Per-voice gain envelope (reduces clicks + peaks)
     const g = audio.createGain();
     g.gain.setValueAtTime(0.0001, now);
     g.gain.linearRampToValueAtTime(1.0, now + 0.008);
@@ -172,7 +183,6 @@ svg{max-width:100%}
     src.connect(g);
     g.connect(masterGain);
 
-    // Polyphony limit: stop oldest voices if too many
     activeVoices.push(src);
     src.onended = () => {
       const i = activeVoices.indexOf(src);
@@ -229,6 +239,38 @@ svg{max-width:100%}
   }
 
   // -----------------------------
+  // Transpose selection by semitones (with bounds)
+  // -----------------------------
+  function transposeSelection(semitones){
+    if (!selectedSet.size) return;
+
+    const arr = [...selectedSet].map(n => noteToMidi(n)).filter(m => m != null);
+    const lo = minMidi();
+    const hi = maxMidi();
+
+    // Check if ANY note would go out of range; if so, block the whole move.
+    const wouldClip = arr.some(m => {
+      const cand = m + semitones;
+      return cand < lo || cand > hi;
+    });
+
+    if (wouldClip){
+      showToast("Cannot transpose further in that direction.");
+      return;
+    }
+
+    const newSet = new Set();
+    arr.forEach(m => {
+      const cand = m + semitones;
+      newSet.add(midiToNote(cand));
+    });
+
+    selectedSet.clear();
+    newSet.forEach(n => selectedSet.add(n));
+    render();
+  }
+
+  // -----------------------------
   // Init from URL ?notes=...
   // -----------------------------
   function initFromURL(){
@@ -242,7 +284,7 @@ svg{max-width:100%}
     for (const n of parts){
       const m = noteToMidi(n);
       if (m == null) continue;
-      if (m < noteToMidi("C3") || m > noteToMidi("B5")) continue;
+      if (m < minMidi() || m > maxMidi()) continue; // respect D3..B5
       selectedSet.add(n);
       if (selectedSet.size >= MAX_NOTES) break;
     }
@@ -251,9 +293,9 @@ svg{max-width:100%}
   // -----------------------------
   // UI: Picker
   // -----------------------------
-  const picker = document.getElementById("picker");
+  const picker   = document.getElementById("picker");
   const drumHost = document.getElementById("drumHost");
-  const countPill = document.getElementById("countPill");
+  const countPill= document.getElementById("countPill");
 
   function buildPicker(){
     picker.innerHTML = "";
@@ -269,9 +311,9 @@ svg{max-width:100%}
       CHROMA.forEach(n => {
         const note = n + oct;
 
-        // Keep within C3..B5
         const m = noteToMidi(note);
-        if (m == null || m < noteToMidi("C3") || m > noteToMidi("B5")) {
+        // Only allow D3..B5; this automatically excludes C3 and C#3
+        if (m == null || m < minMidi() || m > maxMidi()) {
           grid.appendChild(document.createElement("div"));
           return;
         }
@@ -280,7 +322,7 @@ svg{max-width:100%}
         k.className = "key" + (selectedSet.has(note) ? " sel" : "");
         k.textContent = note;
         k.onclick = () => {
-          ensureAudio(); // unlock audio on first interaction for iOS/Safari
+          ensureAudio(); // unlock on first interaction
           if (selectedSet.has(note)) selectedSet.delete(note);
           else if (selectedSet.size < MAX_NOTES) selectedSet.add(note);
           render();
@@ -411,6 +453,14 @@ svg{max-width:100%}
 
   document.getElementById("copyLink").onclick = async () => {
     await copyShareLink();
+  };
+
+  document.getElementById("transposeDown").onclick = () => {
+    transposeSelection(-1);
+  };
+
+  document.getElementById("transposeUp").onclick = () => {
+    transposeSelection(1);
   };
 
   function render(){
