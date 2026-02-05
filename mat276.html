@@ -29,23 +29,12 @@
     .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
     button { padding:10px 14px; font-size:1rem; border-radius:10px; border:none; background: var(--blue); color:#fff; cursor:pointer; font-weight:800; }
     button:hover { filter: brightness(.95); }
-
-    .out{
-      margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
-      white-space: normal;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size: .95rem;
-    }
-    .out .katex { font-size: 1.02em; }
+    .out { margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: .95rem; white-space: pre-wrap; }
   </style>
 
   <!-- Nerdamer -->
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
-
-  <!-- KaTeX -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 </head>
 
 <body>
@@ -167,299 +156,10 @@
   </div>
 
 <script type="module">
-  import {
-    $, isFiniteAll,
-    cAbs, cDiv, cIsZero, complex,
-    eigen2x2, linear2_solve,
-    makeSafeFunction, newton2D, dedupPush
-  } from "./shared-math-tools.js";
+  import { $, isFiniteAll, fmtComplex, fmtVecComplex, eigen2x2, linear2_solve,
+           makeSafeFunction, newton2D, dedupPush } from "./shared-math-tools.js";
 
-  /* =========================
-     KaTeX render helper
-  ========================= */
-  function renderMath(el){
-    if (typeof renderMathInElement !== "function") {
-      setTimeout(() => renderMath(el), 0);
-      return;
-    }
-    renderMathInElement(el, {
-      delimiters: [
-        {left: "$$", right: "$$", display: true},
-        {left: "\\(", right: "\\)", display: false}
-      ],
-      throwOnError: false
-    });
-  }
-
-  /* =========================
-     Nerdamer string -> TeX (robust)
-     This avoids fragile regex hacking of TeX and fixes:
-       - fractions as \frac{...}{...}
-       - exponents like t^-1 rendered as t^{-1}
-  ========================= */
-
-  function tokenize(s){
-    const tokens = [];
-    let i = 0;
-
-    const isSpace = (ch) => /\s/.test(ch);
-    const isDigit = (ch) => /[0-9]/.test(ch);
-    const isAlpha = (ch) => /[A-Za-z_]/.test(ch);
-
-    while (i < s.length){
-      const ch = s[i];
-      if (isSpace(ch)) { i++; continue; }
-
-      // operators / punctuation
-      if ("+-*/^(),".includes(ch)) {
-        tokens.push({type:"op", value: ch});
-        i++;
-        continue;
-      }
-
-      // number (integer or decimal)
-      if (isDigit(ch) || (ch === "." && i+1 < s.length && isDigit(s[i+1]))) {
-        let j = i;
-        while (j < s.length && (isDigit(s[j]) || s[j] === ".")) j++;
-        tokens.push({type:"num", value: s.slice(i,j)});
-        i = j;
-        continue;
-      }
-
-      // identifier
-      if (isAlpha(ch)) {
-        let j = i;
-        while (j < s.length && /[A-Za-z0-9_]/.test(s[j])) j++;
-        tokens.push({type:"id", value: s.slice(i,j)});
-        i = j;
-        continue;
-      }
-
-      // fallback: unknown char
-      tokens.push({type:"unk", value: ch});
-      i++;
-    }
-    return tokens;
-  }
-
-  function parseToAST(tokens){
-    let pos = 0;
-    const peek = () => tokens[pos];
-    const take = () => tokens[pos++];
-
-    function parseExpression(){
-      let node = parseTerm();
-      while (peek() && peek().type==="op" && (peek().value==="+" || peek().value==="-")){
-        const op = take().value;
-        const rhs = parseTerm();
-        node = {type:"bin", op, left: node, right: rhs};
-      }
-      return node;
-    }
-
-    function parseTerm(){
-      let node = parsePower();
-      while (peek() && peek().type==="op" && (peek().value==="*" || peek().value==="/")){
-        const op = take().value;
-        const rhs = parsePower();
-        node = {type:"bin", op, left: node, right: rhs};
-      }
-      return node;
-    }
-
-    function parsePower(){
-      let node = parseUnary();
-      // right-associative ^
-      if (peek() && peek().type==="op" && peek().value==="^"){
-        take();
-        const rhs = parsePower();
-        node = {type:"bin", op:"^", left: node, right: rhs};
-      }
-      return node;
-    }
-
-    function parseUnary(){
-      if (peek() && peek().type==="op" && (peek().value==="+" || peek().value==="-")){
-        const op = take().value;
-        const inner = parseUnary();
-        return {type:"un", op, inner};
-      }
-      return parsePrimary();
-    }
-
-    function parsePrimary(){
-      const t = peek();
-      if (!t) return {type:"num", value:"0"};
-
-      if (t.type==="num"){
-        take();
-        return {type:"num", value:t.value};
-      }
-
-      if (t.type==="id"){
-        const id = take().value;
-
-        // function call id(...)
-        if (peek() && peek().type==="op" && peek().value==="("){
-          take(); // (
-          const arg = parseExpression();
-          if (peek() && peek().type==="op" && peek().value===")") take();
-          return {type:"call", name:id, arg};
-        }
-
-        return {type:"id", value:id};
-      }
-
-      if (t.type==="op" && t.value==="("){
-        take();
-        const inside = parseExpression();
-        if (peek() && peek().type==="op" && peek().value===")") take();
-        return {type:"group", inner: inside};
-      }
-
-      // unknown token
-      take();
-      return {type:"id", value:t.value};
-    }
-
-    const ast = parseExpression();
-    return ast;
-  }
-
-  function astToTeX(node){
-    function wrapIfNeeded(n, tex){
-      // Wrap sums/differences in parentheses when used as factor/base
-      if (!n) return tex;
-      if (n.type==="bin" && (n.op==="+" || n.op==="-" )) return `\\left(${tex}\\right)`;
-      if (n.type==="un") return `\\left(${tex}\\right)`;
-      return tex;
-    }
-
-    switch(node.type){
-      case "num":
-        return node.value;
-
-      case "id": {
-        const v = node.value;
-        if (v === "pi" || v === "PI") return "\\pi";
-        if (v === "e") return "e";
-        return v; // x, y, t, etc.
-      }
-
-      case "group":
-        return `\\left(${astToTeX(node.inner)}\\right)`;
-
-      case "un": {
-        const inner = astToTeX(node.inner);
-        if (node.op === "+") return inner;
-        // unary minus
-        // If inner is a sum, wrap
-        return `-${wrapIfNeeded(node.inner, inner)}`;
-      }
-
-      case "call": {
-        const name = node.name;
-        const argTex = astToTeX(node.arg);
-        if (name === "sqrt") return `\\sqrt{${argTex}}`;
-        if (name === "exp") return `e^{${argTex}}`;
-        if (["sin","cos","tan","sec","csc","cot"].includes(name)) return `\\${name}\\left(${argTex}\\right)`;
-        if (name === "ln") return `\\ln\\left(${argTex}\\right)`;
-        if (name === "log") return `\\log\\left(${argTex}\\right)`;
-        return `${name}\\left(${argTex}\\right)`;
-      }
-
-      case "bin": {
-        const op = node.op;
-        if (op === "+"){
-          return `${astToTeX(node.left)} + ${astToTeX(node.right)}`;
-        }
-        if (op === "-"){
-          return `${astToTeX(node.left)} - ${astToTeX(node.right)}`;
-        }
-        if (op === "*"){
-          const L = astToTeX(node.left);
-          const R = astToTeX(node.right);
-          const Lt = wrapIfNeeded(node.left, L);
-          const Rt = wrapIfNeeded(node.right, R);
-          return `${Lt}\\cdot ${Rt}`;
-        }
-        if (op === "/"){
-          return `\\frac{${astToTeX(node.left)}}{${astToTeX(node.right)}}`;
-        }
-        if (op === "^"){
-          const base = astToTeX(node.left);
-          const exp  = astToTeX(node.right);
-          const b = wrapIfNeeded(node.left, base);
-          return `${b}^{${exp}}`;
-        }
-        return `${astToTeX(node.left)} ${op} ${astToTeX(node.right)}`;
-      }
-
-      default:
-        return "";
-    }
-  }
-
-  function nerdamerStringToTeX(s){
-    // Nerdamer often uses "(-1)" etc; the parser handles it.
-    // We also remove spaces to make tokenization predictable.
-    const cleaned = String(s).replace(/\s+/g, "");
-    const tokens = tokenize(cleaned);
-    const ast = parseToAST(tokens);
-    return astToTeX(ast);
-  }
-
-  /* =========================
-     Eigen formatting helpers
-  ========================= */
-  function trimFixed(x, digits=6){
-    const y = Math.abs(x) < 1e-12 ? 0 : x;
-    return y.toFixed(digits).replace(/\.?0+$/,"");
-  }
-
-  function latexComplex(z){
-    const re = Math.abs(z.re) < 1e-12 ? 0 : z.re;
-    const im = Math.abs(z.im) < 1e-12 ? 0 : z.im;
-
-    if (im === 0) return trimFixed(re);
-    if (re === 0) {
-      const a = trimFixed(Math.abs(im));
-      if (a === "1") return im > 0 ? "i" : "-i";
-      return im > 0 ? `${a}i` : `-${a}i`;
-    }
-
-    const reS = trimFixed(re);
-    const a = trimFixed(Math.abs(im));
-    const imPart = (a === "1") ? "i" : `${a}i`;
-    return im > 0 ? `${reS}+${imPart}` : `${reS}-${imPart}`;
-  }
-
-  function latexColVectorFromComplexArray(v){
-    let vv = v.slice();
-    let maxIdx = 0;
-    for (let i=1;i<vv.length;i++) if (cAbs(vv[i]) > cAbs(vv[maxIdx])) maxIdx = i;
-    const scale = cIsZero(vv[maxIdx]) ? complex(1,0) : vv[maxIdx];
-    vv = vv.map(z => cDiv(z, scale));
-    const entries = vv.map(latexComplex).join(" \\\\ ");
-    return `\\begin{pmatrix}${entries}\\end{pmatrix}`;
-  }
-
-  function latexMatrix2x2(a,b,c,d){
-    return `\\begin{pmatrix}${a} & ${b}\\\\${c} & ${d}\\end{pmatrix}`;
-  }
-
-  function escapeLatexText(s){
-    return s.replace(/\\/g,"\\textbackslash ")
-            .replace(/%/g,"\\%")
-            .replace(/_/g,"\\_")
-            .replace(/#/g,"\\#")
-            .replace(/{/g,"\\{")
-            .replace(/}/g,"\\}");
-  }
-
-  /* =========================
-     Tabs
-  ========================= */
+  // Tabs
   document.addEventListener("click", (ev) => {
     const btn = ev.target;
     if (!btn.classList || !btn.classList.contains("tabbtn")) return;
@@ -471,9 +171,6 @@
     document.getElementById("panel-" + tab).classList.add("active");
   });
 
-  /* =========================
-     MAT276: Eigen 2×2
-  ========================= */
   function MAT276_eigen2(){
     const a = parseFloat($("e2_a").value);
     const b = parseFloat($("e2_b").value);
@@ -482,58 +179,27 @@
     if (!isFiniteAll([a,b,c,d])) { $("e2_out").textContent = "Invalid input."; return; }
 
     const R = eigen2x2(a,b,c,d);
+    $("e2_out").textContent =
+`A = [[${a}, ${b}], [${c}, ${d}]]
 
-    const Atex = latexMatrix2x2(a,b,c,d);
-    const lam1 = latexComplex(R.lam1);
-    const lam2 = latexComplex(R.lam2);
-    const v1 = latexColVectorFromComplexArray(R.v1);
-    const v2 = latexColVectorFromComplexArray(R.v2);
+λ1 = ${fmtComplex(R.lam1)}
+v1 = ${fmtVecComplex(R.v1)}
 
-    $("e2_out").innerHTML = `
-      $$ A = ${Atex} $$
-      $$ \\lambda_1 = ${lam1},\\quad \\mathbf{v}_1 = ${v1} $$
-      $$ \\lambda_2 = ${lam2},\\quad \\mathbf{v}_2 = ${v2} $$
-    `;
-    renderMath($("e2_out"));
+λ2 = ${fmtComplex(R.lam2)}
+v2 = ${fmtVecComplex(R.v2)}`;
   }
 
-  /* =========================
-     MAT276: Linear 2×2
-  ========================= */
   function MAT276_linear2(){
-    const sol = linear2_solve("l");
-
-    if (sol === "Invalid input." || sol === "Infinitely many solutions." || sol === "No solution.") {
-      $("l_out").innerHTML = `$$\\text{${escapeLatexText(sol)}}$$`;
-      renderMath($("l_out"));
-      return;
-    }
-
-    const lines = sol.split("\n").map(s => s.trim());
-    const texLines = lines.map(s => s.replace(/^x\s*=\s*/,"x = ").replace(/^y\s*=\s*/,"y = "));
-
-    $("l_out").innerHTML = `
-      $$\\begin{aligned}
-        ${texLines.join(" \\\\ ")}
-      \\end{aligned}$$
-    `;
-    renderMath($("l_out"));
+    $("l_out").textContent = linear2_solve("l");
   }
 
-  /* =========================
-     MAT276: Equilibrium Points
-  ========================= */
   function MAT276_equilibrium(){
     const fExpr = $("n_f").value.trim();
     const gExpr = $("n_g").value.trim();
 
     let f, g;
     try { f = makeSafeFunction(fExpr); g = makeSafeFunction(gExpr); f(0,0); g(0,0); }
-    catch (e) {
-      $("n_out").innerHTML = `$$\\text{Error parsing.}\\;\\text{${escapeLatexText(e.message)}}$$`;
-      renderMath($("n_out"));
-      return;
-    }
+    catch (e) { $("n_out").textContent = `Error parsing.\n${e.message}`; return; }
 
     const xmin=-4, xmax=4, ymin=-4, ymax=4;
     const grid=41, iters=30, tol=1e-9, eps=1e-4;
@@ -551,83 +217,45 @@
     }
     roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
 
-    if (roots.length === 0) {
-      $("n_out").innerHTML = `$$\\text{No equilibrium points found.}$$`;
-      renderMath($("n_out"));
-      return;
-    }
+    if (roots.length === 0) { $("n_out").textContent = "No equilibrium points found."; return; }
 
-    const pts = roots.map(r => {
+    let out = `Equilibrium points (${roots.length}):\n`;
+    for (const r of roots){
       const xs = r.x.toFixed(10).replace(/\.?0+$/,"");
       const ys = r.y.toFixed(10).replace(/\.?0+$/,"");
-      return `\\left(${xs},\\;${ys}\\right)`;
-    });
-
-    $("n_out").innerHTML = `
-      $$\\begin{aligned}
-        \\text{Equilibrium points (${roots.length}):}\\\\
-        ${pts.join("\\\\")}
-      \\end{aligned}$$
-    `;
-    renderMath($("n_out"));
+      out += `(${xs}, ${ys})\n`;
+    }
+    $("n_out").textContent = out.trim();
   }
 
-  /* =========================
-     MAT276: Integral (Nerdamer -> string -> TeX)
-     Fixes fractions + negative exponents reliably.
-  ========================= */
   function MAT276_integral(){
     const expr = $("i_expr").value.trim();
-    if (!expr) { $("i_out").innerHTML = `$$\\text{Invalid input.}$$`; renderMath($("i_out")); return; }
-    if (typeof nerdamer === "undefined") { $("i_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("i_out")); return; }
+    if (!expr) { $("i_out").textContent = "Invalid input."; return; }
+    if (typeof nerdamer === "undefined") { $("i_out").textContent = "Symbolic engine not available."; return; }
 
     try {
-      const antiStr = nerdamer.integrate(expr, "t").simplify().toString();
-      const exprStr = nerdamer(expr).simplify().toString();
-
-      const exprTex = nerdamerStringToTeX(exprStr);
-      const antiTex = nerdamerStringToTeX(antiStr);
-
-      $("i_out").innerHTML = `$$\\int \\left(${exprTex}\\right)\\,dt = ${antiTex} + C$$`;
-      renderMath($("i_out"));
+      const antideriv = nerdamer.integrate(expr, "t").simplify();
+      $("i_out").textContent = `${antideriv.toString()} + C`;
     } catch (e) {
-      $("i_out").innerHTML = `$$\\text{Could not integrate.}\\;\\text{${escapeLatexText(e.message)}}$$`;
-      renderMath($("i_out"));
+      $("i_out").textContent = `Could not integrate.\n${e.message}`;
     }
   }
 
-  /* =========================
-     MAT276: Partials (Nerdamer -> string -> TeX)
-  ========================= */
   function MAT276_partials(){
     const expr = $("pd_expr").value.trim();
-    if (!expr) { $("pd_out").innerHTML = `$$\\text{Invalid input.}$$`; renderMath($("pd_out")); return; }
-    if (typeof nerdamer === "undefined") { $("pd_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("pd_out")); return; }
+    if (!expr) { $("pd_out").textContent = "Invalid input."; return; }
+    if (typeof nerdamer === "undefined") { $("pd_out").textContent = "Symbolic engine not available."; return; }
 
     try {
-      const fStr  = nerdamer(expr).simplify().toString();
-      const fxStr = nerdamer.diff(expr, "x").simplify().toString();
-      const fyStr = nerdamer.diff(expr, "y").simplify().toString();
-
-      const fTex  = nerdamerStringToTeX(fStr);
-      const fxTex = nerdamerStringToTeX(fxStr);
-      const fyTex = nerdamerStringToTeX(fyStr);
-
-      $("pd_out").innerHTML = `
-        $$ f(x,y) = ${fTex} $$
-        $$ \\frac{\\partial f}{\\partial x} = ${fxTex} $$
-        $$ \\frac{\\partial f}{\\partial y} = ${fyTex} $$
-      `;
-      renderMath($("pd_out"));
+      const fx = nerdamer.diff(expr, "x").simplify().toString();
+      const fy = nerdamer.diff(expr, "y").simplify().toString();
+      $("pd_out").textContent = `∂f/∂x = ${fx}\n∂f/∂y = ${fy}`;
     } catch (e) {
-      $("pd_out").innerHTML = `$$\\text{Could not differentiate.}\\;\\text{${escapeLatexText(e.message)}}$$`;
-      renderMath($("pd_out"));
+      $("pd_out").textContent = `Could not differentiate.\n${e.message}`;
     }
   }
 
-  /* =========================
-     Button wiring
-  ========================= */
+  // Buttons
   document.addEventListener("click", (ev) => {
     const id = ev.target && ev.target.id;
     if (id === "e2_compute") MAT276_eigen2();
@@ -637,7 +265,6 @@
     if (id === "pd_compute") MAT276_partials();
   });
 
-  /* Pre-fill outputs */
   MAT276_eigen2();
   MAT276_linear2();
   MAT276_equilibrium();
