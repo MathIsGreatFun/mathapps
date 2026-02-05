@@ -192,28 +192,6 @@
   }
 
   /* =========================
-     Fix Nerdamer TeX "inline fractions"
-     Nerdamer sometimes emits "(1/4)" instead of "\frac{1}{4}".
-     IMPORTANT: Insert ONE backslash, not TWO.
-  ========================= */
-  function forceTeXFractions(tex){
-    if (!tex) return tex;
-
-    // Convert parenthesized numeric fractions: (1/4), (-3/7)
-    tex = tex.replace(/\(\s*(-?\d+)\s*\/\s*(\d+)\s*\)/g, (_, a, b) => `\\frac{${a}}{${b}}`);
-
-    // Convert standalone numeric fractions: 1/4, -3/7 (conservative)
-    // - Do NOT touch if preceded by "\" (so we don't break \frac)
-    // - Only integer over integer
-    tex = tex.replace(/(^|[^\\\w])(-?\d+)\s*\/\s*(\d+)(?!\w)/g, (_, pre, a, b) => `${pre}\\frac{${a}}{${b}}`);
-
-    // Make multiplication prettier when Nerdamer uses "*"
-    tex = tex.replace(/\s\*\s/g, " \\cdot ");
-
-    return tex;
-  }
-
-  /* =========================
      Formatting helpers (LaTeX)
   ========================= */
   function trimFixed(x, digits=6){
@@ -239,6 +217,7 @@
   }
 
   function latexColVectorFromComplexArray(v){
+    // Normalize by largest magnitude entry so the display is stable
     let vv = v.slice();
     let maxIdx = 0;
     for (let i=1;i<vv.length;i++) if (cAbs(vv[i]) > cAbs(vv[maxIdx])) maxIdx = i;
@@ -378,7 +357,10 @@
   }
 
   /* =========================
-     MAT276: Integral (Nerdamer -> TeX, then fix fractions)
+     MAT276: Integral (Nerdamer -> TeX)
+     Key fix: we DO NOT regex-hack TeX.
+     Instead we ask Nerdamer to rewrite the antiderivative into a form
+     whose TeX uses real \frac{...}{...} and correct exponents.
   ========================= */
   function MAT276_integral(){
     const expr = $("i_expr").value.trim();
@@ -386,13 +368,10 @@
     if (typeof nerdamer === "undefined") { $("i_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("i_out")); return; }
 
     try {
-      const antideriv = nerdamer.integrate(expr, "t").simplify();
-
-      const exprTexRaw = nerdamer(expr).toTeX();
-      const antiTexRaw = (typeof antideriv.toTeX === "function") ? antideriv.toTeX() : antideriv.toString();
-
-      const exprTex = forceTeXFractions(exprTexRaw);
-      const antiTex = forceTeXFractions(antiTexRaw);
+      // Expand/simplify tends to turn (1/4)*(...) into t^4/4 etc., which TeX renders as \frac{t^{4}}{4}
+      const anti = nerdamer.integrate(expr, "t").expand().simplify();
+      const exprTex = nerdamer(expr).expand().simplify().toTeX();
+      const antiTex = anti.toTeX();
 
       $("i_out").innerHTML = `$$\\int \\left(${exprTex}\\right)\\,dt = ${antiTex} + C$$`;
       renderMath($("i_out"));
@@ -403,7 +382,7 @@
   }
 
   /* =========================
-     MAT276: Partials (Nerdamer -> TeX, then fix fractions)
+     MAT276: Partials (Nerdamer -> TeX)
   ========================= */
   function MAT276_partials(){
     const expr = $("pd_expr").value.trim();
@@ -411,15 +390,9 @@
     if (typeof nerdamer === "undefined") { $("pd_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("pd_out")); return; }
 
     try {
-      const fTexRaw = nerdamer(expr).toTeX();
-      const fxObj = nerdamer.diff(expr, "x").simplify();
-      const fyObj = nerdamer.diff(expr, "y").simplify();
-      const fxTexRaw = (typeof fxObj.toTeX === "function") ? fxObj.toTeX() : fxObj.toString();
-      const fyTexRaw = (typeof fyObj.toTeX === "function") ? fyObj.toTeX() : fyObj.toString();
-
-      const fTex  = forceTeXFractions(fTexRaw);
-      const fxTex = forceTeXFractions(fxTexRaw);
-      const fyTex = forceTeXFractions(fyTexRaw);
+      const fTex = nerdamer(expr).expand().simplify().toTeX();
+      const fxTex = nerdamer.diff(expr, "x").expand().simplify().toTeX();
+      const fyTex = nerdamer.diff(expr, "y").expand().simplify().toTeX();
 
       $("pd_out").innerHTML = `
         $$ f(x,y) = ${fTex} $$
