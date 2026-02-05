@@ -30,7 +30,6 @@
     button { padding:10px 14px; font-size:1rem; border-radius:10px; border:none; background: var(--blue); color:#fff; cursor:pointer; font-weight:800; }
     button:hover { filter: brightness(.95); }
 
-    /* Output box: allow KaTeX HTML */
     .out {
       margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
       white-space: normal;
@@ -43,7 +42,7 @@
   <!-- Nerdamer -->
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
 
-  <!-- KaTeX (typeset math nicely) -->
+  <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
@@ -193,26 +192,23 @@
   }
 
   /* =========================
-     TeX post-processing:
-     - convert inline numeric "1/4" style into \frac{1}{4}
-     - also handle forms like ( -3/7 ) and standalone -3/7
+     Fix Nerdamer TeX "inline fractions"
+     Nerdamer sometimes emits "(1/4)" instead of "\frac{1}{4}".
+     IMPORTANT: Insert ONE backslash, not TWO.
   ========================= */
   function forceTeXFractions(tex){
     if (!tex) return tex;
 
-    // 1) Convert parenthesized numeric fractions: (1/4) or (-3/7)
-    tex = tex.replace(/\(\s*(-?\d+)\s*\/\s*(\d+)\s*\)/g, "\\\\frac{$1}{$2}");
+    // Convert parenthesized numeric fractions: (1/4), (-3/7)
+    tex = tex.replace(/\(\s*(-?\d+)\s*\/\s*(\d+)\s*\)/g, (_, a, b) => `\\frac{${a}}{${b}}`);
 
-    // 2) Convert standalone numeric fractions that are not already inside a command.
-    // Avoid touching things that already look like \frac{...}{...}
-    // This is conservative: only integers over integers.
-    tex = tex.replace(/(^|[^\\\w])(-?\d+)\s*\/\s*(\d+)(?!\w)/g, (m, pre, a, b) => {
-      return `${pre}\\\\frac{${a}}{${b}}`;
-    });
+    // Convert standalone numeric fractions: 1/4, -3/7 (conservative)
+    // - Do NOT touch if preceded by "\" (so we don't break \frac)
+    // - Only integer over integer
+    tex = tex.replace(/(^|[^\\\w])(-?\d+)\s*\/\s*(\d+)(?!\w)/g, (_, pre, a, b) => `${pre}\\frac{${a}}{${b}}`);
 
-    // 3) If Nerdamer gives "*", KaTeX is okay, but \cdot looks nicer.
-    // Keep it mild: only replace " * " with " \\cdot "
-    tex = tex.replace(/\s\*\s/g, " \\\\cdot ");
+    // Make multiplication prettier when Nerdamer uses "*"
+    tex = tex.replace(/\s\*\s/g, " \\cdot ");
 
     return tex;
   }
@@ -382,7 +378,7 @@
   }
 
   /* =========================
-     MAT276: Integral (Nerdamer -> TeX, force true fractions)
+     MAT276: Integral (Nerdamer -> TeX, then fix fractions)
   ========================= */
   function MAT276_integral(){
     const expr = $("i_expr").value.trim();
@@ -392,16 +388,13 @@
     try {
       const antideriv = nerdamer.integrate(expr, "t").simplify();
 
-      // Get TeX from Nerdamer, then post-process:
       const exprTexRaw = nerdamer(expr).toTeX();
       const antiTexRaw = (typeof antideriv.toTeX === "function") ? antideriv.toTeX() : antideriv.toString();
 
       const exprTex = forceTeXFractions(exprTexRaw);
       const antiTex = forceTeXFractions(antiTexRaw);
 
-      $("i_out").innerHTML = `
-        $$\\int \\left(${exprTex}\\right)\\,dt = ${antiTex} + C$$
-      `;
+      $("i_out").innerHTML = `$$\\int \\left(${exprTex}\\right)\\,dt = ${antiTex} + C$$`;
       renderMath($("i_out"));
     } catch (e) {
       $("i_out").innerHTML = `$$\\text{Could not integrate.}\\;\\text{${escapeLatexText(e.message)}}$$`;
@@ -410,7 +403,7 @@
   }
 
   /* =========================
-     MAT276: Partials (Nerdamer -> TeX, force true fractions)
+     MAT276: Partials (Nerdamer -> TeX, then fix fractions)
   ========================= */
   function MAT276_partials(){
     const expr = $("pd_expr").value.trim();
