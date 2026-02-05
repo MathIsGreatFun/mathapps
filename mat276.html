@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MAT276 • Math Apps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root { --card:#fff; --bg:#f4f6f8; --ink:#111827; --muted:#6b7280; --blue:#2563eb; --line:#d1d5db; }
+    body { margin:0; padding:20px; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:var(--bg); color:var(--ink); }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    .card { background:var(--card); border-radius:14px; padding:18px 18px 16px; box-shadow:0 8px 20px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 6px; font-size: 1.45rem; }
+    .sub { margin: 0 0 14px; color: var(--muted); }
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px; }
+    .pill { display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; color:#1f2a6d; font-weight:800; }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 14px; }
+    .tabbtn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
+    .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
+    .panel { display:none; }
+    .panel.active { display:block; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .box { flex: 1 1 480px; border:1px solid var(--line); border-radius:12px; padding:14px; }
+    .boxtitle { margin: 0 0 10px; font-size: 1.05rem; }
+    label { font-size: .9rem; color: var(--muted); display:block; margin: 10px 0 6px; }
+    input[type="number"], input[type="text"] { width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem; }
+    .grid2 { display:grid; grid-template-columns: repeat(2, 120px); gap:10px; }
+    .grid3 { display:grid; grid-template-columns: repeat(3, 120px); gap:10px; }
+    .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
+    button { padding:10px 14px; font-size:1rem; border-radius:10px; border:none; background: var(--blue); color:#fff; cursor:pointer; font-weight:800; }
+    button:hover { filter: brightness(.95); }
+    .out { margin-top:12px; background:#f1f5f9; padding:12px; border-radius:12px; overflow:auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: .95rem; white-space: pre-wrap; }
+  </style>
+
+  <!-- Nerdamer -->
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="toolbar">
+        <div>
+          <h1>Math Apps</h1>
+          <p class="sub">Tools for MAT276.</p>
+        </div>
+        <span class="pill">MAT276</span>
+      </div>
+
+      <div class="tabs">
+        <button class="tabbtn active" data-tab="eigen2">Eigen (2×2)</button>
+        <button class="tabbtn" data-tab="linear2">Linear System (2×2)</button>
+        <button class="tabbtn" data-tab="equilibrium">Equilibrium Points</button>
+        <button class="tabbtn" data-tab="integral">Indefinite Integral</button>
+        <button class="tabbtn" data-tab="partials">Partial Derivatives</button>
+      </div>
+
+      <!-- Eigen 2×2 -->
+      <div class="panel active" id="panel-eigen2">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">2×2 Eigenvalues & Eigenvectors</h2>
+            <label>Matrix A = [[a, b], [c, d]]</label>
+            <div class="grid2">
+              <input id="e2_a" type="number" step="any" value="2" />
+              <input id="e2_b" type="number" step="any" value="1" />
+              <input id="e2_c" type="number" step="any" value="1" />
+              <input id="e2_d" type="number" step="any" value="2" />
+            </div>
+            <div class="actions">
+              <button id="e2_compute">Compute</button>
+            </div>
+            <div class="out" id="e2_out"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linear 2×2 -->
+      <div class="panel" id="panel-linear2">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">Solve a 2×2 Linear System</h2>
+
+            <label>Equation 1: a₁x + b₁y = c₁</label>
+            <div class="grid3">
+              <input id="l_a1" type="number" step="any" value="1" />
+              <input id="l_b1" type="number" step="any" value="1" />
+              <input id="l_c1" type="number" step="any" value="4" />
+            </div>
+
+            <label>Equation 2: a₂x + b₂y = c₂</label>
+            <div class="grid3">
+              <input id="l_a2" type="number" step="any" value="2" />
+              <input id="l_b2" type="number" step="any" value="-1" />
+              <input id="l_c2" type="number" step="any" value="1" />
+            </div>
+
+            <div class="actions">
+              <button id="l_solve">Solve</button>
+            </div>
+
+            <div class="out" id="l_out"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Equilibrium -->
+      <div class="panel" id="panel-equilibrium">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">Equilibrium Points</h2>
+            <label>f(x, y) = 0</label>
+            <input id="n_f" type="text" value="x*x + y*y - 1" />
+            <label>g(x, y) = 0</label>
+            <input id="n_g" type="text" value="y - x" />
+            <div class="actions">
+              <button id="n_find">Find</button>
+            </div>
+            <div class="out" id="n_out"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Integral -->
+      <div class="panel" id="panel-integral">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">Indefinite Integral</h2>
+            <label>∫ f(t) dt</label>
+            <input id="i_expr" type="text" value="t^3 - 4*t + sin(t)" />
+            <div class="actions">
+              <button id="i_integrate">Integrate</button>
+            </div>
+            <div class="out" id="i_out"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partials -->
+      <div class="panel" id="panel-partials">
+        <div class="row">
+          <div class="box">
+            <h2 class="boxtitle">Partial Derivatives</h2>
+            <label>f(x, y)</label>
+            <input id="pd_expr" type="text" value="x^2*y + sin(x*y)" />
+            <div class="actions">
+              <button id="pd_compute">Compute</button>
+            </div>
+            <div class="out" id="pd_out"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script type="module">
+  import { $, isFiniteAll, fmtComplex, fmtVecComplex, eigen2x2, linear2_solve,
+           makeSafeFunction, newton2D, dedupPush } from "./shared-math-tools.js";
+
+  // Tabs
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target;
+    if (!btn.classList || !btn.classList.contains("tabbtn")) return;
+    const tab = btn.dataset.tab;
+
+    document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + tab).classList.add("active");
+  });
+
+  function MAT276_eigen2(){
+    const a = parseFloat($("e2_a").value);
+    const b = parseFloat($("e2_b").value);
+    const c = parseFloat($("e2_c").value);
+    const d = parseFloat($("e2_d").value);
+    if (!isFiniteAll([a,b,c,d])) { $("e2_out").textContent = "Invalid input."; return; }
+
+    const R = eigen2x2(a,b,c,d);
+    $("e2_out").textContent =
+`A = [[${a}, ${b}], [${c}, ${d}]]
+
+λ1 = ${fmtComplex(R.lam1)}
+v1 = ${fmtVecComplex(R.v1)}
+
+λ2 = ${fmtComplex(R.lam2)}
+v2 = ${fmtVecComplex(R.v2)}`;
+  }
+
+  function MAT276_linear2(){
+    $("l_out").textContent = linear2_solve("l");
+  }
+
+  function MAT276_equilibrium(){
+    const fExpr = $("n_f").value.trim();
+    const gExpr = $("n_g").value.trim();
+
+    let f, g;
+    try { f = makeSafeFunction(fExpr); g = makeSafeFunction(gExpr); f(0,0); g(0,0); }
+    catch (e) { $("n_out").textContent = `Error parsing.\n${e.message}`; return; }
+
+    const xmin=-4, xmax=4, ymin=-4, ymax=4;
+    const grid=41, iters=30, tol=1e-9, eps=1e-4;
+
+    const roots = [];
+    for (let i=0;i<grid;i++){
+      const x0 = xmin + (xmax - xmin) * (i/(grid-1));
+      for (let j=0;j<grid;j++){
+        const y0 = ymin + (ymax - ymin) * (j/(grid-1));
+        const res = newton2D(f, g, x0, y0, iters, tol);
+        if (!res) continue;
+        if (res.x < xmin-1e-6 || res.x > xmax+1e-6 || res.y < ymin-1e-6 || res.y > ymax+1e-6) continue;
+        dedupPush(roots, res, eps);
+      }
+    }
+    roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
+
+    if (roots.length === 0) { $("n_out").textContent = "No equilibrium points found."; return; }
+
+    let out = `Equilibrium points (${roots.length}):\n`;
+    for (const r of roots){
+      const xs = r.x.toFixed(10).replace(/\.?0+$/,"");
+      const ys = r.y.toFixed(10).replace(/\.?0+$/,"");
+      out += `(${xs}, ${ys})\n`;
+    }
+    $("n_out").textContent = out.trim();
+  }
+
+  function MAT276_integral(){
+    const expr = $("i_expr").value.trim();
+    if (!expr) { $("i_out").textContent = "Invalid input."; return; }
+    if (typeof nerdamer === "undefined") { $("i_out").textContent = "Symbolic engine not available."; return; }
+
+    try {
+      const antideriv = nerdamer.integrate(expr, "t").simplify();
+      $("i_out").textContent = `${antideriv.toString()} + C`;
+    } catch (e) {
+      $("i_out").textContent = `Could not integrate.\n${e.message}`;
+    }
+  }
+
+  function MAT276_partials(){
+    const expr = $("pd_expr").value.trim();
+    if (!expr) { $("pd_out").textContent = "Invalid input."; return; }
+    if (typeof nerdamer === "undefined") { $("pd_out").textContent = "Symbolic engine not available."; return; }
+
+    try {
+      const fx = nerdamer.diff(expr, "x").simplify().toString();
+      const fy = nerdamer.diff(expr, "y").simplify().toString();
+      $("pd_out").textContent = `∂f/∂x = ${fx}\n∂f/∂y = ${fy}`;
+    } catch (e) {
+      $("pd_out").textContent = `Could not differentiate.\n${e.message}`;
+    }
+  }
+
+  // Buttons
+  document.addEventListener("click", (ev) => {
+    const id = ev.target && ev.target.id;
+    if (id === "e2_compute") MAT276_eigen2();
+    if (id === "l_solve") MAT276_linear2();
+    if (id === "n_find") MAT276_equilibrium();
+    if (id === "i_integrate") MAT276_integral();
+    if (id === "pd_compute") MAT276_partials();
+  });
+
+  MAT276_eigen2();
+  MAT276_linear2();
+  MAT276_equilibrium();
+  MAT276_integral();
+  MAT276_partials();
+</script>
+</body>
+</html>
