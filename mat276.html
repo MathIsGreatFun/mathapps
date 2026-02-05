@@ -179,7 +179,6 @@
      KaTeX render helper
   ========================= */
   function renderMath(el){
-    // module scripts + defer scripts timing can vary; retry until available
     if (typeof renderMathInElement !== "function") {
       setTimeout(() => renderMath(el), 0);
       return;
@@ -194,10 +193,34 @@
   }
 
   /* =========================
+     TeX post-processing:
+     - convert inline numeric "1/4" style into \frac{1}{4}
+     - also handle forms like ( -3/7 ) and standalone -3/7
+  ========================= */
+  function forceTeXFractions(tex){
+    if (!tex) return tex;
+
+    // 1) Convert parenthesized numeric fractions: (1/4) or (-3/7)
+    tex = tex.replace(/\(\s*(-?\d+)\s*\/\s*(\d+)\s*\)/g, "\\\\frac{$1}{$2}");
+
+    // 2) Convert standalone numeric fractions that are not already inside a command.
+    // Avoid touching things that already look like \frac{...}{...}
+    // This is conservative: only integers over integers.
+    tex = tex.replace(/(^|[^\\\w])(-?\d+)\s*\/\s*(\d+)(?!\w)/g, (m, pre, a, b) => {
+      return `${pre}\\\\frac{${a}}{${b}}`;
+    });
+
+    // 3) If Nerdamer gives "*", KaTeX is okay, but \cdot looks nicer.
+    // Keep it mild: only replace " * " with " \\cdot "
+    tex = tex.replace(/\s\*\s/g, " \\\\cdot ");
+
+    return tex;
+  }
+
+  /* =========================
      Formatting helpers (LaTeX)
   ========================= */
   function trimFixed(x, digits=6){
-    // avoid "-0"
     const y = Math.abs(x) < 1e-12 ? 0 : x;
     return y.toFixed(digits).replace(/\.?0+$/,"");
   }
@@ -220,8 +243,6 @@
   }
 
   function latexColVectorFromComplexArray(v){
-    // If complex entries appear, normalize like your previous display:
-    // divide by the largest-magnitude entry so it looks "nice".
     let vv = v.slice();
     let maxIdx = 0;
     for (let i=1;i<vv.length;i++) if (cAbs(vv[i]) > cAbs(vv[maxIdx])) maxIdx = i;
@@ -237,7 +258,6 @@
   }
 
   function escapeLatexText(s){
-    // minimal escaping for showing user-entered strings in \text{...}
     return s.replace(/\\/g,"\\textbackslash ")
             .replace(/%/g,"\\%")
             .replace(/_/g,"\\_")
@@ -298,15 +318,8 @@
       return;
     }
 
-    // sol looks like:
-    // x = ...
-    // y = ...
     const lines = sol.split("\n").map(s => s.trim());
-    const texLines = lines.map(s => {
-      // "x = 1.23" -> "x = 1.23"
-      // keep as math
-      return s.replace(/^x\s*=\s*/,"x = ").replace(/^y\s*=\s*/,"y = ");
-    });
+    const texLines = lines.map(s => s.replace(/^x\s*=\s*/,"x = ").replace(/^y\s*=\s*/,"y = "));
 
     $("l_out").innerHTML = `
       $$\\begin{aligned}
@@ -369,7 +382,7 @@
   }
 
   /* =========================
-     MAT276: Integral (Nerdamer -> TeX)
+     MAT276: Integral (Nerdamer -> TeX, force true fractions)
   ========================= */
   function MAT276_integral(){
     const expr = $("i_expr").value.trim();
@@ -378,8 +391,13 @@
 
     try {
       const antideriv = nerdamer.integrate(expr, "t").simplify();
-      const exprTex = nerdamer(expr).toTeX();
-      const antiTex = (typeof antideriv.toTeX === "function") ? antideriv.toTeX() : antideriv.toString();
+
+      // Get TeX from Nerdamer, then post-process:
+      const exprTexRaw = nerdamer(expr).toTeX();
+      const antiTexRaw = (typeof antideriv.toTeX === "function") ? antideriv.toTeX() : antideriv.toString();
+
+      const exprTex = forceTeXFractions(exprTexRaw);
+      const antiTex = forceTeXFractions(antiTexRaw);
 
       $("i_out").innerHTML = `
         $$\\int \\left(${exprTex}\\right)\\,dt = ${antiTex} + C$$
@@ -392,7 +410,7 @@
   }
 
   /* =========================
-     MAT276: Partials (Nerdamer -> TeX)
+     MAT276: Partials (Nerdamer -> TeX, force true fractions)
   ========================= */
   function MAT276_partials(){
     const expr = $("pd_expr").value.trim();
@@ -400,11 +418,15 @@
     if (typeof nerdamer === "undefined") { $("pd_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("pd_out")); return; }
 
     try {
-      const fTex = nerdamer(expr).toTeX();
+      const fTexRaw = nerdamer(expr).toTeX();
       const fxObj = nerdamer.diff(expr, "x").simplify();
       const fyObj = nerdamer.diff(expr, "y").simplify();
-      const fxTex = (typeof fxObj.toTeX === "function") ? fxObj.toTeX() : fxObj.toString();
-      const fyTex = (typeof fyObj.toTeX === "function") ? fyObj.toTeX() : fyObj.toString();
+      const fxTexRaw = (typeof fxObj.toTeX === "function") ? fxObj.toTeX() : fxObj.toString();
+      const fyTexRaw = (typeof fyObj.toTeX === "function") ? fyObj.toTeX() : fyObj.toString();
+
+      const fTex  = forceTeXFractions(fTexRaw);
+      const fxTex = forceTeXFractions(fxTexRaw);
+      const fyTex = forceTeXFractions(fyTexRaw);
 
       $("pd_out").innerHTML = `
         $$ f(x,y) = ${fTex} $$
