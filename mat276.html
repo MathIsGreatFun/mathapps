@@ -8,7 +8,7 @@
   <style>
     :root { --card:#fff; --bg:#f4f6f8; --ink:#111827; --muted:#6b7280; --blue:#2563eb; --line:#d1d5db; }
     body { margin:0; padding:20px; font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif; background:var(--bg); color:var(--ink); }
-    .wrap { max-width: 1120px; margin: 0 auto; }
+    .wrap { max-width: 1180px; margin: 0 auto; }
     .card { background:var(--card); border-radius:14px; padding:18px 18px 16px; box-shadow:0 8px 20px rgba(0,0,0,.08); }
     h1 { margin: 0 0 6px; font-size: 1.45rem; }
     .sub { margin: 0 0 14px; color: var(--muted); }
@@ -19,16 +19,15 @@
     .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
     .panel { display:none; }
     .panel.active { display:block; }
-    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; }
     .box { flex: 1 1 480px; border:1px solid var(--line); border-radius:12px; padding:14px; background:#fff; }
     .boxtitle { margin: 0 0 10px; font-size: 1.05rem; }
     label { font-size: .9rem; color: var(--muted); display:block; margin: 10px 0 6px; }
     input[type="number"], input[type="text"], select {
-      width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem;
-      background:#fff;
+      width:100%; box-sizing:border-box; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:1rem; background:#fff;
     }
-    .grid2 { display:grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap:10px; }
-    .grid3 { display:grid; grid-template-columns: repeat(3, minmax(140px, 1fr)); gap:10px; }
+    .grid2 { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+    .grid3 { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:10px; }
     .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px; }
     button { padding:10px 14px; font-size:1rem; border-radius:10px; border:none; background: var(--blue); color:#fff; cursor:pointer; font-weight:800; }
     button:hover { filter: brightness(.95); }
@@ -43,7 +42,18 @@
     }
     .out .katex { font-size: 1.02em; }
 
-    /* Slope field canvas */
+    /* Slope field layout fixes */
+    .left-scroll {
+      max-height: 74vh;
+      overflow:auto;
+      padding-right: 6px;
+    }
+    .hint { color: var(--muted); font-size:.92rem; margin-top:8px; }
+    .tiny { font-size:.9rem; color:var(--muted); }
+    .checkrow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+    .checkrow label { margin:0; display:flex; gap:8px; align-items:center; color:var(--muted); }
+    .checkrow input { width:auto; }
+
     .canvas-wrap{
       width:100%;
       border:1px solid var(--line);
@@ -52,11 +62,42 @@
       background:#fff;
     }
     canvas{ display:block; width:100%; height:auto; }
-    .hint { color: var(--muted); font-size:.92rem; margin-top:8px; }
-    .tiny { font-size:.9rem; color:var(--muted); }
-    .checkrow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:8px; }
-    .checkrow label { margin:0; display:flex; gap:8px; align-items:center; color:var(--muted); }
-    .checkrow input { width:auto; }
+
+    .mini-title { margin:10px 0 6px; font-size: .95rem; color: var(--muted); font-weight:700; }
+
+    .table-wrap{
+      border:1px solid var(--line);
+      border-radius:12px;
+      overflow:hidden;
+      background:#fff;
+    }
+    .table-scroll{
+      max-height: 360px;
+      overflow:auto;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: .92rem;
+    }
+    thead th{
+      position:sticky; top:0;
+      background:#f8fafc;
+      border-bottom:1px solid var(--line);
+      padding:10px;
+      text-align:left;
+      z-index:1;
+    }
+    tbody td{
+      border-bottom:1px solid #edf2f7;
+      padding:8px 10px;
+      white-space:nowrap;
+    }
+
+    @media (max-width: 980px){
+      .left-scroll{ max-height:none; }
+    }
   </style>
 
   <!-- Nerdamer -->
@@ -187,93 +228,145 @@
       <!-- Slope Field -->
       <div class="panel" id="panel-slopefield">
         <div class="row">
-          <div class="box" style="flex: 1 1 360px;">
-            <h2 class="boxtitle">Slope Field for \(y' = f(x,y)\)</h2>
+          <div class="box" style="flex: 1 1 380px;">
+            <div class="left-scroll">
+              <h2 class="boxtitle">Slope Field for \(y' = f(t,y)\)</h2>
 
-            <label>Enter \(f(x,y)\) (use x and y; functions like sin, cos, exp, ln, sqrt)</label>
-            <input id="sf_expr" type="text" value="x - y" />
+              <label>Enter \(f(t,y)\) (use t and y; functions like sin, cos, exp, ln, sqrt)</label>
+              <input id="sf_expr" type="text" value="t - y" />
 
-            <div class="grid2">
-              <div>
-                <label>x-min</label>
-                <input id="sf_xmin" type="number" step="any" value="-4" />
+              <div class="grid2">
+                <div>
+                  <label>t-min</label>
+                  <input id="sf_tmin" type="number" step="any" value="-4" />
+                </div>
+                <div>
+                  <label>t-max</label>
+                  <input id="sf_tmax" type="number" step="any" value="4" />
+                </div>
+                <div>
+                  <label>y-min</label>
+                  <input id="sf_ymin" type="number" step="any" value="-4" />
+                </div>
+                <div>
+                  <label>y-max</label>
+                  <input id="sf_ymax" type="number" step="any" value="4" />
+                </div>
               </div>
-              <div>
-                <label>x-max</label>
-                <input id="sf_xmax" type="number" step="any" value="4" />
+
+              <div class="grid2">
+                <div>
+                  <label>Field grid (segments per side)</label>
+                  <input id="sf_grid" type="number" step="1" value="21" min="5" />
+                </div>
+                <div>
+                  <label>Segment length (px)</label>
+                  <input id="sf_len" type="number" step="1" value="14" min="4" />
+                </div>
               </div>
-              <div>
-                <label>y-min</label>
-                <input id="sf_ymin" type="number" step="any" value="-4" />
+
+              <div class="grid2">
+                <div>
+                  <label>Method</label>
+                  <select id="sf_method">
+                    <option value="rk4" selected>Runge–Kutta (RK4)</option>
+                    <option value="euler">Euler</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Solver step \(h\)</label>
+                  <input id="sf_h" type="number" step="any" value="0.05" min="0.000001" />
+                </div>
               </div>
-              <div>
-                <label>y-max</label>
-                <input id="sf_ymax" type="number" step="any" value="4" />
+
+              <div class="grid2">
+                <div>
+                  <label>Max steps (each direction)</label>
+                  <input id="sf_steps" type="number" step="1" value="2500" min="50" />
+                </div>
+                <div>
+                  <label>Curve thickness (px)</label>
+                  <input id="sf_thick" type="number" step="1" value="2" min="1" max="6" />
+                </div>
               </div>
+
+              <div class="mini-title">Add an Initial Value Problem (IVP)</div>
+              <div class="grid2">
+                <div>
+                  <label>\(t_0\)</label>
+                  <input id="sf_t0" type="number" step="any" value="0" />
+                </div>
+                <div>
+                  <label>\(y_0\)</label>
+                  <input id="sf_y0" type="number" step="any" value="1" />
+                </div>
+              </div>
+
+              <div class="actions">
+                <button id="sf_add_ivp">Add IVP</button>
+                <button class="btn-ghost" id="sf_clear">Clear all curves</button>
+              </div>
+
+              <div class="checkrow">
+                <label><input id="sf_both" type="checkbox" checked /> Plot forward & backward in \(t\)</label>
+                <label><input id="sf_axes" type="checkbox" checked /> Show axes</label>
+                <label><input id="sf_gridlines" type="checkbox" /> Show gridlines</label>
+                <label><input id="sf_show_dydt" type="checkbox" /> Show \(y'(t)\) on time plot</label>
+              </div>
+
+              <div class="mini-title">Table controls (sampling)</div>
+              <div class="grid2">
+                <div>
+                  <label>Display step \(\Delta t_{\text{table}}\)</label>
+                  <input id="sf_dt_table" type="number" step="any" value="0.5" min="0.000001" />
+                </div>
+                <div>
+                  <label>Max table rows</label>
+                  <input id="sf_max_rows" type="number" step="1" value="100" min="10" max="500" />
+                </div>
+              </div>
+
+              <div class="actions">
+                <button id="sf_draw">Draw field</button>
+              </div>
+
+              <div class="hint">
+                <b>Click</b> on the slope field to add an IVP at that point. <br/>
+                <b>Drag</b> to pan. <b>Wheel</b> to zoom.
+              </div>
+
+              <div class="out" id="sf_out"></div>
             </div>
-
-            <div class="grid2">
-              <div>
-                <label>Grid (segments per side)</label>
-                <input id="sf_grid" type="number" step="1" value="21" min="5" />
-              </div>
-              <div>
-                <label>Segment length (px)</label>
-                <input id="sf_len" type="number" step="1" value="14" min="4" />
-              </div>
-            </div>
-
-            <div class="grid2">
-              <div>
-                <label>Method</label>
-                <select id="sf_method">
-                  <option value="rk4" selected>Runge–Kutta (RK4)</option>
-                  <option value="euler">Euler</option>
-                </select>
-              </div>
-              <div>
-                <label>Step size \(h\)</label>
-                <input id="sf_h" type="number" step="any" value="0.05" min="0.0001" />
-              </div>
-            </div>
-
-            <div class="grid2">
-              <div>
-                <label>Max steps (each direction)</label>
-                <input id="sf_steps" type="number" step="1" value="2500" min="50" />
-              </div>
-              <div>
-                <label>Curve thickness (px)</label>
-                <input id="sf_thick" type="number" step="1" value="2" min="1" max="6" />
-              </div>
-            </div>
-
-            <div class="checkrow">
-              <label><input id="sf_both" type="checkbox" checked /> Plot forward & backward in \(x\)</label>
-              <label><input id="sf_axes" type="checkbox" checked /> Show axes</label>
-              <label><input id="sf_gridlines" type="checkbox" /> Show gridlines</label>
-            </div>
-
-            <div class="actions">
-              <button id="sf_draw">Draw field</button>
-              <button class="btn-ghost" id="sf_clear">Clear curves</button>
-            </div>
-
-            <div class="hint">
-              Click the graph to add an initial point \((x_0,y_0)\) and plot a solution curve.
-            </div>
-
-            <div class="out" id="sf_out"></div>
           </div>
 
-          <div class="box" style="flex: 2 1 560px;">
+          <div class="box" style="flex: 2 1 620px;">
             <h2 class="boxtitle">Slope Field</h2>
             <div class="canvas-wrap">
-              <canvas id="sf_canvas" width="900" height="600"></canvas>
+              <canvas id="sf_canvas" width="1000" height="620"></canvas>
             </div>
-            <div class="tiny" style="margin-top:8px;">
-              Tip: if the field looks “too vertical,” try a smaller window or fewer grid segments.
+
+            <div class="mini-title">Time plot (for selected curve)</div>
+            <div class="canvas-wrap">
+              <canvas id="sf_timeplot" width="1000" height="260"></canvas>
             </div>
+            <div class="tiny" id="sf_selected_label" style="margin-top:8px;"></div>
+
+            <div class="mini-title">Table (sampled)</div>
+            <div class="table-wrap">
+              <div class="table-scroll">
+                <table id="sf_table">
+                  <thead>
+                    <tr>
+                      <th>t</th>
+                      <th>y(t)</th>
+                      <th>y'(t)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -307,40 +400,34 @@
   }
 
   /* =========================
-     Nerdamer string -> TeX (robust enough for your apps)
+     Nerdamer string -> TeX (small, reliable subset)
   ========================= */
   function tokenize(s){
     const tokens = [];
     let i = 0;
-    const isSpace = (ch) => /\s/.test(ch);
+    const isSpace = (ch) => /\\s/.test(ch);
     const isDigit = (ch) => /[0-9]/.test(ch);
     const isAlpha = (ch) => /[A-Za-z_]/.test(ch);
-
     while (i < s.length){
       const ch = s[i];
       if (isSpace(ch)) { i++; continue; }
       if ("+-*/^(),".includes(ch)) { tokens.push({type:"op", value: ch}); i++; continue; }
-
       if (isDigit(ch) || (ch==="." && i+1<s.length && isDigit(s[i+1]))) {
         let j=i; while (j<s.length && (isDigit(s[j]) || s[j]===".")) j++;
         tokens.push({type:"num", value:s.slice(i,j)}); i=j; continue;
       }
-
       if (isAlpha(ch)) {
         let j=i; while (j<s.length && /[A-Za-z0-9_]/.test(s[j])) j++;
         tokens.push({type:"id", value:s.slice(i,j)}); i=j; continue;
       }
-
       tokens.push({type:"unk", value: ch}); i++;
     }
     return tokens;
   }
-
   function parseToAST(tokens){
     let pos = 0;
     const peek = () => tokens[pos];
     const take = () => tokens[pos++];
-
     function parseExpression(){
       let node = parseTerm();
       while (peek() && peek().type==="op" && (peek().value==="+" || peek().value==="-")){
@@ -350,7 +437,6 @@
       }
       return node;
     }
-
     function parseTerm(){
       let node = parsePower();
       while (peek() && peek().type==="op" && (peek().value==="*" || peek().value==="/")){
@@ -360,7 +446,6 @@
       }
       return node;
     }
-
     function parsePower(){
       let node = parseUnary();
       if (peek() && peek().type==="op" && peek().value==="^"){
@@ -370,7 +455,6 @@
       }
       return node;
     }
-
     function parseUnary(){
       if (peek() && peek().type==="op" && (peek().value==="+" || peek().value==="-")){
         const op = take().value;
@@ -379,38 +463,31 @@
       }
       return parsePrimary();
     }
-
     function parsePrimary(){
       const t = peek();
       if (!t) return {type:"num", value:"0"};
-
       if (t.type==="num"){ take(); return {type:"num", value:t.value}; }
-
       if (t.type==="id"){
         const id = take().value;
         if (peek() && peek().type==="op" && peek().value==="("){
-          take(); // (
+          take();
           const arg = parseExpression();
           if (peek() && peek().type==="op" && peek().value===")") take();
           return {type:"call", name:id, arg};
         }
         return {type:"id", value:id};
       }
-
       if (t.type==="op" && t.value==="("){
         take();
         const inside = parseExpression();
         if (peek() && peek().type==="op" && peek().value===")") take();
         return {type:"group", inner: inside};
       }
-
       take();
       return {type:"id", value:t.value};
     }
-
     return parseExpression();
   }
-
   function astToTeX(node){
     function wrapIfNeeded(n, tex){
       if (!n) return tex;
@@ -418,7 +495,6 @@
       if (n.type==="un") return `\\left(${tex}\\right)`;
       return tex;
     }
-
     switch(node.type){
       case "num": return node.value;
       case "id": {
@@ -453,19 +529,18 @@
       default: return "";
     }
   }
-
   function nerdamerStringToTeX(s){
-    const cleaned = String(s).replace(/\s+/g, "");
+    const cleaned = String(s).replace(/\\s+/g, "");
     const ast = parseToAST(tokenize(cleaned));
     return astToTeX(ast);
   }
 
   /* =========================
-     Eigen formatting helpers
+     Existing MAT276 tools
   ========================= */
   function trimFixed(x, digits=6){
     const y = Math.abs(x) < 1e-12 ? 0 : x;
-    return y.toFixed(digits).replace(/\.?0+$/,"");
+    return y.toFixed(digits).replace(/\\.?0+$/,"");
   }
   function latexComplex(z){
     const re = Math.abs(z.re) < 1e-12 ? 0 : z.re;
@@ -494,7 +569,7 @@
     return `\\begin{pmatrix}${a} & ${b}\\\\${c} & ${d}\\end{pmatrix}`;
   }
   function escapeLatexText(s){
-    return String(s).replace(/\\/g,"\\textbackslash ")
+    return String(s).replace(/\\\\/g,"\\textbackslash ")
                     .replace(/%/g,"\\%")
                     .replace(/_/g,"\\_")
                     .replace(/#/g,"\\#")
@@ -502,46 +577,21 @@
                     .replace(/}/g,"\\}");
   }
 
-  /* =========================
-     Tabs
-  ========================= */
-  document.addEventListener("click", (ev) => {
-    const btn = ev.target;
-    if (!btn.classList || !btn.classList.contains("tabbtn")) return;
-    const tab = btn.dataset.tab;
-
-    document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("panel-" + tab).classList.add("active");
-
-    if (tab === "slopefield") { setTimeout(() => SF_redraw(), 0); }
-  });
-
-  /* =========================
-     MAT276: Eigen 2×2
-  ========================= */
   function MAT276_eigen2(){
     const a = parseFloat($("e2_a").value);
     const b = parseFloat($("e2_b").value);
     const c = parseFloat($("e2_c").value);
     const d = parseFloat($("e2_d").value);
     if (!isFiniteAll([a,b,c,d])) { $("e2_out").textContent = "Invalid input."; return; }
-
     const R = eigen2x2(a,b,c,d);
-    const Atex = latexMatrix2x2(a,b,c,d);
-
     $("e2_out").innerHTML = `
-      $$ A = ${Atex} $$
+      $$ A = ${latexMatrix2x2(a,b,c,d)} $$
       $$ \\lambda_1 = ${latexComplex(R.lam1)},\\quad \\mathbf{v}_1 = ${latexColVectorFromComplexArray(R.v1)} $$
       $$ \\lambda_2 = ${latexComplex(R.lam2)},\\quad \\mathbf{v}_2 = ${latexColVectorFromComplexArray(R.v2)} $$
     `;
     renderMath($("e2_out"));
   }
 
-  /* =========================
-     MAT276: Linear 2×2
-  ========================= */
   function MAT276_linear2(){
     const sol = linear2_solve("l");
     if (sol === "Invalid input." || sol === "Infinitely many solutions." || sol === "No solution.") {
@@ -549,18 +599,14 @@
       renderMath($("l_out"));
       return;
     }
-    const lines = sol.split("\n").map(s => s.trim()).map(s => s.replace(/^x\s*=\s*/,"x = ").replace(/^y\s*=\s*/,"y = "));
+    const lines = sol.split("\\n").map(s => s.trim()).map(s => s.replace(/^x\\s*=\\s*/,"x = ").replace(/^y\\s*=\\s*/,"y = "));
     $("l_out").innerHTML = `$$\\begin{aligned}${lines.join(" \\\\ ")}\\end{aligned}$$`;
     renderMath($("l_out"));
   }
 
-  /* =========================
-     MAT276: Equilibrium Points
-  ========================= */
   function MAT276_equilibrium(){
     const fExpr = $("n_f").value.trim();
     const gExpr = $("n_g").value.trim();
-
     let f, g;
     try { f = makeSafeFunction(fExpr); g = makeSafeFunction(gExpr); f(0,0); g(0,0); }
     catch (e) { $("n_out").innerHTML = `$$\\text{Error parsing.}\\;\\text{${escapeLatexText(e.message)}}$$`; renderMath($("n_out")); return; }
@@ -580,22 +626,16 @@
       }
     }
     roots.sort((p,q) => (p.x - q.x) || (p.y - q.y));
-
     if (roots.length === 0) { $("n_out").innerHTML = `$$\\text{No equilibrium points found.}$$`; renderMath($("n_out")); return; }
-
-    const pts = roots.map(r => `\\left(${r.x.toFixed(10).replace(/\.?0+$/,"")},\\;${r.y.toFixed(10).replace(/\.?0+$/,"")}\\right)`);
+    const pts = roots.map(r => `\\left(${r.x.toFixed(10).replace(/\\.?0+$/,"")},\\;${r.y.toFixed(10).replace(/\\.?0+$/,"")}\\right)`);
     $("n_out").innerHTML = `$$\\begin{aligned}\\text{Equilibrium points (${roots.length}):}\\\\${pts.join("\\\\")}\\end{aligned}$$`;
     renderMath($("n_out"));
   }
 
-  /* =========================
-     MAT276: Integral (Nerdamer -> string -> TeX)
-  ========================= */
   function MAT276_integral(){
     const expr = $("i_expr").value.trim();
     if (!expr) { $("i_out").innerHTML = `$$\\text{Invalid input.}$$`; renderMath($("i_out")); return; }
     if (typeof nerdamer === "undefined") { $("i_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("i_out")); return; }
-
     try {
       const antiStr = nerdamer.integrate(expr, "t").simplify().toString();
       const exprStr = nerdamer(expr).simplify().toString();
@@ -609,23 +649,17 @@
     }
   }
 
-  /* =========================
-     MAT276: Partials (Nerdamer -> string -> TeX)
-  ========================= */
   function MAT276_partials(){
     const expr = $("pd_expr").value.trim();
     if (!expr) { $("pd_out").innerHTML = `$$\\text{Invalid input.}$$`; renderMath($("pd_out")); return; }
     if (typeof nerdamer === "undefined") { $("pd_out").innerHTML = `$$\\text{Symbolic engine not available.}$$`; renderMath($("pd_out")); return; }
-
     try {
       const fStr  = nerdamer(expr).simplify().toString();
       const fxStr = nerdamer.diff(expr, "x").simplify().toString();
       const fyStr = nerdamer.diff(expr, "y").simplify().toString();
-
       const fTex  = nerdamerStringToTeX(fStr);
       const fxTex = nerdamerStringToTeX(fxStr);
       const fyTex = nerdamerStringToTeX(fyStr);
-
       $("pd_out").innerHTML = `
         $$ f(x,y) = ${fTex} $$
         $$ \\frac{\\partial f}{\\partial x} = ${fxTex} $$
@@ -639,18 +673,39 @@
   }
 
   /* =========================
-     Slope Field Tab
+     Tabs
+  ========================= */
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target;
+    if (!btn.classList || !btn.classList.contains("tabbtn")) return;
+    const tab = btn.dataset.tab;
+    document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + tab).classList.add("active");
+    if (tab === "slopefield") setTimeout(() => SF_redraw(), 0);
+  });
+
+  /* =========================
+     Slope Field + IVPs + Pan/Zoom + Timeplot + Table sampling
   ========================= */
   const SF = {
     canvas: null,
     ctx: null,
-    curves: [], // {x0,y0, pts:[{x,y}], colorIdx}
+    timeCanvas: null,
+    timeCtx: null,
+    curves: [],       // each: {t0,y0, pts:[{t,y,dydt}], colorIdx}
+    selectedIdx: 0,
     colors: ["#2563eb","#059669","#d97706","#dc2626","#7c3aed","#0ea5e9","#111827"],
+
+    // pan/zoom state
+    dragging: false,
+    dragStart: null, // {px,py, tmin,tmax, ymin,ymax}
   };
 
   function SF_getParams(){
-    const xmin = parseFloat($("sf_xmin").value);
-    const xmax = parseFloat($("sf_xmax").value);
+    const tmin = parseFloat($("sf_tmin").value);
+    const tmax = parseFloat($("sf_tmax").value);
     const ymin = parseFloat($("sf_ymin").value);
     const ymax = parseFloat($("sf_ymax").value);
     const grid = parseInt($("sf_grid").value, 10);
@@ -661,68 +716,74 @@
     const both = $("sf_both").checked;
     const axes = $("sf_axes").checked;
     const gridlines = $("sf_gridlines").checked;
+    const showDydt = $("sf_show_dydt").checked;
     const method = $("sf_method").value;
     const expr = $("sf_expr").value.trim();
 
-    return {xmin,xmax,ymin,ymax,grid,len,h,steps,thick,both,axes,gridlines,method,expr};
+    const dtTable = parseFloat($("sf_dt_table").value);
+    const maxRows = parseInt($("sf_max_rows").value, 10);
+
+    return {tmin,tmax,ymin,ymax,grid,len,h,steps,thick,both,axes,gridlines,showDydt,method,expr,dtTable,maxRows};
   }
 
-  function SF_worldToPx(p, x, y){
-    const {xmin,xmax,ymin,ymax} = p;
+  function SF_setWindow(tmin,tmax,ymin,ymax){
+    $("sf_tmin").value = tmin;
+    $("sf_tmax").value = tmax;
+    $("sf_ymin").value = ymin;
+    $("sf_ymax").value = ymax;
+  }
+
+  function SF_worldToPx(p, t, y){
     const W = SF.canvas.width, H = SF.canvas.height;
-    const u = (x - xmin) / (xmax - xmin);
-    const v = (y - ymin) / (ymax - ymin);
+    const u = (t - p.tmin) / (p.tmax - p.tmin);
+    const v = (y - p.ymin) / (p.ymax - p.ymin);
     return { px: u * W, py: (1 - v) * H };
   }
 
   function SF_pxToWorld(p, px, py){
-    const {xmin,xmax,ymin,ymax} = p;
     const W = SF.canvas.width, H = SF.canvas.height;
     const u = px / W;
     const v = 1 - (py / H);
-    return { x: xmin + u*(xmax-xmin), y: ymin + v*(ymax-ymin) };
+    return { t: p.tmin + u*(p.tmax-p.tmin), y: p.ymin + v*(p.ymax-p.ymin) };
   }
 
   function SF_drawAxes(p){
     const ctx = SF.ctx;
-    const {xmin,xmax,ymin,ymax} = p;
     const W = SF.canvas.width, H = SF.canvas.height;
 
     ctx.save();
     ctx.lineWidth = 1;
 
-    // optional light gridlines
     if (p.gridlines) {
       ctx.strokeStyle = "#e5e7eb";
       const n = 8;
       for (let i=0;i<=n;i++){
-        const x = xmin + (xmax-xmin)*(i/n);
-        const pt1 = SF_worldToPx(p, x, ymin);
-        const pt2 = SF_worldToPx(p, x, ymax);
-        ctx.beginPath(); ctx.moveTo(pt1.px, pt1.py); ctx.lineTo(pt2.px, pt2.py); ctx.stroke();
+        const t = p.tmin + (p.tmax-p.tmin)*(i/n);
+        const a = SF_worldToPx(p, t, p.ymin);
+        const b = SF_worldToPx(p, t, p.ymax);
+        ctx.beginPath(); ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py); ctx.stroke();
       }
       for (let j=0;j<=n;j++){
-        const y = ymin + (ymax-ymin)*(j/n);
-        const pt1 = SF_worldToPx(p, xmin, y);
-        const pt2 = SF_worldToPx(p, xmax, y);
-        ctx.beginPath(); ctx.moveTo(pt1.px, pt1.py); ctx.lineTo(pt2.px, pt2.py); ctx.stroke();
+        const y = p.ymin + (p.ymax-p.ymin)*(j/n);
+        const a = SF_worldToPx(p, p.tmin, y);
+        const b = SF_worldToPx(p, p.tmax, y);
+        ctx.beginPath(); ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py); ctx.stroke();
       }
     }
 
-    // axes x=0, y=0 if in window
+    // axes t=0 and y=0 if in window
     ctx.strokeStyle = "#9ca3af";
-    if (xmin < 0 && xmax > 0){
-      const a = SF_worldToPx(p, 0, ymin);
-      const b = SF_worldToPx(p, 0, ymax);
+    if (p.tmin < 0 && p.tmax > 0){
+      const a = SF_worldToPx(p, 0, p.ymin);
+      const b = SF_worldToPx(p, 0, p.ymax);
       ctx.beginPath(); ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py); ctx.stroke();
     }
-    if (ymin < 0 && ymax > 0){
-      const a = SF_worldToPx(p, xmin, 0);
-      const b = SF_worldToPx(p, xmax, 0);
+    if (p.ymin < 0 && p.ymax > 0){
+      const a = SF_worldToPx(p, p.tmin, 0);
+      const b = SF_worldToPx(p, p.tmax, 0);
       ctx.beginPath(); ctx.moveTo(a.px, a.py); ctx.lineTo(b.px, b.py); ctx.stroke();
     }
 
-    // border
     ctx.strokeStyle = "#d1d5db";
     ctx.strokeRect(0.5,0.5,W-1,H-1);
 
@@ -731,94 +792,101 @@
 
   function SF_drawField(p, f){
     const ctx = SF.ctx;
-    const {xmin,xmax,ymin,ymax,grid,len} = p;
-
     ctx.save();
     ctx.strokeStyle = "#111827";
     ctx.lineWidth = 1;
 
-    const nx = Math.max(5, grid);
-    const ny = Math.max(5, grid);
+    const nt = Math.max(5, p.grid|0);
+    const ny = Math.max(5, p.grid|0);
 
-    for (let i=0;i<nx;i++){
-      const x = xmin + (xmax-xmin) * (i/(nx-1));
+    for (let i=0;i<nt;i++){
+      const t = p.tmin + (p.tmax-p.tmin) * (i/(nt-1));
       for (let j=0;j<ny;j++){
-        const y = ymin + (ymax-ymin) * (j/(ny-1));
-
-        let m = f(x,y);
+        const y = p.ymin + (p.ymax-p.ymin) * (j/(ny-1));
+        let m = f(t,y);
         if (!Number.isFinite(m)) continue;
 
         // direction vector (1, m), normalize
         let vx = 1, vy = m;
-
-        // if extremely steep, make it near vertical
         const mag = Math.hypot(vx, vy);
         if (!Number.isFinite(mag) || mag < 1e-14) continue;
         vx /= mag; vy /= mag;
 
-        const center = SF_worldToPx(p, x, y);
-
-        // scale by len in pixels, but account for aspect ratio of units:
-        // We'll draw in pixel space using the normalized vector, so compute endpoints in pixel coords.
-        const dx = vx * len;
-        const dy = -vy * len; // minus because pixel y increases downward
+        const c = SF_worldToPx(p, t, y);
+        const dx = vx * p.len;
+        const dy = -vy * p.len;
 
         ctx.beginPath();
-        ctx.moveTo(center.px - dx, center.py - dy);
-        ctx.lineTo(center.px + dx, center.py + dy);
+        ctx.moveTo(c.px - dx, c.py - dy);
+        ctx.lineTo(c.px + dx, c.py + dy);
         ctx.stroke();
       }
     }
-
     ctx.restore();
   }
 
-  function SF_rk4Step(f, x, y, h){
-    const k1 = f(x, y);
-    const k2 = f(x + h/2, y + h*k1/2);
-    const k3 = f(x + h/2, y + h*k2/2);
-    const k4 = f(x + h,   y + h*k3);
+  function SF_rk4Step(f, t, y, h){
+    const k1 = f(t, y);
+    const k2 = f(t + h/2, y + h*k1/2);
+    const k3 = f(t + h/2, y + h*k2/2);
+    const k4 = f(t + h,   y + h*k3);
     if (![k1,k2,k3,k4].every(Number.isFinite)) return null;
-    return y + (h/6)*(k1 + 2*k2 + 2*k3 + k4);
+    return { y: y + (h/6)*(k1 + 2*k2 + 2*k3 + k4), dydt: k1 };
   }
-
-  function SF_eulerStep(f, x, y, h){
-    const k1 = f(x, y);
+  function SF_eulerStep(f, t, y, h){
+    const k1 = f(t, y);
     if (!Number.isFinite(k1)) return null;
-    return y + h*k1;
+    return { y: y + h*k1, dydt: k1 };
   }
 
-  function SF_traceCurve(p, f, x0, y0, dir){
-    const {xmin,xmax,ymin,ymax,h,steps,method} = p;
-    const hh = dir * h;
+  function SF_traceCurve(p, f, t0, y0, dir){
+    const hh = dir * p.h;
     const pts = [];
+    let t = t0, y = y0;
 
-    let x = x0, y = y0;
-    for (let n=0; n<steps; n++){
-      if (x < xmin || x > xmax || y < ymin || y > ymax) break;
-      pts.push({x,y});
+    for (let n=0; n<p.steps; n++){
+      if (t < p.tmin || t > p.tmax || y < p.ymin || y > p.ymax) break;
 
-      let yNext = null;
-      if (method === "euler") yNext = SF_eulerStep(f, x, y, hh);
-      else yNext = SF_rk4Step(f, x, y, hh);
+      const dydt_here = f(t,y);
+      pts.push({t, y, dydt: Number.isFinite(dydt_here) ? dydt_here : NaN});
 
-      if (yNext === null || !Number.isFinite(yNext)) break;
-      x = x + hh;
-      y = yNext;
+      let stepRes = null;
+      if (p.method === "euler") stepRes = SF_eulerStep(f, t, y, hh);
+      else stepRes = SF_rk4Step(f, t, y, hh);
+      if (!stepRes || !Number.isFinite(stepRes.y)) break;
+
+      t = t + hh;
+      y = stepRes.y;
     }
     return pts;
+  }
+
+  function SF_addCurve(p, f, t0, y0){
+    const forward = SF_traceCurve(p, f, t0, y0, +1);
+    let pts = forward;
+
+    if (p.both){
+      const backward = SF_traceCurve(p, f, t0, y0, -1);
+      const backRev = backward.slice().reverse();
+      if (backRev.length > 0 && forward.length > 0) backRev.pop();
+      pts = backRev.concat(forward);
+    }
+
+    SF.curves.push({ t0, y0, pts, colorIdx: SF.curves.length });
+    SF.selectedIdx = SF.curves.length - 1;
   }
 
   function SF_drawCurves(p){
     const ctx = SF.ctx;
     ctx.save();
-
     const thick = Math.max(1, p.thick|0);
 
-    for (const c of SF.curves){
+    for (let idx=0; idx<SF.curves.length; idx++){
+      const c = SF.curves[idx];
       const col = SF.colors[c.colorIdx % SF.colors.length];
+
       ctx.strokeStyle = col;
-      ctx.lineWidth = thick;
+      ctx.lineWidth = (idx === SF.selectedIdx) ? thick+1 : thick;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
 
@@ -826,24 +894,24 @@
       if (!pts || pts.length < 2) continue;
 
       ctx.beginPath();
-      const p0 = SF_worldToPx(p, pts[0].x, pts[0].y);
+      const p0 = SF_worldToPx(p, pts[0].t, pts[0].y);
       ctx.moveTo(p0.px, p0.py);
       for (let i=1;i<pts.length;i++){
-        const pi = SF_worldToPx(p, pts[i].x, pts[i].y);
+        const pi = SF_worldToPx(p, pts[i].t, pts[i].y);
         ctx.lineTo(pi.px, pi.py);
       }
       ctx.stroke();
 
       // mark initial point
-      const ip = SF_worldToPx(p, c.x0, c.y0);
+      const ip = SF_worldToPx(p, c.t0, c.y0);
       ctx.fillStyle = col;
       ctx.beginPath();
-      ctx.arc(ip.px, ip.py, 4, 0, Math.PI*2);
+      ctx.arc(ip.px, ip.py, (idx===SF.selectedIdx ? 5 : 4), 0, Math.PI*2);
       ctx.fill();
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(ip.px, ip.py, 4, 0, Math.PI*2);
+      ctx.arc(ip.px, ip.py, (idx===SF.selectedIdx ? 5 : 4), 0, Math.PI*2);
       ctx.stroke();
     }
 
@@ -851,45 +919,189 @@
   }
 
   function SF_updateText(p){
-    const expr = p.expr || "";
-    const safe = escapeLatexText(expr);
-    $("sf_out").innerHTML = `
-      $$\\frac{dy}{dx} = \\text{${safe}}$$
-      <div class="tiny">(${SF.curves.length} curve${SF.curves.length===1?"":"s"}; click the graph to add more.)</div>
-    `;
+    const safe = escapeLatexText(p.expr || "");
+    $("sf_out").innerHTML = `$$\\frac{dy}{dt} = \\text{${safe}}$$
+      <div class="tiny">${SF.curves.length} curve${SF.curves.length===1?"":"s"} (selected: ${SF.curves.length ? (SF.selectedIdx+1) : "-"})</div>`;
     renderMath($("sf_out"));
+  }
+
+  function SF_drawTimePlot(p, f){
+    const ctx = SF.timeCtx;
+    const W = SF.timeCanvas.width, H = SF.timeCanvas.height;
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,W,H);
+
+    // border
+    ctx.strokeStyle = "#d1d5db";
+    ctx.strokeRect(0.5,0.5,W-1,H-1);
+
+    if (!SF.curves.length) {
+      $("sf_selected_label").textContent = "No curves yet. Add an IVP to plot y(t).";
+      return;
+    }
+    const c = SF.curves[SF.selectedIdx] || SF.curves[0];
+    const pts = c.pts;
+    if (!pts || pts.length < 2) return;
+
+    // compute ranges from visible window (tmin..tmax) but only where pts exist
+    let tMin = Infinity, tMax = -Infinity, yMin = Infinity, yMax = -Infinity;
+    let dMin = Infinity, dMax = -Infinity;
+    for (const q of pts){
+      tMin = Math.min(tMin, q.t); tMax = Math.max(tMax, q.t);
+      yMin = Math.min(yMin, q.y); yMax = Math.max(yMax, q.y);
+      if (Number.isFinite(q.dydt)){
+        dMin = Math.min(dMin, q.dydt);
+        dMax = Math.max(dMax, q.dydt);
+      }
+    }
+    if (!Number.isFinite(tMin) || tMax <= tMin) return;
+    if (yMax === yMin) { yMax += 1; yMin -= 1; }
+
+    // axes lines (light)
+    ctx.save();
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
+    // horizontal midline
+    ctx.beginPath();
+    ctx.moveTo(0, H/2);
+    ctx.lineTo(W, H/2);
+    ctx.stroke();
+    ctx.restore();
+
+    function toPxT(t){ return (t - tMin)/(tMax - tMin) * W; }
+    function toPxY(y){ return (1 - (y - yMin)/(yMax - yMin)) * H; }
+
+    const col = SF.colors[c.colorIdx % SF.colors.length];
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(toPxT(pts[0].t), toPxY(pts[0].y));
+    for (let i=1;i<pts.length;i++){
+      ctx.lineTo(toPxT(pts[i].t), toPxY(pts[i].y));
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    if (p.showDydt && Number.isFinite(dMin) && Number.isFinite(dMax) && dMax > dMin){
+      function toPxD(d){ return (1 - (d - dMin)/(dMax - dMin)) * H; }
+      ctx.save();
+      ctx.strokeStyle = "#111827";
+      ctx.setLineDash([6,4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(toPxT(pts[0].t), toPxD(pts[0].dydt));
+      for (let i=1;i<pts.length;i++){
+        if (!Number.isFinite(pts[i].dydt)) continue;
+        ctx.lineTo(toPxT(pts[i].t), toPxD(pts[i].dydt));
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    $("sf_selected_label").textContent =
+      `Selected curve: #${SF.selectedIdx+1}  (t0=${c.t0.toFixed(4).replace(/\\.?0+$/,"")}, y0=${c.y0.toFixed(4).replace(/\\.?0+$/,"")})`;
+  }
+
+  function SF_fillTable(p, f){
+    const tbody = document.querySelector("#sf_table tbody");
+    tbody.innerHTML = "";
+
+    if (!SF.curves.length) return;
+    const c = SF.curves[SF.selectedIdx] || SF.curves[0];
+    const pts = c.pts;
+    if (!pts || pts.length < 2) return;
+
+    // build a map from t -> closest index (pts already ordered by t)
+    // We'll sample at increments dtTable but cap to maxRows.
+    const dt = Math.max(1e-12, p.dtTable);
+    const maxRows = Math.max(10, Math.min(500, p.maxRows|0));
+
+    // determine sample start/end using visible window (p.tmin..p.tmax), but also within curve range
+    const tStart = Math.max(p.tmin, pts[0].t);
+    const tEnd   = Math.min(p.tmax, pts[pts.length-1].t);
+    if (!(tEnd > tStart)) return;
+
+    // pick step so we don't exceed maxRows (your request)
+    const idealRows = Math.floor((tEnd - tStart)/dt) + 1;
+    let step = dt;
+    if (idealRows > maxRows){
+      step = (tEnd - tStart) / (maxRows - 1);
+    }
+
+    function findClosestIndex(t){
+      // binary search
+      let lo = 0, hi = pts.length-1;
+      while (hi - lo > 1){
+        const mid = (lo+hi)>>1;
+        if (pts[mid].t < t) lo = mid; else hi = mid;
+      }
+      // choose closer of lo/hi
+      const dlo = Math.abs(pts[lo].t - t);
+      const dhi = Math.abs(pts[hi].t - t);
+      return (dhi < dlo) ? hi : lo;
+    }
+
+    for (let k=0; k<maxRows; k++){
+      const t = tStart + k*step;
+      if (t > tEnd + 1e-12) break;
+      const idx = findClosestIndex(t);
+      const row = pts[idx];
+
+      const dydt = f(row.t, row.y);
+      const tStr = row.t.toFixed(6).replace(/\\.?0+$/,"");
+      const yStr = row.y.toFixed(6).replace(/\\.?0+$/,"");
+      const dStr = Number.isFinite(dydt) ? dydt.toFixed(6).replace(/\\.?0+$/,"") : "—";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${tStr}</td><td>${yStr}</td><td>${dStr}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function SF_recomputeCurves(p, f){
+    // When window/method/h changes, we recompute curves for accuracy.
+    // Keep same t0,y0 but re-trace.
+    const old = SF.curves.slice();
+    SF.curves = [];
+    for (const c of old){
+      SF_addCurve(p, f, c.t0, c.y0);
+    }
+    // keep selection roughly
+    if (old.length) SF.selectedIdx = Math.min(old.length-1, SF.selectedIdx);
   }
 
   function SF_redraw(){
     if (!SF.canvas) return;
-
     const p = SF_getParams();
-    if (!isFiniteAll([p.xmin,p.xmax,p.ymin,p.ymax,p.grid,p.len,p.h,p.steps,p.thick])) return;
-    if (!(p.xmax > p.xmin && p.ymax > p.ymin)) return;
+    if (!isFiniteAll([p.tmin,p.tmax,p.ymin,p.ymax,p.grid,p.len,p.h,p.steps,p.thick,p.dtTable,p.maxRows])) return;
+    if (!(p.tmax > p.tmin && p.ymax > p.ymin)) return;
 
-    // compile function
     let f;
     try {
-      f = makeSafeFunction(p.expr);
-      // sanity call
-      const t = f(0,0);
-      if (!Number.isFinite(t) && !Number.isNaN(t)) { /* allow NaN to show nothing */ }
+      f = makeSafeFunction(p.expr.replace(/\\bx\\b/g,"t")); // if someone types x out of habit, treat as t
+      // sanity
+      f(0,0);
     } catch (e) {
-      $("sf_out").innerHTML = `$$\\text{Error parsing }f(x,y).\\;\\text{${escapeLatexText(e.message)}}$$`;
+      $("sf_out").innerHTML = `$$\\text{Error parsing }f(t,y).\\;\\text{${escapeLatexText(e.message)}}$$`;
       renderMath($("sf_out"));
       return;
     }
 
-    // clear
+    // If solver params changed, we want consistent re-trace when needed.
+    // We'll do a simple approach: whenever redraw is called from inputs, retrace curves.
+    // (This is OK for classroom sizes; still fast.)
+    SF_recomputeCurves(p, f);
+
     const ctx = SF.ctx;
     ctx.clearRect(0,0,SF.canvas.width,SF.canvas.height);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0,0,SF.canvas.width,SF.canvas.height);
 
-    // axes/grid
     if (p.axes || p.gridlines) SF_drawAxes(p);
     else {
-      // border at least
       ctx.save();
       ctx.strokeStyle="#d1d5db";
       ctx.strokeRect(0.5,0.5,SF.canvas.width-1,SF.canvas.height-1);
@@ -898,61 +1110,135 @@
 
     SF_drawField(p, f);
     SF_drawCurves(p);
-
     SF_updateText(p);
+    SF_drawTimePlot(p, f);
+    SF_fillTable(p, f);
   }
 
-  function SF_addCurveAt(px, py){
+  function SF_addIVPFromInputs(){
     const p = SF_getParams();
-    if (!(p.xmax > p.xmin && p.ymax > p.ymin)) return;
-
     let f;
-    try { f = makeSafeFunction(p.expr); } catch { return; }
+    try { f = makeSafeFunction(p.expr.replace(/\\bx\\b/g,"t")); } catch { return; }
 
+    const t0 = parseFloat($("sf_t0").value);
+    const y0 = parseFloat($("sf_y0").value);
+    if (!Number.isFinite(t0) || !Number.isFinite(y0)) return;
+
+    SF_addCurve(p, f, t0, y0);
+    SF_redraw();
+  }
+
+  function SF_addIVPAtClick(px, py){
+    const p = SF_getParams();
+    let f;
+    try { f = makeSafeFunction(p.expr.replace(/\\bx\\b/g,"t")); } catch { return; }
     const w = SF_pxToWorld(p, px, py);
-    const x0 = w.x, y0 = w.y;
+    SF_addCurve(p, f, w.t, w.y);
+    SF_redraw();
+  }
 
-    const ptsForward = SF_traceCurve(p, f, x0, y0, +1);
-    let pts = ptsForward;
-
-    if (p.both){
-      const ptsBackward = SF_traceCurve(p, f, x0, y0, -1);
-      // combine backward (reversed) + forward (skip duplicate initial)
-      const backRev = ptsBackward.slice().reverse();
-      if (backRev.length > 0 && ptsForward.length > 0) {
-        // avoid double initial point
-        backRev.pop();
-      }
-      pts = backRev.concat(ptsForward);
-    }
-
-    SF.curves.push({
-      x0, y0,
-      pts,
-      colorIdx: SF.curves.length
+  function SF_initPanZoom(){
+    SF.canvas.addEventListener("mousedown", (ev) => {
+      const p = SF_getParams();
+      SF.dragging = true;
+      SF.dragStart = {
+        px: ev.clientX,
+        py: ev.clientY,
+        tmin: p.tmin, tmax: p.tmax,
+        ymin: p.ymin, ymax: p.ymax
+      };
     });
 
-    SF_redraw();
+    window.addEventListener("mouseup", () => {
+      SF.dragging = false;
+      SF.dragStart = null;
+    });
+
+    window.addEventListener("mousemove", (ev) => {
+      if (!SF.dragging || !SF.dragStart) return;
+
+      const r = SF.canvas.getBoundingClientRect();
+      const dxPx = ev.clientX - SF.dragStart.px;
+      const dyPx = ev.clientY - SF.dragStart.py;
+
+      const W = r.width, H = r.height;
+      const dt = (SF.dragStart.tmax - SF.dragStart.tmin) * (dxPx / W);
+      const dy = (SF.dragStart.ymax - SF.dragStart.ymin) * (-dyPx / H);
+
+      const newTmin = SF.dragStart.tmin - dt;
+      const newTmax = SF.dragStart.tmax - dt;
+      const newYmin = SF.dragStart.ymin - dy;
+      const newYmax = SF.dragStart.ymax - dy;
+
+      SF_setWindow(newTmin, newTmax, newYmin, newYmax);
+      SF_redraw();
+    });
+
+    SF.canvas.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      const p = SF_getParams();
+      const r = SF.canvas.getBoundingClientRect();
+      const px = (ev.clientX - r.left) * (SF.canvas.width / r.width);
+      const py = (ev.clientY - r.top)  * (SF.canvas.height / r.height);
+      const center = SF_pxToWorld(p, px, py);
+
+      // zoom factor
+      const zoom = ev.deltaY < 0 ? 0.9 : 1.111111111; // in/out
+      const tSpan = (p.tmax - p.tmin) * zoom;
+      const ySpan = (p.ymax - p.ymin) * zoom;
+
+      // clamp spans
+      const tSpanClamped = Math.max(1e-4, Math.min(1e6, tSpan));
+      const ySpanClamped = Math.max(1e-4, Math.min(1e6, ySpan));
+
+      const newTmin = center.t - (center.t - p.tmin) * zoom;
+      const newYmin = center.y - (center.y - p.ymin) * zoom;
+
+      SF_setWindow(newTmin, newTmin + tSpanClamped, newYmin, newYmin + ySpanClamped);
+      SF_redraw();
+    }, { passive:false });
   }
 
   function SF_init(){
     SF.canvas = $("sf_canvas");
     SF.ctx = SF.canvas.getContext("2d", { alpha:false });
+    SF.timeCanvas = $("sf_timeplot");
+    SF.timeCtx = SF.timeCanvas.getContext("2d", { alpha:false });
 
-    // redraw on resize (canvas stays same internal pixels; CSS scales it)
-    window.addEventListener("resize", () => SF_redraw());
-
+    // click to add IVP OR select curve if clicking near a start point
     SF.canvas.addEventListener("click", (ev) => {
       const r = SF.canvas.getBoundingClientRect();
       const px = (ev.clientX - r.left) * (SF.canvas.width / r.width);
       const py = (ev.clientY - r.top)  * (SF.canvas.height / r.height);
-      SF_addCurveAt(px, py);
+
+      // selection test: near initial point
+      const p = SF_getParams();
+      let bestIdx = -1, bestDist = 1e9;
+      for (let i=0;i<SF.curves.length;i++){
+        const c = SF.curves[i];
+        const ip = SF_worldToPx(p, c.t0, c.y0);
+        const d = Math.hypot(ip.px - px, ip.py - py);
+        if (d < bestDist){ bestDist = d; bestIdx = i; }
+      }
+      if (bestDist <= 14 && bestIdx >= 0){
+        SF.selectedIdx = bestIdx;
+        SF_redraw();
+        return;
+      }
+
+      SF_addIVPAtClick(px, py);
     });
+
+    SF_initPanZoom();
+
+    // redraw on window resize
+    window.addEventListener("resize", () => SF_redraw());
 
     // live redraw when inputs change
     const ids = [
-      "sf_expr","sf_xmin","sf_xmax","sf_ymin","sf_ymax","sf_grid","sf_len",
-      "sf_method","sf_h","sf_steps","sf_thick","sf_both","sf_axes","sf_gridlines"
+      "sf_expr","sf_tmin","sf_tmax","sf_ymin","sf_ymax","sf_grid","sf_len",
+      "sf_method","sf_h","sf_steps","sf_thick","sf_both","sf_axes","sf_gridlines","sf_show_dydt",
+      "sf_dt_table","sf_max_rows"
     ];
     for (const id of ids){
       $(id).addEventListener("input", () => SF_redraw());
@@ -960,7 +1246,8 @@
     }
 
     $("sf_draw").addEventListener("click", () => SF_redraw());
-    $("sf_clear").addEventListener("click", () => { SF.curves = []; SF_redraw(); });
+    $("sf_clear").addEventListener("click", () => { SF.curves = []; SF.selectedIdx = 0; SF_redraw(); });
+    $("sf_add_ivp").addEventListener("click", () => SF_addIVPFromInputs());
 
     SF_redraw();
   }
@@ -977,7 +1264,7 @@
     if (id === "pd_compute") MAT276_partials();
   });
 
-  /* Pre-fill outputs */
+  /* Pre-fill */
   MAT276_eigen2();
   MAT276_linear2();
   MAT276_equilibrium();
