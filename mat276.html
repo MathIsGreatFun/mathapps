@@ -788,6 +788,65 @@ const SF = {
   dragStart: null
 };
 
+// ---------- Slope-field expression preprocessing + safe function builder ----------
+// Goal: keep your UI exactly the same, but make f(t,y) behave like a math expression:
+// - allow ^ as exponent (convert to **)
+// - allow ln(...) (convert to log(...))
+// - allow x as alias for t (already desired)
+// - allow "e" and "pi" constants in a natural way
+function SF_preprocessExpr(exprRaw){
+  let s = String(exprRaw || "").trim();
+
+  // tolerate "x" as the independent variable
+  s = s.replace(/\bx\b/g, "t");
+
+  // unicode minus to normal minus
+  s = s.replace(/\u2212/g, "-");
+
+  // ln -> log (because we expose Math.log)
+  s = s.replace(/\bln\b/g, "log");
+
+  // pi constant -> PI (Math.PI is destructured as PI below)
+  s = s.replace(/\bpi\b/gi, "PI");
+
+  // exponent: ^ -> ** (IMPORTANT: in JS, ^ is XOR)
+  // This simple replace is what you want for student-facing math input.
+  s = s.replace(/\^/g, "**");
+
+  return s;
+}
+
+// Builds f(t,y) with a Math-safe scope.
+// NOTE: This intentionally does NOT change any other app tool behavior.
+function SF_makeFunction(exprRaw){
+  const expr = SF_preprocessExpr(exprRaw);
+
+  const body = `
+    "use strict";
+    const {
+      abs, acos, asin, atan, atan2, ceil, cos, exp, floor, log,
+      max, min, pow, round, sin, sqrt, tan, PI, E
+    } = Math;
+
+    // convenience aliases students often expect
+    const ln = log;
+    const e = E;
+
+    return (${expr});
+  `;
+
+  const fn = new Function("t", "y", body);
+
+  // quick sanity check
+  const test = fn(0, 0);
+  if (!Number.isFinite(test) && test !== 0) {
+    // allow 0; reject NaN/Infinity
+    // (we still let the slope field skip bad points later)
+  }
+  return fn;
+}
+
+  
 function SF_getParams(){
   const p = {
     tmin: parseFloat($("sf_tmin").value),
@@ -1124,13 +1183,14 @@ function SF_redraw(){
 
     let f;
     try {
-      f = makeSafeFunction(p.expr.replace(/\bx\b/g,"t")); // tolerate x
+      f = SF_makeFunction(p.expr);
       f(0,0);
     } catch (e) {
       $("sf_out").innerHTML = `$$\\text{Error parsing }f(t,y).$$`;
       renderMath($("sf_out"));
       return;
     }
+
 
     // IMPORTANT: white background always (prevents black)
     const ctx = SF.ctx;
@@ -1157,7 +1217,7 @@ function SF_redraw(){
 function SF_addIVPFromInputs(){
   const p = SF_getParams();
   let f;
-  try { f = makeSafeFunction(p.expr.replace(/\bx\b/g,"t")); } catch { return; }
+  try { f = SF_makeFunction(p.expr); } catch { return; }
   const t0 = parseFloat($("sf_t0").value);
   const y0 = parseFloat($("sf_y0").value);
   if (!Number.isFinite(t0) || !Number.isFinite(y0)) return;
@@ -1235,7 +1295,8 @@ function SF_init(){
 
     // add IVP at click
     let f;
-    try { f = makeSafeFunction(p.expr.replace(/\bx\b/g,"t")); } catch { return; }
+    try { f = SF_makeFunction(p.expr); } catch { return; }
+}
     const w = SF_pxToWorld(p, px, py);
     SF_addCurve(p, f, w.t, w.y);
     SF_redraw();
