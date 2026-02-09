@@ -3,568 +3,887 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MAT276 Slope Field + Table Sampler (t,y)</title>
+  <title>MAT276 Math Tools (Slope Field + Calculators)</title>
 
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 
-  <!-- math.js for parsing/evaluating f(t,y) -->
+  <!-- math.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/mathjs@11.11.2/lib/browser/math.js"></script>
 
   <style>
-    :root { --bg:#0f1115; --panel:#171a21; --ink:#e8ecf1; --muted:#aab3c2; --accent:#7aa2ff; --line:#2a2f3a; }
-    html,body { height:100%; }
-    body {
-      margin:0; background:var(--bg); color:var(--ink);
-      font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    :root{
+      --ink:#e8ecf1;
+      --muted:#aab3c2;
+      --panel: rgba(18, 22, 30, 0.72);
+      --panel2: rgba(18, 22, 30, 0.55);
+      --line: rgba(255,255,255,0.10);
+      --soft: rgba(10, 12, 18, 0.65);
+      --accent:#7aa2ff;
+      --warn:#ffcc66;
+      --err:#ff6b6b;
+      --shadow: 0 18px 50px rgba(0,0,0,.40);
+      --radius: 14px;
     }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
-    h1 { margin: 0 0 12px; font-size: 18px; font-weight: 650; }
-    .grid { display:grid; grid-template-columns: 380px 1fr; gap: 14px; }
-    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
 
-    .card {
-      background: var(--panel); border: 1px solid var(--line);
-      border-radius: 12px; padding: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    html,body { height:100%; }
+    body{
+      margin:0;
+      color: var(--ink);
+      font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      overflow-x:hidden;
     }
-    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    label { display:block; color:var(--muted); font-size: 12px; margin-bottom: 6px; }
-    input, select, button, textarea {
-      width:100%; box-sizing:border-box;
-      background:#0e1016; color:var(--ink);
-      border:1px solid #2b3240; border-radius:10px;
-      padding:10px 10px; outline:none;
+
+    /* =========================
+       BACKGROUND BLOCK
+       Replace this whole block
+       with your original background
+       ========================= */
+    body{
+      background: radial-gradient(1200px 700px at 15% 20%, #1b2340 0%, rgba(0,0,0,0) 60%),
+                  radial-gradient(1000px 650px at 85% 15%, #2b1b3d 0%, rgba(0,0,0,0) 55%),
+                  radial-gradient(900px 700px at 50% 90%, #14322c 0%, rgba(0,0,0,0) 60%),
+                  #07080c;
     }
-    input:focus, textarea:focus, select:focus { border-color: rgba(122,162,255,.7); }
-    button {
-      cursor:pointer; font-weight:650;
-      background: linear-gradient(180deg, rgba(122,162,255,.25), rgba(122,162,255,.12));
-      border-color: rgba(122,162,255,.35);
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.55)),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.06), rgba(255,255,255,0) 55%);
+      pointer-events:none;
+      z-index:-2;
     }
-    button:hover { filter: brightness(1.06); }
-    .two { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .three { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
-    .small { font-size: 12px; color: var(--muted); }
-    .katexBox {
-      padding: 10px 12px; border-radius: 10px;
-      border:1px dashed #2b3240; background:#0e1016;
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      background-image:
+        radial-gradient(rgba(255,255,255,0.06) 1px, rgba(0,0,0,0) 1px);
+      background-size: 30px 30px;
+      opacity: 0.20;
+      pointer-events:none;
+      z-index:-1;
+    }
+    /* ========================= */
+
+    .wrap{ max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap: 12px; margin-bottom: 12px;
+    }
+    h1{ margin:0; font-size: 18px; font-weight: 750; letter-spacing:.2px; }
+    .sub{ color: var(--muted); font-size: 12px; }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap: 8px; flex-wrap:wrap;
+      padding: 10px;
+      border-radius: var(--radius);
+    }
+    .tabBtn{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.25);
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight: 700;
+      user-select:none;
+    }
+    .tabBtn.active{
+      color: var(--ink);
+      border-color: rgba(122,162,255,0.45);
+      background: rgba(122,162,255,0.12);
+    }
+
+    .panel{
+      padding: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .grid{ display:grid; grid-template-columns: 380px 1fr; gap: 12px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    label{ display:block; color: var(--muted); font-size: 12px; margin: 8px 0 6px; }
+    input, select, button, textarea{
+      width:100%;
+      box-sizing:border-box;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      padding: 10px;
+      border-radius: 12px;
+      outline:none;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(122,162,255,0.65);
+    }
+    button{
+      cursor:pointer;
+      font-weight: 800;
+      background: linear-gradient(180deg, rgba(122,162,255,0.28), rgba(122,162,255,0.10));
+      border-color: rgba(122,162,255,0.35);
+    }
+    button:hover{ filter: brightness(1.05); }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .two{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .three{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+
+    .katexBox{
+      background: var(--panel2);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
       overflow:auto;
     }
-    canvas {
-      width: 100%; height: 520px;
-      border-radius: 12px; border:1px solid var(--line);
-      background: #0b0d12;
+
+    .pill{
+      display:inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.25);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .status{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .warn{ color: var(--warn); }
+    .err{ color: var(--err); white-space: pre-wrap; margin-top:8px; }
+
+    canvas{
+      width:100%;
+      height: 520px;
       display:block;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
     }
-    .tableWrap {
-      max-height: 520px; overflow:auto; border-radius: 12px;
-      border:1px solid var(--line);
+
+    .tableWrap{
+      max-height: 520px;
+      overflow:auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.22);
     }
-    table { width:100%; border-collapse: collapse; min-width: 520px; }
-    thead th {
-      position: sticky; top:0;
-      background:#111520; color: var(--muted);
-      text-align:left; font-weight:650; font-size:12px;
+    table{ width:100%; border-collapse: collapse; min-width: 520px; }
+    thead th{
+      position:sticky; top:0;
+      background: rgba(12, 16, 24, 0.88);
+      color: var(--muted);
+      text-align:left;
+      font-size:12px;
+      font-weight:800;
+      padding: 10px;
       border-bottom: 1px solid var(--line);
-      padding: 10px 10px;
-      z-index: 2;
+      z-index:2;
+      backdrop-filter: blur(8px);
     }
-    tbody td {
-      padding: 9px 10px; border-bottom:1px solid #1f2430;
+    tbody td{
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
       font-variant-numeric: tabular-nums;
     }
-    .pill {
-      display:inline-block; padding: 3px 8px; border-radius: 999px;
-      border:1px solid #2b3240; color: var(--muted); font-size: 12px;
-      background:#0e1016;
-    }
-    .warn { color:#ffcc66; }
-    .err { color:#ff6b6b; white-space: pre-wrap; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .tiny{ font-size: 12px; color: var(--muted); }
+    hr{ border:none; border-top:1px solid var(--line); margin: 12px 0; }
   </style>
 </head>
 
 <body>
-<div class="wrap">
-  <h1>MAT276 Slope Field (t,y) + Solution Table Sampler</h1>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>MAT276 Math Tools</h1>
+        <div class="sub">Integral calculator • Partial derivatives • Slope fields (t,y) • Table sampling</div>
+      </div>
+      <div class="pill">Single-file applet</div>
+    </div>
 
-  <div class="grid">
-    <!-- Controls -->
     <div class="card">
-      <div style="margin-bottom:10px;">
-        <label>ODE right-hand side <span class="small">(type f(t,y))</span></label>
-        <input id="fInput" value="t - y" spellcheck="false" />
-        <div class="small" style="margin-top:6px;">
-          Use <span class="pill">t</span> and <span class="pill">y</span>.
-          Functions: <span class="pill">sin</span> <span class="pill">cos</span> <span class="pill">tan</span>
-          <span class="pill">exp</span> <span class="pill">log</span> <span class="pill">sqrt</span> <span class="pill">abs</span>.
-          Exponent: <span class="pill">^</span> works.
-        </div>
+      <div class="tabs" id="tabs">
+        <button class="tabBtn active" data-tab="integral">Integral</button>
+        <button class="tabBtn" data-tab="partial">Partial Derivative</button>
+        <button class="tabBtn" data-tab="slope">Slope Field</button>
+        <button class="tabBtn" data-tab="help">Help</button>
       </div>
 
-      <div style="margin-bottom:10px;">
-        <label>Rendered math</label>
-        <div class="katexBox" id="mathBox"></div>
-      </div>
+      <!-- INTEGRAL TAB -->
+      <div class="panel" id="tab-integral">
+        <div class="grid">
+          <div>
+            <label>Function f(x)</label>
+            <input id="int_f" value="sin(x) + x^2" spellcheck="false">
 
-      <div class="two" style="margin-bottom:10px;">
-        <div>
-          <label>t-min</label>
-          <input id="tMin" type="number" step="any" value="0" />
-        </div>
-        <div>
-          <label>t-max</label>
-          <input id="tMax" type="number" step="any" value="10" />
-        </div>
-      </div>
+            <div class="two">
+              <div>
+                <label>Lower bound a</label>
+                <input id="int_a" type="number" step="any" value="0">
+              </div>
+              <div>
+                <label>Upper bound b</label>
+                <input id="int_b" type="number" step="any" value="2">
+              </div>
+            </div>
 
-      <div class="two" style="margin-bottom:10px;">
-        <div>
-          <label>y-min</label>
-          <input id="yMin" type="number" step="any" value="-5" />
-        </div>
-        <div>
-          <label>y-max</label>
-          <input id="yMax" type="number" step="any" value="5" />
-        </div>
-      </div>
+            <div class="two">
+              <div>
+                <label>Numeric accuracy (smaller = more accurate)</label>
+                <input id="int_eps" type="number" step="any" value="1e-8">
+              </div>
+              <div>
+                <label>Max recursion depth</label>
+                <input id="int_depth" type="number" step="1" value="20">
+              </div>
+            </div>
 
-      <div class="three" style="margin-bottom:10px;">
-        <div>
-          <label>Grid (t)</label>
-          <input id="nT" type="number" min="5" max="80" value="25" />
-        </div>
-        <div>
-          <label>Grid (y)</label>
-          <input id="nY" type="number" min="5" max="80" value="25" />
-        </div>
-        <div>
-          <label>Segment scale</label>
-          <input id="segScale" type="number" step="any" value="0.9" />
-        </div>
-      </div>
+            <div class="row" style="margin-top:10px;">
+              <button id="int_run">Compute ∫</button>
+            </div>
 
-      <hr style="border:none;border-top:1px solid var(--line); margin: 12px 0;">
+            <div class="status" id="int_status"></div>
+            <div class="err" id="int_error"></div>
+          </div>
 
-      <div class="two" style="margin-bottom:10px;">
-        <div>
-          <label>Initial condition \(y(t_0)=y_0\)</label>
-          <div class="two">
-            <input id="t0" type="number" step="any" value="0" title="t0">
-            <input id="y0" type="number" step="any" value="1" title="y0">
+          <div>
+            <label>Rendered</label>
+            <div class="katexBox" id="int_math"></div>
+
+            <label style="margin-top:12px;">Result</label>
+            <div class="katexBox mono" id="int_out">—</div>
+
+            <div class="tiny" style="margin-top:10px;">
+              This is a <span class="pill">numeric definite integral</span> (adaptive Simpson). It’s reliable for MAT276-style modeling.
+            </div>
           </div>
         </div>
-        <div>
-          <label>Method</label>
-          <select id="method">
-            <option value="euler">Euler</option>
-            <option value="heun">Improved Euler (Heun)</option>
-            <option value="rk4" selected>RK4</option>
-          </select>
+      </div>
+
+      <!-- PARTIAL TAB -->
+      <div class="panel" id="tab-partial" style="display:none;">
+        <div class="grid">
+          <div>
+            <label>Function f(x,y,...) </label>
+            <input id="pd_f" value="x^2*y + sin(x*y)" spellcheck="false">
+
+            <div class="two">
+              <div>
+                <label>Differentiate with respect to</label>
+                <input id="pd_var" value="x" spellcheck="false">
+              </div>
+              <div>
+                <label>Order</label>
+                <input id="pd_order" type="number" min="1" step="1" value="1">
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="pd_run">Compute ∂</button>
+            </div>
+
+            <div class="status" id="pd_status"></div>
+            <div class="err" id="pd_error"></div>
+          </div>
+
+          <div>
+            <label>Rendered</label>
+            <div class="katexBox" id="pd_math"></div>
+
+            <label style="margin-top:12px;">Result (symbolic)</label>
+            <div class="katexBox mono" id="pd_out">—</div>
+
+            <div class="tiny" style="margin-top:10px;">
+              Powered by <span class="pill">math.js derivative()</span>. Great for quick partial derivatives.
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="two" style="margin-bottom:10px;">
-        <div>
-          <label>Compute step \(h\) <span class="small">(internal)</span></label>
-          <input id="h" type="number" step="any" value="0.01" />
-        </div>
-        <div>
-          <label>Stop at \(t=\)</label>
-          <input id="tEnd" type="number" step="any" value="10" />
+      <!-- SLOPE FIELD TAB -->
+      <div class="panel" id="tab-slope" style="display:none;">
+        <div class="grid">
+          <div>
+            <label>ODE right-hand side f(t,y)</label>
+            <input id="sf_f" value="t - y" spellcheck="false">
+            <div class="tiny">
+              Use <span class="pill">t</span>, <span class="pill">y</span>, exponent <span class="pill">^</span>,
+              and functions <span class="pill">sin</span> <span class="pill">cos</span> <span class="pill">exp</span> <span class="pill">log</span>.
+            </div>
+
+            <label>Rendered</label>
+            <div class="katexBox" id="sf_math"></div>
+
+            <div class="two">
+              <div><label>t-min</label><input id="sf_tmin" type="number" step="any" value="0"></div>
+              <div><label>t-max</label><input id="sf_tmax" type="number" step="any" value="10"></div>
+            </div>
+
+            <div class="two">
+              <div><label>y-min</label><input id="sf_ymin" type="number" step="any" value="-5"></div>
+              <div><label>y-max</label><input id="sf_ymax" type="number" step="any" value="5"></div>
+            </div>
+
+            <div class="three">
+              <div><label>Grid (t)</label><input id="sf_nt" type="number" min="5" max="80" value="25"></div>
+              <div><label>Grid (y)</label><input id="sf_ny" type="number" min="5" max="80" value="25"></div>
+              <div><label>Segment scale</label><input id="sf_scale" type="number" step="any" value="0.9"></div>
+            </div>
+
+            <hr>
+
+            <label>Initial condition y(t₀)=y₀</label>
+            <div class="two">
+              <input id="sf_t0" type="number" step="any" value="0">
+              <input id="sf_y0" type="number" step="any" value="1">
+            </div>
+
+            <div class="two">
+              <div>
+                <label>Method</label>
+                <select id="sf_method">
+                  <option value="euler">Euler</option>
+                  <option value="heun">Improved Euler (Heun)</option>
+                  <option value="rk4" selected>RK4</option>
+                </select>
+              </div>
+              <div>
+                <label>Compute step h</label>
+                <input id="sf_h" type="number" step="any" value="0.01">
+              </div>
+            </div>
+
+            <div class="two">
+              <div><label>Stop at t=</label><input id="sf_tend" type="number" step="any" value="10"></div>
+              <div>
+                <label>Overlay solution curve?</label>
+                <select id="sf_overlay">
+                  <option value="yes" selected>Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="two">
+              <div><label>Max table rows</label><input id="sf_maxrows" type="number" min="10" max="5000" value="100"></div>
+              <div><label>Display step (optional)</label><input id="sf_hdisp" type="number" step="any" placeholder="auto"></div>
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="sf_draw" style="flex:1;">Draw field</button>
+              <button id="sf_table" style="flex:1;">Compute table</button>
+            </div>
+
+            <div class="status" id="sf_status"></div>
+            <div class="err" id="sf_error"></div>
+          </div>
+
+          <div>
+            <canvas id="sf_canvas" width="1000" height="520"></canvas>
+            <div class="row" style="justify-content:space-between; margin-top:10px;">
+              <div class="tiny"><span class="pill">Tip</span> Dot/curve only appear if they fall inside your t/y window.</div>
+              <div class="tiny" id="sf_meta"></div>
+            </div>
+
+            <div class="tableWrap" style="margin-top:10px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>t</th>
+                    <th>y</th>
+                    <th>f(t,y)</th>
+                  </tr>
+                </thead>
+                <tbody id="sf_tbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="two" style="margin-bottom:10px;">
-        <div>
-          <label>Max table rows</label>
-          <input id="maxRows" type="number" min="10" max="5000" value="100" />
+      <!-- HELP TAB -->
+      <div class="panel" id="tab-help" style="display:none;">
+        <div class="katexBox">
+          <div style="font-weight:800; margin-bottom:6px;">Quick notes</div>
+          <ul style="margin:0 0 0 18px;">
+            <li>Multiplication must use <span class="mono">* </span> (e.g., <span class="mono">2*y</span>, not <span class="mono">2y</span>).</li>
+            <li><span class="mono">ln</span> is accepted (mapped to <span class="mono">log</span>).</li>
+            <li>Slope Field uses <span class="mono">t</span> as the horizontal axis and <span class="mono">y</span> as the vertical axis.</li>
+            <li>If your initial condition dot “doesn’t plot,” it’s usually outside the visible window.</li>
+          </ul>
         </div>
-        <div>
-          <label>Display step <span class="small">(optional)</span></label>
-          <input id="hDisplay" type="number" step="any" placeholder="auto" />
-        </div>
       </div>
 
-      <div class="row" style="margin-top:10px;">
-        <button id="drawBtn" style="flex:1;">Draw slope field</button>
-        <button id="solveBtn" style="flex:1;">Compute table</button>
-      </div>
-
-      <div id="status" class="small" style="margin-top:10px;"></div>
-      <div id="error" class="err" style="margin-top:8px;"></div>
-    </div>
-
-    <!-- Canvas + Table -->
-    <div class="card">
-      <canvas id="canvas" width="1000" height="520"></canvas>
-      <div class="row" style="justify-content:space-between; margin-top:10px;">
-        <div class="small">
-          <span class="pill">Tip</span> If the field looks too dense, reduce Grid (t)/(y). If lines are too long, reduce Segment scale.
-        </div>
-        <div class="small" id="tableMeta"></div>
-      </div>
-
-      <div class="tableWrap" style="margin-top:10px;">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:33%;">t</th>
-              <th style="width:33%;">y</th>
-              <th style="width:34%;">f(t,y)</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
     </div>
   </div>
-</div>
 
 <script>
-(function () {
+(() => {
   const $ = (id) => document.getElementById(id);
 
-  // Wait until both KaTeX and math.js are available (they load defer)
-  function whenReady(fn) {
+  function whenReady(fn){
     const timer = setInterval(() => {
       if (window.katex && window.math) { clearInterval(timer); fn(); }
     }, 20);
   }
 
-  // ---------- Safe KaTeX rendering ----------
-  function renderMath(fStr) {
-    const box = $("mathBox");
-    const latex = String.raw`\frac{dy}{dt} = ${toLatexSafe(fStr)}`;
-    try {
-      katex.render(latex, box, {
-        throwOnError: false,
-        displayMode: true,
-        strict: "ignore"
-      });
-    } catch (e) {
-      // If KaTeX itself fails, show plain text instead of “black boxes”
-      box.textContent = `dy/dt = ${fStr}`;
+  // ---------- Tabs ----------
+  function setTab(name){
+    const tabs = ["integral","partial","slope","help"];
+    tabs.forEach(t => {
+      const btn = document.querySelector(`.tabBtn[data-tab="${t}"]`);
+      const panel = $(`tab-${t}`);
+      const on = (t === name);
+      btn.classList.toggle("active", on);
+      panel.style.display = on ? "block" : "none";
+    });
+  }
+  function initTabs(){
+    document.querySelectorAll(".tabBtn").forEach(btn => {
+      btn.addEventListener("click", () => setTab(btn.dataset.tab));
+    });
+  }
+
+  // ---------- KaTeX safe render ----------
+  function toLatexSafe(expr){
+    const s = String(expr).trim();
+    const ok = /^[0-9a-zA-Z_\s\+\-\*\/\^\(\)\.,]+$/.test(s);
+    if (!ok) return String.raw`\\text{${s.replace(/[{}\\]/g,"")}}`;
+    return s.replace(/\*/g, String.raw`\\cdot `);
+  }
+  function katexBoxRender(el, latex){
+    try{
+      katex.render(latex, el, { throwOnError:false, displayMode:true, strict:"ignore" });
+    }catch{
+      el.textContent = latex;
     }
   }
 
-  // Convert a plain expression to a KaTeX-friendly string.
-  // This is intentionally conservative: it avoids injecting raw slashes/HTML.
-  function toLatexSafe(expr) {
-    // Minimal escaping for KaTeX:
-    // - wrap in \text{...} if weird characters appear
-    // - otherwise allow typical math characters
-    const s = String(expr).trim();
-    // Allow digits/letters/operators/paren/space/dot/comma/caret
-    const ok = /^[0-9a-zA-Z_\s\+\-\*\/\^\(\)\.,]+$/.test(s);
-    if (!ok) return String.raw`\text{${s.replace(/[{}\\]/g, "")}}`;
-    // Replace * with \cdot for nicer display (optional)
-    return s.replace(/\*/g, String.raw`\cdot `);
-  }
-
-  // ---------- Parser / evaluator ----------
-  // Uses math.js compile + evaluate for speed and stability.
-  // Supports: t, y, common functions, ^ exponent, etc.
-  function compileRHS(raw) {
-    const expr = preprocess(raw);
-    // Will throw if invalid
-    return math.compile(expr);
-  }
-
-  function preprocess(raw) {
+  // ---------- math.js helpers ----------
+  function preprocess(raw){
     let s = String(raw || "").trim();
-
-    // Common student inputs:
-    // - allow "ln" as log
-    // - allow "e^x" (math.js supports e as constant)
     s = s.replace(/\bln\b/gi, "log");
-
-    // Normalize unicode minus
     s = s.replace(/\u2212/g, "-");
-
-    // math.js already supports ^ for exponent
     return s;
   }
-
-  function evalRHS(compiled, t, y) {
-    const v = compiled.evaluate({ t, y });
-    if (!Number.isFinite(v)) throw new Error("f(t,y) evaluated to a non-finite number.");
+  function compileExpr(raw){
+    return math.compile(preprocess(raw));
+  }
+  function evalExpr(compiled, scope){
+    const v = compiled.evaluate(scope);
+    if (!Number.isFinite(v)) throw new Error("Expression evaluated to non-finite value.");
     return v;
   }
 
-  // ---------- Canvas mapping ----------
-  function makeMapper(tMin, tMax, yMin, yMax, W, H, pad=40) {
-    const x0 = pad, y0 = pad;
-    const w = W - 2*pad, h = H - 2*pad;
-
-    const tx = (t) => x0 + (t - tMin) * (w / (tMax - tMin));
-    const ty = (y) => y0 + (yMax - y) * (h / (yMax - yMin)); // invert
-    const invT = (x) => tMin + (x - x0) * ((tMax - tMin) / w);
-    const invY = (yy) => yMax - (yy - y0) * ((yMax - yMin) / h);
-
-    return { tx, ty, invT, invY, pad, x0, y0, w, h };
+  function fmtNum(x){
+    if (!Number.isFinite(x)) return "—";
+    const ax = Math.abs(x);
+    if (ax !== 0 && (ax < 1e-5 || ax > 1e7)) return x.toExponential(8);
+    return (Math.round(x * 1e10) / 1e10).toString();
   }
 
-  function drawAxes(ctx, map, tMin, tMax, yMin, yMax) {
+  // =========================================
+  // Integral tab: adaptive Simpson
+  // =========================================
+  function simpson(f, a, b){
+    const c = (a + b) / 2;
+    return (b - a) / 6 * (f(a) + 4*f(c) + f(b));
+  }
+  function adaptiveSimpson(f, a, b, eps, maxDepth){
+    const S = simpson(f, a, b);
+    function rec(a, b, eps, S, depth){
+      const c = (a + b) / 2;
+      const Sleft = simpson(f, a, c);
+      const Sright = simpson(f, c, b);
+      const delta = Sleft + Sright - S;
+      if (depth <= 0) return Sleft + Sright + delta / 15;
+      if (Math.abs(delta) <= 15 * eps) return Sleft + Sright + delta / 15;
+      return rec(a, c, eps/2, Sleft, depth-1) + rec(c, b, eps/2, Sright, depth-1);
+    }
+    return rec(a, b, eps, S, maxDepth);
+  }
+
+  function runIntegral(){
+    $("int_error").textContent = "";
+    $("int_status").textContent = "";
+
+    const fStr = $("int_f").value;
+    const a = parseFloat($("int_a").value);
+    const b = parseFloat($("int_b").value);
+    const eps = parseFloat($("int_eps").value);
+    const depth = parseInt($("int_depth").value, 10);
+
+    // render
+    katexBoxRender($("int_math"), String.raw`\\int_{${a}}^{${b}} \\left(${toLatexSafe(fStr)}\\right)\,dx`);
+
+    let compiled;
+    try{ compiled = compileExpr(fStr); }
+    catch(e){ $("int_error").textContent = "Parse error: " + (e?.message ?? String(e)); return; }
+
+    if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(eps) || !Number.isFinite(depth)){
+      $("int_error").textContent = "Please enter numeric a, b, eps, depth.";
+      return;
+    }
+    if (eps <= 0){ $("int_error").textContent = "eps must be > 0"; return; }
+
+    const f = (x) => evalExpr(compiled, { x });
+
+    try{
+      const val = adaptiveSimpson(f, a, b, eps, depth);
+      $("int_out").textContent = fmtNum(val);
+      $("int_status").innerHTML = `<span class="pill">Done</span> numeric definite integral computed.`;
+    }catch(e){
+      $("int_error").textContent = "Evaluation failed (maybe a discontinuity?): " + (e?.message ?? String(e));
+    }
+  }
+
+  // =========================================
+  // Partial derivative tab: math.derivative
+  // =========================================
+  function runPartial(){
+    $("pd_error").textContent = "";
+    $("pd_status").textContent = "";
+
+    const fStr = $("pd_f").value;
+    const v = preprocess($("pd_var").value);
+    const order = Math.max(1, parseInt($("pd_order").value, 10) || 1);
+
+    katexBoxRender($("pd_math"), String.raw`f = ${toLatexSafe(fStr)}\\quad\\Rightarrow\\quad \\frac{\\partial^{${order}} f}{\\partial ${v}^{${order}}}`);
+
+    try{
+      let node = math.parse(preprocess(fStr));
+      for (let k=0;k<order;k++){
+        node = math.derivative(node, v);
+      }
+      $("pd_out").textContent = node.toString();
+      $("pd_status").innerHTML = `<span class="pill">Done</span> symbolic derivative computed.`;
+    }catch(e){
+      $("pd_error").textContent = "Derivative failed: " + (e?.message ?? String(e));
+    }
+  }
+
+  // =========================================
+  // Slope field tab
+  // =========================================
+  function makeMapper(tMin,tMax,yMin,yMax,W,H,pad=40){
+    const x0=pad, y0=pad;
+    const w=W-2*pad, h=H-2*pad;
+    const tx = (t) => x0 + (t - tMin) * (w / (tMax - tMin));
+    const ty = (y) => y0 + (yMax - y) * (h / (yMax - yMin)); // invert
+    return { tx, ty, x0, y0, w, h };
+  }
+
+  function drawAxes(ctx,map,tMin,tMax,yMin,yMax){
     ctx.save();
-    ctx.strokeStyle = "#2a2f3a";
+    ctx.strokeStyle = "rgba(255,255,255,0.13)";
     ctx.lineWidth = 1;
+    ctx.strokeRect(map.x0,map.y0,map.w,map.h);
 
-    // Border
-    ctx.strokeRect(map.x0, map.y0, map.w, map.h);
-
-    // Light grid lines (5 each)
-    const n = 5;
-    for (let i=1;i<n;i++){
-      const x = map.x0 + (map.w*i/n);
-      const y = map.y0 + (map.h*i/n);
-      ctx.beginPath(); ctx.moveTo(x, map.y0); ctx.lineTo(x, map.y0+map.h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(map.x0, y); ctx.lineTo(map.x0+map.w, y); ctx.stroke();
+    const n=5;
+    for(let i=1;i<n;i++){
+      const x=map.x0+(map.w*i/n);
+      const y=map.y0+(map.h*i/n);
+      ctx.beginPath(); ctx.moveTo(x,map.y0); ctx.lineTo(x,map.y0+map.h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(map.x0,y); ctx.lineTo(map.x0+map.w,y); ctx.stroke();
     }
 
-    // Labels
-    ctx.fillStyle = "#aab3c2";
-    ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(`t: [${tMin}, ${tMax}]`, map.x0, map.y0 - 10);
-    ctx.fillText(`y: [${yMin}, ${yMax}]`, map.x0 + 140, map.y0 - 10);
-
+    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.font = "12px system-ui,-apple-system,Segoe UI,Roboto,Arial";
+    ctx.fillText(`t ∈ [${tMin}, ${tMax}]`, map.x0, map.y0 - 10);
+    ctx.fillText(`y ∈ [${yMin}, ${yMax}]`, map.x0 + 150, map.y0 - 10);
     ctx.restore();
   }
 
-  // ---------- Slope field ----------
-  function drawSlopeField() {
-    $("error").textContent = "";
-    const ctx = $("canvas").getContext("2d");
-    const W = $("canvas").width, H = $("canvas").height;
+  function compileRHS_ty(raw){
+    return math.compile(preprocess(raw));
+  }
+  function evalRHS_ty(compiled, t, y){
+    return evalExpr(compiled, { t, y });
+  }
 
-    const fStr = $("fInput").value;
-    const tMin = parseFloat($("tMin").value);
-    const tMax = parseFloat($("tMax").value);
-    const yMin = parseFloat($("yMin").value);
-    const yMax = parseFloat($("yMax").value);
-    const nT = Math.max(5, Math.min(80, parseInt($("nT").value, 10) || 25));
-    const nY = Math.max(5, Math.min(80, parseInt($("nY").value, 10) || 25));
-    const segScale = Math.max(0.1, Math.min(2.0, parseFloat($("segScale").value) || 0.9));
+  function stepper(method, fCompiled, t, y, h){
+    if (method === "euler"){
+      const k1 = evalRHS_ty(fCompiled,t,y);
+      return y + h*k1;
+    }
+    if (method === "heun"){
+      const k1 = evalRHS_ty(fCompiled,t,y);
+      const yPred = y + h*k1;
+      const k2 = evalRHS_ty(fCompiled,t+h,yPred);
+      return y + (h/2)*(k1+k2);
+    }
+    // rk4
+    const k1 = evalRHS_ty(fCompiled,t,y);
+    const k2 = evalRHS_ty(fCompiled,t+h/2,y+h*k1/2);
+    const k3 = evalRHS_ty(fCompiled,t+h/2,y+h*k2/2);
+    const k4 = evalRHS_ty(fCompiled,t+h,y+h*k3);
+    return y + (h/6)*(k1+2*k2+2*k3+k4);
+  }
 
-    if (!(tMax > tMin) || !(yMax > yMin)) {
-      $("error").textContent = "Please ensure t-max > t-min and y-max > y-min.";
+  function drawSlopeField(){
+    $("sf_error").textContent = "";
+    $("sf_status").textContent = "";
+
+    const fStr = $("sf_f").value;
+    const tMin = parseFloat($("sf_tmin").value);
+    const tMax = parseFloat($("sf_tmax").value);
+    const yMin = parseFloat($("sf_ymin").value);
+    const yMax = parseFloat($("sf_ymax").value);
+    const nT = Math.max(5, Math.min(80, parseInt($("sf_nt").value,10) || 25));
+    const nY = Math.max(5, Math.min(80, parseInt($("sf_ny").value,10) || 25));
+    const segScale = Math.max(0.1, Math.min(2.0, parseFloat($("sf_scale").value) || 0.9));
+
+    const t0 = parseFloat($("sf_t0").value);
+    const y0 = parseFloat($("sf_y0").value);
+
+    const overlay = $("sf_overlay").value === "yes";
+    const method = $("sf_method").value;
+    const h = parseFloat($("sf_h").value);
+    const tEnd = parseFloat($("sf_tend").value);
+
+    katexBoxRender($("sf_math"), String.raw`\\frac{dy}{dt} = ${toLatexSafe(fStr)}`);
+
+    if (!(tMax > tMin) || !(yMax > yMin)){
+      $("sf_error").textContent = "Window error: need tMax>tMin and yMax>yMin.";
       return;
     }
 
     let compiled;
-    try {
-      compiled = compileRHS(fStr);
-    } catch (e) {
-      $("error").textContent = "Could not parse f(t,y). " + (e && e.message ? e.message : String(e));
+    try{ compiled = compileRHS_ty(fStr); }
+    catch(e){
+      $("sf_error").textContent = "Parse error in f(t,y): " + (e?.message ?? String(e));
       return;
     }
 
-    // Clear
-    ctx.clearRect(0, 0, W, H);
-    const map = makeMapper(tMin, tMax, yMin, yMax, W, H);
-    drawAxes(ctx, map, tMin, tMax, yMin, yMax);
+    const canvas = $("sf_canvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
 
-    // Segment base length based on spacing
+    const map = makeMapper(tMin,tMax,yMin,yMax,W,H);
+    drawAxes(ctx,map,tMin,tMax,yMin,yMax);
+
+    // slope segments
     const dt = (tMax - tMin) / (nT - 1);
     const dy = (yMax - yMin) / (nY - 1);
-    // Convert a "data step" to pixels to set segment length nicely
     const pxDt = Math.abs(map.tx(tMin + dt) - map.tx(tMin));
     const pxDy = Math.abs(map.ty(yMin + dy) - map.ty(yMin));
     const L = segScale * 0.45 * Math.min(pxDt, pxDy);
 
     ctx.save();
-    ctx.strokeStyle = "#7aa2ff";
+    ctx.strokeStyle = "rgba(122,162,255,0.90)";
     ctx.lineWidth = 1;
 
-    for (let i=0; i<nT; i++) {
+    for (let i=0;i<nT;i++){
       const t = tMin + i*dt;
-      for (let j=0; j<nY; j++) {
+      for (let j=0;j<nY;j++){
         const y = yMin + j*dy;
-
         let m;
-        try {
-          m = evalRHS(compiled, t, y);
-        } catch {
-          continue;
-        }
-
-        // direction vector proportional to (1, m), normalized
+        try{ m = evalRHS_ty(compiled, t, y); }
+        catch{ continue; }
         const norm = Math.hypot(1, m);
-        const ux = 1 / norm;
-        const uy = m / norm;
+        const ux = 1/norm, uy = m/norm;
 
         const xC = map.tx(t);
         const yC = map.ty(y);
 
-        const x1 = xC - (L * ux);
-        const y1 = yC + (L * uy); // + because canvas y goes down
-        const x2 = xC + (L * ux);
-        const y2 = yC - (L * uy);
+        // canvas y-axis downward:
+        const x1 = xC - (L*ux);
+        const y1 = yC + (L*uy);
+        const x2 = xC + (L*ux);
+        const y2 = yC - (L*uy);
 
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x2,y2);
         ctx.stroke();
       }
     }
-
-    // Initial condition point
-    const t0 = parseFloat($("t0").value);
-    const y0 = parseFloat($("y0").value);
-    if (Number.isFinite(t0) && Number.isFinite(y0)) {
-      const x0 = map.tx(t0), yy0 = map.ty(y0);
-      ctx.fillStyle = "#ffcc66";
-      ctx.beginPath(); ctx.arc(x0, yy0, 4, 0, Math.PI*2); ctx.fill();
-    }
-
     ctx.restore();
-    $("status").innerHTML = `<span class="pill">Slope field drawn</span> using f(t,y) = <span class="pill">${escapeHtml(fStr)}</span>`;
+
+    // Initial condition point: plot & warn if outside
+    const inWindow = (t0 >= tMin && t0 <= tMax && y0 >= yMin && y0 <= yMax);
+    if (Number.isFinite(t0) && Number.isFinite(y0) && inWindow){
+      ctx.save();
+      ctx.fillStyle = "rgba(255,204,102,0.95)";
+      ctx.strokeStyle = "rgba(0,0,0,0.65)";
+      ctx.lineWidth = 2;
+      const x = map.tx(t0), y = map.ty(y0);
+      ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    } else if (Number.isFinite(t0) && Number.isFinite(y0) && !inWindow){
+      $("sf_status").innerHTML = `<span class="pill warn">Note</span> Initial condition (t₀,y₀)=(${fmtNum(t0)},${fmtNum(y0)}) is outside the current window, so it won’t be visible.`;
+    }
+
+    // Optional overlay solution curve
+    if (overlay && Number.isFinite(t0) && Number.isFinite(y0) && Number.isFinite(h) && h > 0 && Number.isFinite(tEnd) && tEnd > t0){
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,204,102,0.85)";
+      ctx.lineWidth = 2;
+
+      let t = t0;
+      let y = y0;
+
+      ctx.beginPath();
+      let started = false;
+
+      const steps = Math.ceil((tEnd - t0) / h);
+      for (let k=0;k<=steps;k++){
+        // draw only if inside view
+        if (t >= tMin && t <= tMax && y >= yMin && y <= yMax){
+          const xPix = map.tx(t);
+          const yPix = map.ty(y);
+          if (!started){
+            ctx.moveTo(xPix, yPix);
+            started = true;
+          } else {
+            ctx.lineTo(xPix, yPix);
+          }
+        }
+        if (k < steps){
+          try{
+            y = stepper(method, compiled, t, y, h);
+          }catch{
+            break;
+          }
+          t = t + h;
+        }
+      }
+      if (started) ctx.stroke();
+      ctx.restore();
+    }
+
+    $("sf_meta").textContent = `grid ${nT}×${nY} • segScale ${segScale}`;
+    if (!$("sf_status").textContent) {
+      $("sf_status").innerHTML = `<span class="pill">Drawn</span> slope field updated.`;
+    }
   }
 
-  // ---------- Numerical methods ----------
-  function stepper(method, fCompiled, t, y, h) {
-    if (method === "euler") {
-      const k1 = evalRHS(fCompiled, t, y);
-      return y + h * k1;
-    }
-    if (method === "heun") {
-      const k1 = evalRHS(fCompiled, t, y);
-      const yPred = y + h * k1;
-      const k2 = evalRHS(fCompiled, t + h, yPred);
-      return y + (h/2) * (k1 + k2);
-    }
-    // rk4 default
-    const k1 = evalRHS(fCompiled, t, y);
-    const k2 = evalRHS(fCompiled, t + h/2, y + h*k1/2);
-    const k3 = evalRHS(fCompiled, t + h/2, y + h*k2/2);
-    const k4 = evalRHS(fCompiled, t + h, y + h*k3);
-    return y + (h/6) * (k1 + 2*k2 + 2*k3 + k4);
-  }
-
-  // Build a full computed trajectory with internal step h,
-  // then sample it for display so we cap at maxRows.
-  function computeTable() {
-    $("error").textContent = "";
-    const tbody = $("tbody");
+  function computeSlopeTable(){
+    $("sf_error").textContent = "";
+    const tbody = $("sf_tbody");
     tbody.innerHTML = "";
 
-    const fStr = $("fInput").value;
-    let fCompiled;
-    try { fCompiled = compileRHS(fStr); }
-    catch (e) {
-      $("error").textContent = "Could not parse f(t,y). " + (e && e.message ? e.message : String(e));
+    const fStr = $("sf_f").value;
+    let compiled;
+    try{ compiled = compileRHS_ty(fStr); }
+    catch(e){
+      $("sf_error").textContent = "Parse error in f(t,y): " + (e?.message ?? String(e));
       return;
     }
 
-    const method = $("method").value;
-    const t0 = parseFloat($("t0").value);
-    const y0 = parseFloat($("y0").value);
-    const h = parseFloat($("h").value);
-    const tEnd = parseFloat($("tEnd").value);
-    const maxRows = Math.max(10, parseInt($("maxRows").value, 10) || 100);
+    const method = $("sf_method").value;
+    const t0 = parseFloat($("sf_t0").value);
+    const y0 = parseFloat($("sf_y0").value);
+    const h = parseFloat($("sf_h").value);
+    const tEnd = parseFloat($("sf_tend").value);
+    const maxRows = Math.max(10, parseInt($("sf_maxrows").value,10) || 100);
 
-    if (!Number.isFinite(t0) || !Number.isFinite(y0) || !Number.isFinite(h) || !Number.isFinite(tEnd)) {
-      $("error").textContent = "Please provide numeric values for t0, y0, h, and tEnd.";
+    if (!Number.isFinite(t0) || !Number.isFinite(y0) || !Number.isFinite(h) || !Number.isFinite(tEnd)){
+      $("sf_error").textContent = "Please provide numeric t0, y0, h, tEnd.";
       return;
     }
-    if (h <= 0) {
-      $("error").textContent = "Compute step h must be > 0.";
-      return;
-    }
-    if (!(tEnd > t0)) {
-      $("error").textContent = "Please ensure tEnd > t0 (forward integration).";
-      return;
-    }
+    if (h <= 0){ $("sf_error").textContent = "h must be > 0."; return; }
+    if (!(tEnd > t0)){ $("sf_error").textContent = "Need tEnd > t0."; return; }
 
     const totalSteps = Math.ceil((tEnd - t0) / h);
-    // Determine display step:
-    // If user sets it, respect it (but still cap rows by skipping if needed).
-    // If blank, auto choose a display step so rows <= maxRows.
-    const hDisplayRaw = $("hDisplay").value.trim();
-    let hDisplay = hDisplayRaw ? parseFloat(hDisplayRaw) : NaN;
 
-    if (!Number.isFinite(hDisplay) || hDisplay <= 0) {
-      // Auto: choose a multiple of h so we show <= maxRows rows.
+    const hDispRaw = $("sf_hdisp").value.trim();
+    let hDisp = hDispRaw ? parseFloat(hDispRaw) : NaN;
+
+    if (!Number.isFinite(hDisp) || hDisp <= 0){
       const approxEvery = Math.max(1, Math.ceil(totalSteps / (maxRows - 1)));
-      hDisplay = approxEvery * h;
+      hDisp = approxEvery * h;
     } else {
-      // Snap display step to at least h, and to a multiple of h for clean sampling
-      const mult = Math.max(1, Math.round(hDisplay / h));
-      hDisplay = mult * h;
+      const mult = Math.max(1, Math.round(hDisp / h));
+      hDisp = mult * h;
     }
+    const sampleEvery = Math.max(1, Math.round(hDisp / h));
 
-    // Compute full path but only keep sampled points
-    const sampleEvery = Math.max(1, Math.round(hDisplay / h));
-    let t = t0;
-    let y = y0;
-
+    let t = t0, y = y0;
     const rows = [];
-    for (let n = 0; n <= totalSteps; n++) {
-      if (n % sampleEvery === 0 || n === totalSteps) {
-        const ft = safeEvalForRow(fCompiled, t, y);
-        rows.push({ t, y, f: ft });
-        if (rows.length >= maxRows) break; // hard cap
+
+    for (let n=0; n<=totalSteps; n++){
+      if (n % sampleEvery === 0 || n === totalSteps){
+        let fval = NaN;
+        try{ fval = evalRHS_ty(compiled, t, y); }catch{}
+        rows.push({t,y,f:fval});
+        if (rows.length >= maxRows) break;
       }
-      // step forward unless last
-      if (n < totalSteps) {
-        const yNext = stepper(method, fCompiled, t, y, h);
+      if (n < totalSteps){
+        try{
+          y = stepper(method, compiled, t, y, h);
+        }catch(e){
+          $("sf_error").textContent = "Stopped early: " + (e?.message ?? String(e));
+          break;
+        }
         t = t + h;
-        y = yNext;
       }
     }
 
-    // Render rows
-    const fmt = (x) => {
-      if (!Number.isFinite(x)) return "—";
-      // nicer compact format
-      const abs = Math.abs(x);
-      if (abs !== 0 && (abs < 1e-4 || abs > 1e6)) return x.toExponential(6);
-      return (Math.round(x * 1e8) / 1e8).toString();
-    };
-
-    for (const r of rows) {
+    rows.forEach(r => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${fmt(r.t)}</td><td>${fmt(r.y)}</td><td>${fmt(r.f)}</td>`;
+      tr.innerHTML = `<td>${fmtNum(r.t)}</td><td>${fmtNum(r.y)}</td><td>${fmtNum(r.f)}</td>`;
       tbody.appendChild(tr);
-    }
-
-    $("tableMeta").textContent =
-      `rows: ${rows.length} • internal h=${h} • displayed every ${sampleEvery} step(s) (h_display≈${hDisplay})`;
-
-    $("status").innerHTML =
-      `<span class="pill">Table computed</span> using <span class="pill">${escapeHtml(method.toUpperCase())}</span> and f(t,y)=<span class="pill">${escapeHtml(fStr)}</span>`;
-  }
-
-  function safeEvalForRow(compiled, t, y) {
-    try { return evalRHS(compiled, t, y); }
-    catch { return NaN; }
-  }
-
-  // ---------- Helpers ----------
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    })[c]);
-  }
-
-  // ---------- Wire up ----------
-  whenReady(() => {
-    const rerender = () => renderMath($("fInput").value);
-
-    $("fInput").addEventListener("input", rerender);
-    $("drawBtn").addEventListener("click", () => { rerender(); drawSlopeField(); });
-    $("solveBtn").addEventListener("click", () => { rerender(); computeTable(); });
-
-    // Enter-to-run in RHS input
-    $("fInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { rerender(); drawSlopeField(); }
     });
 
-    // First render
-    rerender();
+    $("sf_status").innerHTML = `<span class="pill">Table</span> rows=${rows.length} (sampleEvery=${sampleEvery}, h_display≈${fmtNum(hDisp)})`;
+  }
+
+  // ---------- Wire everything ----------
+  whenReady(() => {
+    initTabs();
+
+    // initial renders
+    katexBoxRender($("int_math"), String.raw`\\int_{0}^{2} (${toLatexSafe($("int_f").value)})\\,dx`);
+    katexBoxRender($("pd_math"), String.raw`\\frac{\\partial f}{\\partial x}`);
+    katexBoxRender($("sf_math"), String.raw`\\frac{dy}{dt} = ${toLatexSafe($("sf_f").value)}`);
+
+    // integral
+    $("int_run").addEventListener("click", runIntegral);
+    $("int_f").addEventListener("input", () => {
+      const a = parseFloat($("int_a").value), b = parseFloat($("int_b").value);
+      katexBoxRender($("int_math"), String.raw`\\int_{${a}}^{${b}} \\left(${toLatexSafe($("int_f").value)}\\right)\\,dx`);
+    });
+    ["int_a","int_b"].forEach(id => $(id).addEventListener("input", () => {
+      const a = parseFloat($("int_a").value), b = parseFloat($("int_b").value);
+      katexBoxRender($("int_math"), String.raw`\\int_{${a}}^{${b}} \\left(${toLatexSafe($("int_f").value)}\\right)\\,dx`);
+    }));
+
+    // partial
+    $("pd_run").addEventListener("click", runPartial);
+    ["pd_f","pd_var","pd_order"].forEach(id => $(id).addEventListener("input", () => {
+      const fStr = $("pd_f").value;
+      const v = preprocess($("pd_var").value);
+      const order = Math.max(1, parseInt($("pd_order").value,10) || 1);
+      katexBoxRender($("pd_math"), String.raw`f = ${toLatexSafe(fStr)}\\quad\\Rightarrow\\quad \\frac{\\partial^{${order}} f}{\\partial ${v}^{${order}}}`);
+    }));
+
+    // slope field
+    $("sf_draw").addEventListener("click", drawSlopeField);
+    $("sf_table").addEventListener("click", computeSlopeTable);
+
+    // auto redraw on key changes (not too aggressive)
+    ["sf_f","sf_tmin","sf_tmax","sf_ymin","sf_ymax","sf_nt","sf_ny","sf_scale","sf_t0","sf_y0","sf_method","sf_h","sf_tend","sf_overlay"]
+      .forEach(id => $(id).addEventListener("change", () => {
+        katexBoxRender($("sf_math"), String.raw`\\frac{dy}{dt} = ${toLatexSafe($("sf_f").value)}`);
+        drawSlopeField();
+      }));
+
+    // first draw
     drawSlopeField();
   });
+
 })();
 </script>
 </body>
