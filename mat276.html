@@ -19,6 +19,14 @@
     .tabbtn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
     .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
 
+    /* LOCKED TAB STYLES */
+    .tabbtn.locked{
+      opacity:.55;
+      cursor:not-allowed;
+      background:#fff;
+    }
+    .tabbtn.locked:hover{ filter:none; }
+
     .panel { display:none; }
     .panel.active { display:block; }
 
@@ -310,6 +318,14 @@
   </div>
 
 <script>
+/* =========================
+   TAB LOCK CONFIG
+   Keep only these tabs accessible right now:
+   - linear2 (system of equations solver)
+   - integral (integral calculator)
+========================= */
+const UNLOCKED_TABS = new Set(["linear2","integral"]);
+
 /* =========================
    Small DOM helpers
 ========================= */
@@ -762,12 +778,47 @@ function MAT276_partials(){
 }
 
 /* =========================
-   Tabs
+   Tabs (with locking)
 ========================= */
+function applyTabLocks(){
+  document.querySelectorAll(".tabbtn").forEach(btn => {
+    const tab = btn.dataset.tab;
+    const locked = !UNLOCKED_TABS.has(tab);
+    btn.classList.toggle("locked", locked);
+    if (locked){
+      btn.setAttribute("aria-disabled","true");
+      btn.tabIndex = -1;
+      btn.title = "Locked (not available right now)";
+    } else {
+      btn.removeAttribute("aria-disabled");
+      btn.tabIndex = 0;
+      btn.title = "";
+    }
+  });
+
+  // Ensure the default active tab is an unlocked one
+  const currentActive = document.querySelector(".tabbtn.active")?.dataset?.tab;
+  if (!currentActive || !UNLOCKED_TABS.has(currentActive)){
+    const firstUnlocked = document.querySelector(`.tabbtn[data-tab="${[...UNLOCKED_TABS][0]}"]`) ||
+                          document.querySelector(`.tabbtn[data-tab="linear2"]`) ||
+                          document.querySelector(`.tabbtn[data-tab="integral"]`);
+    if (firstUnlocked) firstUnlocked.click();
+  }
+}
+
 document.addEventListener("click", (ev) => {
   const btn = ev.target;
   if (!btn.classList || !btn.classList.contains("tabbtn")) return;
+
   const tab = btn.dataset.tab;
+
+  // BLOCK LOCKED TABS
+  if (!UNLOCKED_TABS.has(tab)) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    return;
+  }
+
   document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
   btn.classList.add("active");
@@ -1172,7 +1223,6 @@ function SF_redraw(){
       return;
     }
 
-    // IMPORTANT: white background always (prevents black)
     const ctx = SF.ctx;
     ctx.clearRect(0,0,SF.canvas.width,SF.canvas.height);
     ctx.fillStyle = "#ffffff";
@@ -1185,7 +1235,6 @@ function SF_redraw(){
     SF_drawTimePlot(p, f);
     SF_fillTable(p, f);
   } catch (err) {
-    // keep canvas white if anything goes wrong
     if (SF.ctx && SF.canvas) {
       SF.ctx.fillStyle = "#ffffff";
       SF.ctx.fillRect(0,0,SF.canvas.width,SF.canvas.height);
@@ -1250,7 +1299,6 @@ function SF_init(){
   SF.canvas = $("sf_canvas");
   SF.timeCanvas = $("sf_timeplot");
 
-  // NOTE: default 2d context (alpha true) avoids opaque-black fallback
   SF.ctx = SF.canvas.getContext("2d");
   SF.timeCtx = SF.timeCanvas.getContext("2d");
 
@@ -1273,7 +1321,6 @@ function SF_init(){
       return;
     }
 
-    // add IVP at click
     let f;
     try { f = SF_makeFunction(p.expr); } catch { return; }
     const w = SF_pxToWorld(p, px, py);
@@ -1314,13 +1361,17 @@ document.addEventListener("click", (ev) => {
    Initial compute
 ========================= */
 window.addEventListener("load", () => {
+  // Lock tabs first, then force an unlocked landing tab
+  applyTabLocks();
+
+  // You can still compute behind the scenes; the panels just won't be accessible
   MAT276_eigen2();
   MAT276_linear2();
   MAT276_equilibrium();
   MAT276_integral();
   MAT276_partials();
   SF_init();
-  renderAllMath(); // ensures headings are rendered
+  renderAllMath();
 });
 </script>
 </body>
