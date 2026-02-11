@@ -17,6 +17,7 @@
     .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 12px 0 14px; }
     .tabbtn { border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:700; }
     .tabbtn.active { background: var(--blue); color:#fff; border-color:var(--blue); }
+    .tabbtn.disabled { opacity:0.45; cursor:not-allowed; }
     .panel { display:none; }
     .panel.active { display:block; }
     .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
@@ -45,53 +46,34 @@
       </div>
 
       <div class="tabs">
-        <button class="tabbtn active" data-tab="quad">Quadratic Roots</button>
-        <button class="tabbtn" data-tab="linear2">Linear System (2×2)</button>
+        <button class="tabbtn disabled" data-tab="quad">Quadratic Roots</button>
+        <button class="tabbtn disabled" data-tab="linear2">Linear System (2×2)</button>
+        <button class="tabbtn active" data-tab="combo">Combinations & Permutations</button>
       </div>
 
-      <div class="panel active" id="panel-quad">
+      <!-- Quadratic Panel (Disabled but preserved) -->
+      <div class="panel" id="panel-quad"></div>
+
+      <!-- Linear Panel (Disabled but preserved) -->
+      <div class="panel" id="panel-linear2"></div>
+
+      <!-- New Combinations Panel -->
+      <div class="panel active" id="panel-combo">
         <div class="row">
           <div class="box">
-            <h2 class="boxtitle">Solve x² = a x + b</h2>
+            <h2 class="boxtitle">Compute nPr and nCr</h2>
 
-            <label>a</label>
-            <input id="q_a" type="number" step="any" value="1" />
-            <label>b</label>
-            <input id="q_b" type="number" step="any" value="1" />
+            <label>n (total objects)</label>
+            <input id="c_n" type="number" step="1" value="5" min="0" />
 
-            <div class="actions">
-              <button id="q_compute">Compute</button>
-            </div>
-
-            <div class="out" id="q_out"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel" id="panel-linear2">
-        <div class="row">
-          <div class="box">
-            <h2 class="boxtitle">Solve a 2×2 Linear System</h2>
-
-            <label>Equation 1: a₁x + b₁y = c₁</label>
-            <div class="grid3">
-              <input id="l_a1" type="number" step="any" value="1" />
-              <input id="l_b1" type="number" step="any" value="1" />
-              <input id="l_c1" type="number" step="any" value="4" />
-            </div>
-
-            <label>Equation 2: a₂x + b₂y = c₂</label>
-            <div class="grid3">
-              <input id="l_a2" type="number" step="any" value="2" />
-              <input id="l_b2" type="number" step="any" value="-1" />
-              <input id="l_c2" type="number" step="any" value="1" />
-            </div>
+            <label>r (objects chosen)</label>
+            <input id="c_r" type="number" step="1" value="2" min="0" />
 
             <div class="actions">
-              <button id="l_solve">Solve</button>
+              <button id="c_compute">Compute</button>
             </div>
 
-            <div class="out" id="l_out"></div>
+            <div class="out" id="c_out"></div>
           </div>
         </div>
       </div>
@@ -100,12 +82,13 @@
   </div>
 
 <script type="module">
-  import { $, isFiniteAll, complex, fmtComplex, linear2_solve } from "./shared-math-tools.js";
 
-  // Tabs
+  // Tabs (disabled tabs ignored)
   document.addEventListener("click", (ev) => {
     const btn = ev.target;
     if (!btn.classList || !btn.classList.contains("tabbtn")) return;
+    if (btn.classList.contains("disabled")) return;
+
     const tab = btn.dataset.tab;
 
     document.querySelectorAll(".tabbtn").forEach(b => b.classList.remove("active"));
@@ -114,41 +97,43 @@
     document.getElementById("panel-" + tab).classList.add("active");
   });
 
-  function MAT227_quadratic(){
-    const a = parseFloat($("q_a").value);
-    const b = parseFloat($("q_b").value);
-    if (!isFiniteAll([a,b])) { $("q_out").textContent = "Invalid input."; return; }
+  // Factorial
+  function factorial(n){
+    if (n < 0) return NaN;
+    if (n === 0 || n === 1) return 1;
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+  }
 
-    const disc = a*a + 4*b;
-    let r1, r2;
-    if (disc >= 0) {
-      const s = Math.sqrt(disc);
-      r1 = complex((a + s)/2, 0);
-      r2 = complex((a - s)/2, 0);
-    } else {
-      const s = Math.sqrt(-disc);
-      r1 = complex(a/2,  s/2);
-      r2 = complex(a/2, -s/2);
+  function MAT227_combinations(){
+    const n = parseInt(document.getElementById("c_n").value);
+    const r = parseInt(document.getElementById("c_r").value);
+
+    if (!Number.isInteger(n) || !Number.isInteger(r) || n < 0 || r < 0){
+      document.getElementById("c_out").textContent = "n and r must be nonnegative integers.";
+      return;
     }
 
-    $("q_out").textContent =
-`x1 = ${fmtComplex(r1)}
-x2 = ${fmtComplex(r2)}`;
+    if (r > n){
+      document.getElementById("c_out").textContent = "r cannot be larger than n.";
+      return;
+    }
+
+    const nPr = factorial(n) / factorial(n - r);
+    const nCr = nPr / factorial(r);
+
+    document.getElementById("c_out").textContent =
+`Permutations (nPr) = ${nPr}
+Combinations (nCr) = ${nCr}`;
   }
 
-  function MAT227_linear2(){
-    $("l_out").textContent = linear2_solve("l");
-  }
-
-  // Buttons
   document.addEventListener("click", (ev) => {
-    const id = ev.target && ev.target.id;
-    if (id === "q_compute") MAT227_quadratic();
-    if (id === "l_solve") MAT227_linear2();
+    if (ev.target && ev.target.id === "c_compute") MAT227_combinations();
   });
 
-  MAT227_quadratic();
-  MAT227_linear2();
+  MAT227_combinations();
+
 </script>
 </body>
 </html>
