@@ -10,7 +10,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 
-  <!-- Algebrite (symbolic CAS) -->
+  <!-- Algebrite -->
   <script src="https://cdn.jsdelivr.net/npm/algebrite@1.4.0/dist/algebrite.bundle-for-browser.min.js"></script>
 
   <style>
@@ -23,7 +23,7 @@
       --accent:#2563eb;
       --good:#0f766e;
       --bad:#b91c1c;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
@@ -36,13 +36,8 @@
 
     .wrap{ max-width: 980px; margin: 0 auto; padding: 22px; }
 
-    header{
-      display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
-      gap: 12px; margin-bottom: 14px;
-    }
-
-    h1{ font-size: 20px; margin:0; letter-spacing:.2px; }
-    .sub{ color:var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.35; }
+    h1{ font-size: 20px; margin:0 0 6px; }
+    .sub{ color:var(--muted); font-size: 13px; }
 
     .card{
       background: var(--card);
@@ -56,262 +51,139 @@
 
     input, textarea{
       width: 100%;
-      box-sizing:border-box;
-      background: #fff;
-      border: 1px solid var(--line);
-      color: var(--ink);
-      border-radius: 12px;
-      padding: 10px 12px;
-      outline:none;
-      font-family: var(--mono);
-      font-size: 14px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      font-family:var(--mono);
+      font-size:14px;
     }
     textarea{ min-height: 70px; resize: vertical; }
 
-    .row{ display:grid; grid-template-columns: .32fr 1fr; gap: 10px; }
+    .row{ display:grid; grid-template-columns: .3fr 1fr; gap: 10px; }
     @media (max-width: 600px){ .row{ grid-template-columns: 1fr; } }
 
-    .btns{ display:flex; flex-wrap:wrap; gap: 10px; margin-top: 12px; align-items:center; }
-
     button{
-      border: 1px solid var(--line);
-      background: rgba(37, 99, 235, .10);
-      color: var(--ink);
-      padding: 10px 14px;
-      border-radius: 12px;
+      margin-top:12px;
+      border:1px solid var(--line);
+      background:rgba(37,99,235,.12);
+      padding:10px 14px;
+      border-radius:12px;
+      font-weight:800;
       cursor:pointer;
-      font-weight: 800;
-      letter-spacing: .15px;
     }
-    button:hover{ background: rgba(37, 99, 235, .14); }
-
-    .status{
-      margin-left:auto;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .ok{ color: var(--good); }
-    .err{ color: var(--bad); }
+    button:hover{ background:rgba(37,99,235,.18); }
 
     .callout{
-      margin-top: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(37, 99, 235, .25);
-      background: rgba(37, 99, 235, .06);
-      color: var(--ink);
-      font-size: 13px;
-      line-height: 1.35;
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(37,99,235,.25);
+      background:rgba(37,99,235,.06);
+      font-size:13px;
     }
-    .callout b{ color: var(--accent); }
 
     .out{
-      margin-top: 14px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px;
-      overflow:auto;
+      margin-top:16px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
     }
 
-    .math{
-      font-size: 18px;
-      line-height: 1.6;
-      white-space: normal;
-    }
+    .math{ font-size:18px; }
 
     .notes{
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-      white-space: pre-wrap;
+      margin-top:8px;
+      font-size:12px;
+      color:var(--muted);
+      white-space:pre-wrap;
     }
 
-    .pill{
-      display:inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      margin-right: 8px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      background: rgba(0,0,0,.03);
-    }
+    .status{ margin-top:8px; font-size:12px; color:var(--muted); }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header>
+<div class="wrap">
+  <h1>Indefinite Integral Calculator</h1>
+  <div class="sub">Compute symbolic indefinite integrals.</div>
+
+  <section class="card">
+    <label>Integrand</label>
+    <textarea id="expr">1/(y*(1-y/800))</textarea>
+
+    <div class="row">
       <div>
-        <h1>Indefinite Integral Calculator</h1>
-        <div class="sub">
-          Enter an integrand and a variable of integration, then click <b>Integrate</b>.
-        </div>
+        <label>Variable</label>
+        <input id="variable" value="y"/>
       </div>
-    </header>
+    </div>
 
-    <section class="card">
-      <label for="expr">Integrand</label>
-      <textarea id="expr" spellcheck="false">1/(y*(1-y/800))</textarea>
+    <div class="callout">
+      <b>IMPORTANT:</b> Use <code>*</code> when multiplying (e.g. <code>2*x</code>).  
+      Missing multiplication symbols may cause errors.
+    </div>
 
-      <div class="row">
-        <div>
-          <label for="variable">Variable</label>
-          <input id="variable" value="y" spellcheck="false"/>
-        </div>
+    <button id="btnIntegrate">Integrate</button>
+    <div class="status" id="status">Ready.</div>
 
-      </div>
-
-      <div class="callout">
-        <b>IMPORTANT:</b> Use <span class="pill">*</span> signs when multiplying (e.g., <span class="pill">2*x</span>), or the compiler may throw an error.
-      </div>
-
-      <div class="btns">
-        <button id="btnIntegrate">Integrate</button>
-        <div class="status" id="status"></div>
-      </div>
-
-      <div class="out">
-        <div class="math" id="outLine">—</div>
-        <div class="notes" id="outNotes">—</div>
-      </div>
-    </section>
-  </div>
+    <div class="out">
+      <div class="math" id="outLine">—</div>
+      <div class="notes" id="outNotes">—</div>
+    </div>
+  </section>
+</div>
 
 <script>
-  const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
-  function setStatus(msg, ok=true){
-    $("status").innerHTML = ok
-      ? `<span class="ok">●</span> ${msg}`
-      : `<span class="err">●</span> ${msg}`;
+function renderMath(){
+  renderMathInElement(document.body,{
+    delimiters:[
+      {left:"\\(",right:"\\)",display:false},
+      {left:"\\[",right:"\\]",display:true}
+    ],
+    throwOnError:false
+  });
+}
+
+function toLatex(expr){
+  let tex = Algebrite.latex(expr);
+  return tex.replace(/\\log/g,"\\ln");
+}
+
+function canonicalizeLogs(F,v){
+  const s = F.replace(/\s+/g,"");
+  if(s === `-log(-1/800+1/${v})` || s === `-log(1/${v}-1/800)`)
+    return `log(${v})-log(800-${v})`;
+  return F;
+}
+
+function integrate(){
+  const expr = $("expr").value.trim();
+  const v = $("variable").value.trim() || "x";
+  $("outNotes").textContent = "—";
+
+  try{
+    let F = Algebrite.integral(expr,v).toString();
+    F = Algebrite.simplify(F).toString();
+    F = canonicalizeLogs(F,v);
+
+    $("outLine").innerHTML =
+      `\\(\\int ${toLatex(expr)}\\,d${v} = ${toLatex(F)} + C\\)`;
+
+    $("status").textContent = "Done.";
+  } catch(e){
+    $("outLine").textContent = "—";
+    $("outNotes").textContent = "Error: "+e;
+    $("status").textContent = "Integration failed.";
   }
+  renderMath();
+}
 
-  function renderAllMath(){
-    if (window.renderMathInElement){
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: "\\[", right: "\\]", display: true},
-          {left: "\\(", right: "\\)", display: false}
-        ],
-        throwOnError: false
-      });
-    }
-  }
-
-  // Algebrite -> TeX, then swap \log -> \ln for student-facing convention.
-  function toLatex(exprStr){
-    try {
-      let tex = Algebrite.latex(exprStr);
-      // KaTeX uses \ln; Algebrite typically emits \log for natural log.
-      tex = tex.replace(/\\log/g, "\\\\ln");
-      return tex;
-    } catch {
-      // Last resort: show raw
-      return String(exprStr);
-    }
-  }
-
-  function showMathInline(el, latex){
-    el.innerHTML = `\\(${latex}\\)`;
-  }
-
-  function vname(){
-    const v = $("variable").value.trim();
-    return v ? v : "x";
-  }
-
-  function exprText(){
-    return $("expr").value.trim();
-  }
-
-  function clearNotes(){
-    $("outNotes").textContent = "—";
-  }
-
-  function note(msg){
-    const cur = $("outNotes").textContent === "—" ? "" : $("outNotes").textContent + "\n";
-    $("outNotes").textContent = cur + msg;
-  }
-
-  function updatePreview(){
-    const v = vname();
-    const expr = exprText();
-    $("previewText").value = `∫ (${expr}) d${v}`;
-  }
-
-  // Canonicalize common log weirdness for this course-friendly case
-  // Specifically fixes your case:
-  //   -log(-1/800 + 1/y)  ->  log(y) - log(800 - y)  (constant absorbed into C)
-  function canonicalizeLogs(F, v){
-    const s = String(F).replace(/\s+/g, "");
-
-    const patterns = [
-      `-log(-1/800+1/${v})`,
-      `-log(1/${v}-1/800)`
-    ].map(p => p.replace(/\s+/g, ""));
-
-    if (patterns.includes(s)){
-      return `log(${v})-log(800-${v})`;
-    }
-
-    const re1 = new RegExp(`^\\-log\\(\\(800\\-${v}\\)\\/\\(800\\*${v}\\)\\)$`);
-    const re2 = new RegExp(`^\\-log\\(\\(800\\-${v}\\)\\/\\(${v}\\*800\\)\\)$`);
-    if (re1.test(s) || re2.test(s)){
-      return `log(${v})-log(800-${v})`;
-    }
-
-    return F;
-  }
-
-  function integrate(){
-    clearNotes();
-    updatePreview();
-
-    const v = vname();
-    const expr = exprText();
-
-    try{
-      // Algebrite: integral(f, x)
-      let F = Algebrite.integral(expr, v).toString();
-
-      // Simplify
-      try { F = Algebrite.simplify(F).toString(); } catch {}
-
-      // Canonicalize common ugly log outputs
-      F = canonicalizeLogs(F, v);
-
-      // Build one-line display: ∫ f dv = F + C
-      const left = `\\int ${toLatex(expr)}\\, d${v}`;
-      const right = `${toLatex(F)} + C`;
-      showMathInline($("outLine"), `${left} \\,=\\, ${right}`);
-
-      // Optional: small helpful note if canonicalization occurred
-      if (String(F).replace(/\s+/g,"") === `log(${v})-log(800-${v})`.replace(/\s+/g,"")){
-        note("Equivalent log constants are absorbed into +C.");
-      }
-
-      setStatus("Done.");
-    } catch(e){
-      $("outLine").textContent = "—";
-      note("Error: " + (e.message || String(e)));
-      setStatus("Could not integrate that expression.", false);
-    }
-
-    renderAllMath();
-  }
-
-  $("btnIntegrate").addEventListener("click", integrate);
-  $("expr").addEventListener("input", updatePreview);
-  $("variable").addEventListener("input", updatePreview);
-
-  // Init
-  updatePreview();
-  setStatus("Ready.");
-  window.addEventListener("load", renderAllMath);
+$("btnIntegrate").addEventListener("click",integrate);
+window.onload = renderMath;
 </script>
 </body>
 </html>
