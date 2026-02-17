@@ -16,11 +16,9 @@
   <style>
     :root{
       --bg:#0b1220;
-      --card:#101a33;
       --ink:#e7ecff;
       --muted:#a9b3d6;
       --line:rgba(255,255,255,.10);
-      --accent:#8bd3ff;
       --good:#7CFFB2;
       --bad:#ff7c7c;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -110,11 +108,7 @@
       text-transform: uppercase;
     }
 
-    .math{
-      font-size: 16px;
-      line-height: 1.55;
-      white-space: normal;
-    }
+    .math{ font-size: 16px; line-height: 1.55; white-space: normal; }
 
     .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
     .pill{
@@ -188,7 +182,8 @@
         <div class="hint">
           <div><span class="pill">Syntax</span> Use <span class="pill">^</span> for powers, <span class="pill">*</span> for multiplication, and functions like <span class="pill">sin(x)</span>, <span class="pill">ln(x)</span>, <span class="pill">exp(x)</span>.</div>
           <div style="margin-top:8px;">
-            <span class="pill">Tip</span> For rational functions, click <b>Partial Fractions</b> first, then integrate the decomposed form.
+            <span class="pill">Fix</span> Integration results are now <b>verified by differentiation</b>. If Nerdamer returns an answer with the wrong sign,
+            the app will automatically correct it.
           </div>
 
           <div class="examples">
@@ -294,8 +289,36 @@
   function expand(expr){ return nerdamer(expr).expand().toString(); }
   function factor(expr){ return nerdamer(expr).factor().toString(); }
 
-  function integrateIndef(expr, v){
-    return nerdamer(`integrate(${expr}, ${v})`).toString();
+  // --------- NEW: integrate + verify by differentiating ----------
+  function integrateWithVerification(expr, v){
+    // Try a cleaned form first (often improves stability)
+    let cleanExpr = expr;
+    try {
+      cleanExpr = nerdamer(expr).simplify().toString();
+    } catch {}
+
+    // Candidate antiderivative from Nerdamer
+    const F = nerdamer(`integrate(${cleanExpr}, ${v})`).toString();
+
+    // Verify: d/dv(F) should equal expr (up to simplification).
+    // If it equals -expr, flip sign.
+    let dF, diff1, diff2;
+    try {
+      dF = nerdamer(`diff(${F}, ${v})`).simplify().toString();
+      diff1 = nerdamer(`(${dF}) - (${cleanExpr})`).simplify().toString();
+      if (diff1 === "0") return { F, corrected:false, verified:true, cleanExpr };
+
+      diff2 = nerdamer(`(${dF}) + (${cleanExpr})`).simplify().toString();
+      if (diff2 === "0") {
+        const flipped = nerdamer(`-(${F})`).toString();
+        return { F: flipped, corrected:true, verified:true, cleanExpr };
+      }
+
+      // Not verified (CAS might need assumptions/branch cuts/etc.)
+      return { F, corrected:false, verified:false, cleanExpr, dF, diff1, diff2 };
+    } catch {
+      return { F, corrected:false, verified:false, cleanExpr };
+    }
   }
 
   function actionIntegrate(){
@@ -314,10 +337,20 @@
     }
 
     try{
-      const F = integrateIndef(expr, v);
-      const Fs = nerdamer(F).simplify().toString();
+      const res = integrateWithVerification(expr, v);
+      const Fs = nerdamer(res.F).simplify().toString();
+
       showMath($("outResult"), `${toLatex(Fs)} + C`, true);
-      setStatus("Integrated successfully.");
+
+      if (res.verified && res.corrected){
+        note("Note: The CAS returned an antiderivative with the wrong sign. The app corrected it by differentiating and checking.", false);
+        setStatus("Integrated (auto-corrected sign via derivative check).");
+      } else if (res.verified){
+        setStatus("Integrated successfully (verified by derivative check).");
+      } else {
+        note("Warning: Could not fully verify the antiderivative by simplification. (This can happen with branch cuts, absolute values, or complex logs.)", false);
+        setStatus("Integrated, but verification was inconclusive.", true);
+      }
     } catch(e){
       $("outResult").textContent = "—";
       note(e.message || String(e), true);
