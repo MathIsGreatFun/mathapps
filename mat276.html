@@ -201,11 +201,24 @@
     }
   }
 
-  // Algebrite -> TeX, then swap \log -> \ln for student-facing convention.
+  // Normalize "log" -> "ln" in BOTH:
+  // 1) the raw Algebrite string (log(...) -> ln(...))
+  // 2) the TeX produced by Algebrite (\log -> \ln)
+  function normalizeLnRaw(s){
+    // Replace function calls log( ... ) with ln( ... )
+    // Use word boundary so we don't touch "catalog(" etc.
+    return String(s).replace(/\blog\s*\(/g, "ln(");
+  }
+
   function toLatex(exprStr){
     try {
-      let tex = Algebrite.latex(exprStr);
+      // First normalize raw string so Algebrite emits ln in its latex too (often)
+      const raw = normalizeLnRaw(exprStr);
+      let tex = Algebrite.latex(raw);
+
+      // Then normalize TeX no matter what
       tex = tex.replace(/\\log/g, "\\\\ln");
+
       return tex;
     } catch {
       return String(exprStr);
@@ -234,7 +247,6 @@
     $("outNotes").textContent = cur + msg;
   }
 
-  // Canonicalize common log weirdness for this course-friendly case
   function canonicalizeLogs(F, v){
     const s = String(F).replace(/\s+/g, "");
 
@@ -269,11 +281,15 @@
 
       F = canonicalizeLogs(F, v);
 
-      const left = `\\int ${toLatex(expr)}\\, d${v}`;
+      // Ensure final displayed expression uses ln
+      F = normalizeLnRaw(F);
+      const exprShown = normalizeLnRaw(expr);
+
+      const left = `\\int ${toLatex(exprShown)}\\, d${v}`;
       const right = `${toLatex(F)} + C`;
       showMathInline($("outLine"), `${left} \\,=\\, ${right}`);
 
-      if (String(F).replace(/\s+/g,"") === `log(${v})-log(800-${v})`.replace(/\s+/g,"")){
+      if (String(F).replace(/\s+/g,"") === `ln(${v})-ln(800-${v})`.replace(/\s+/g,"")){
         note("Equivalent log constants are absorbed into +C.");
       }
 
@@ -287,7 +303,6 @@
     renderAllMath();
   }
 
-  // Wire up UI
   $("btnIntegrate").addEventListener("click", integrate);
 
   // Init
