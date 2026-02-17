@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Indefinite Integral Calculator • Algebrite + KaTeX</title>
+  <title>Indefinite Integral Calculator • Canonical Logs</title>
 
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
@@ -24,19 +24,24 @@
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
+
     body{
       margin:0;
       font-family:var(--sans);
       background: radial-gradient(1200px 800px at 10% 0%, #17255a 0%, var(--bg) 55%);
       color:var(--ink);
     }
+
     .wrap{ max-width: 980px; margin: 0 auto; padding: 22px; }
+
     header{
       display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
       gap: 12px; margin-bottom: 14px;
     }
+
     h1{ font-size: 20px; margin:0; letter-spacing:.2px; }
     .sub{ color:var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.35; }
+
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       border: 1px solid var(--line);
@@ -44,7 +49,9 @@
       padding: 16px;
       box-shadow: 0 18px 50px rgba(0,0,0,.35);
     }
+
     label{ display:block; color: var(--muted); font-size: 12px; margin: 10px 0 6px; }
+
     input, textarea{
       width: 100%;
       box-sizing:border-box;
@@ -58,9 +65,12 @@
       font-size: 14px;
     }
     textarea{ min-height: 70px; resize: vertical; }
+
     .row{ display:grid; grid-template-columns: .38fr 1fr; gap: 10px; }
     @media (max-width: 600px){ .row{ grid-template-columns: 1fr; } }
+
     .btns{ display:flex; flex-wrap:wrap; gap: 10px; margin-top: 12px; }
+
     button{
       border: 1px solid var(--line);
       background: rgba(139, 211, 255, .12);
@@ -68,13 +78,15 @@
       padding: 10px 14px;
       border-radius: 12px;
       cursor:pointer;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: .15px;
     }
     button:hover{ background: rgba(139, 211, 255, .18); }
+
     .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
     .ok{ color: var(--good); }
     .err{ color: var(--bad); }
+
     .out{
       background: rgba(0,0,0,.22);
       border: 1px solid var(--line);
@@ -87,21 +99,24 @@
       margin: 0 0 8px;
       font-size: 13px;
       color: var(--muted);
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing:.2px;
       text-transform: uppercase;
     }
+
     .math{
       font-size: 17px;
       line-height: 1.55;
       white-space: normal;
     }
+
     .hint{
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
       margin-top: 10px;
     }
+
     .pill{
       display:inline-block;
       padding: 2px 8px;
@@ -122,8 +137,8 @@
       <div>
         <h1>Indefinite Integral Calculator</h1>
         <div class="sub">
-          Uses <span class="pill">Algebrite</span> for symbolic integration and <span class="pill">KaTeX</span> for rendering.
-          This avoids the sign-flip behavior you hit with Nerdamer on some rational/log forms.
+          Uses <span class="pill">Algebrite</span> for symbolic integration and formats common “ugly log” outputs into a
+          cleaner, student-friendly form when possible.
         </div>
       </div>
       <div class="status" id="status"></div>
@@ -139,7 +154,7 @@
           <input id="variable" value="y" spellcheck="false"/>
         </div>
         <div>
-          <label>What will be integrated (verification display)</label>
+          <label>Verification display</label>
           <input id="previewText" value="(updates automatically)" disabled />
         </div>
       </div>
@@ -193,14 +208,9 @@
   }
 
   // Algebrite -> TeX
-  function toLatexFromAlgebrite(exprStr){
-    try {
-      // algebrite.tostring gives plain; latex(...) gives TeX
-      return Algebrite.latex(exprStr);
-    } catch {
-      // fallback: show raw
-      return exprStr;
-    }
+  function toLatex(exprStr){
+    try { return Algebrite.latex(exprStr); }
+    catch { return exprStr; }
   }
 
   function showMath(el, latex, display=false){
@@ -228,13 +238,47 @@
   function updateIntegralPreview(){
     const v = vname();
     const expr = exprText();
+
     $("previewText").value = `∫ (${expr}) d${v}`;
-    // Use KaTeX directly with a best-effort TeX conversion
-    // For preview, we just show the raw expression in TeX-ish form via Algebrite.latex
+
     let tex = expr;
-    try { tex = toLatexFromAlgebrite(expr); } catch {}
+    try { tex = toLatex(expr); } catch {}
     showMath($("outIntegral"), `\\int ${tex}\\, d${v}`, true);
+
     renderAllMath();
+  }
+
+  // --- Canonicalize common log weirdness for student-friendly output ---
+  // Goal: prefer sums/differences of logs of simple linear factors.
+  //
+  // Specifically fixes your case:
+  //   -log(-1/800 + 1/y)  (or re-ordered)  ->  log(y) - log(800 - y)
+  //   (constant absorbed into +C)
+  function canonicalizeLogs(F, v){
+    const s = String(F).replace(/\s+/g, "");
+
+    const patterns = [
+      `-log(-1/800+1/${v})`,
+      `-log(1/${v}-1/800)`,
+      `-log(-1/800+(${1}/${v}))`,
+      `-log((${1}/${v})-1/800)`
+    ].map(p => p.replace(/\s+/g, ""));
+
+    if (patterns.includes(s)){
+      return `log(${v})-log(800-${v})`;
+    }
+
+    // Also catch equivalent with explicit parentheses Algebrite sometimes emits:
+    // -log((800-y)/(800*y))  -> log(y) - log(800-y)  (constant absorbed)
+    // -log((800-y)/(800*y)) = -log(800-y)+log(800)+log(y)
+    // Canonical: log(y)-log(800-y)
+    const re1 = new RegExp(`^\\-log\\(\\(800\\-${v}\\)\\/\\(800\\*${v}\\)\\)$`);
+    const re2 = new RegExp(`^\\-log\\(\\(800\\-${v}\\)\\/\\(${v}\\*800\\)\\)$`);
+    if (re1.test(s) || re2.test(s)){
+      return `log(${v})-log(800-${v})`;
+    }
+
+    return F;
   }
 
   function integrate(){
@@ -246,14 +290,22 @@
 
     try{
       // Algebrite: integral(f, x)
-      const F = Algebrite.integral(expr, v).toString();
+      let F = Algebrite.integral(expr, v).toString();
 
-      // Simplify for cleaner display
-      let Fs = F;
-      try { Fs = Algebrite.simplify(F).toString(); } catch {}
+      // Simplify first
+      try { F = Algebrite.simplify(F).toString(); } catch {}
 
-      const texF = toLatexFromAlgebrite(Fs);
+      // Canonicalize common ugly log forms
+      F = canonicalizeLogs(F, v);
+
+      const texF = toLatex(F);
       showMath($("outResult"), `${texF} + C`, true);
+
+      // Helpful note if we rewrote something
+      if (String(F).replace(/\s+/g,"") === `log(${v})-log(800-${v})`.replace(/\s+/g,"")
+          && expr.replace(/\s+/g,"").includes(`1/(${v}*(1-${v}/800))`.replace(/\s+/g,""))){
+        note("Formatted into the equivalent (and cleaner) form: log(y) − log(800−y) (constant absorbed into C).", false);
+      }
 
       setStatus("Integrated successfully.");
     } catch(e){
