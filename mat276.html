@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Indefinite Integral Calculator • Canonical Logs</title>
+  <title>Indefinite Integral Calculator</title>
 
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
@@ -15,12 +15,14 @@
 
   <style>
     :root{
-      --bg:#0b1220;
-      --ink:#e7ecff;
-      --muted:#a9b3d6;
-      --line:rgba(255,255,255,.10);
-      --good:#7CFFB2;
-      --bad:#ff7c7c;
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#4b5563;
+      --line:rgba(17,24,39,.14);
+      --accent:#2563eb;
+      --good:#0f766e;
+      --bad:#b91c1c;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
@@ -28,7 +30,7 @@
     body{
       margin:0;
       font-family:var(--sans);
-      background: radial-gradient(1200px 800px at 10% 0%, #17255a 0%, var(--bg) 55%);
+      background: radial-gradient(1200px 800px at 10% 0%, #e7efff 0%, var(--bg) 55%);
       color:var(--ink);
     }
 
@@ -43,11 +45,11 @@
     .sub{ color:var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.35; }
 
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 16px;
-      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
     }
 
     label{ display:block; color: var(--muted); font-size: 12px; margin: 10px 0 6px; }
@@ -55,7 +57,7 @@
     input, textarea{
       width: 100%;
       box-sizing:border-box;
-      background: rgba(0,0,0,.22);
+      background: #fff;
       border: 1px solid var(--line);
       color: var(--ink);
       border-radius: 12px;
@@ -66,14 +68,14 @@
     }
     textarea{ min-height: 70px; resize: vertical; }
 
-    .row{ display:grid; grid-template-columns: .38fr 1fr; gap: 10px; }
+    .row{ display:grid; grid-template-columns: .32fr 1fr; gap: 10px; }
     @media (max-width: 600px){ .row{ grid-template-columns: 1fr; } }
 
-    .btns{ display:flex; flex-wrap:wrap; gap: 10px; margin-top: 12px; }
+    .btns{ display:flex; flex-wrap:wrap; gap: 10px; margin-top: 12px; align-items:center; }
 
     button{
       border: 1px solid var(--line);
-      background: rgba(139, 211, 255, .12);
+      background: rgba(37, 99, 235, .10);
       color: var(--ink);
       padding: 10px 14px;
       border-radius: 12px;
@@ -81,40 +83,49 @@
       font-weight: 800;
       letter-spacing: .15px;
     }
-    button:hover{ background: rgba(139, 211, 255, .18); }
+    button:hover{ background: rgba(37, 99, 235, .14); }
 
-    .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .status{
+      margin-left:auto;
+      font-size: 12px;
+      color: var(--muted);
+    }
     .ok{ color: var(--good); }
     .err{ color: var(--bad); }
 
+    .callout{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(37, 99, 235, .25);
+      background: rgba(37, 99, 235, .06);
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .callout b{ color: var(--accent); }
+
     .out{
-      background: rgba(0,0,0,.22);
+      margin-top: 14px;
+      background: #fff;
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 12px;
-      margin-top: 12px;
       overflow:auto;
-    }
-    .out h3{
-      margin: 0 0 8px;
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 800;
-      letter-spacing:.2px;
-      text-transform: uppercase;
     }
 
     .math{
-      font-size: 17px;
-      line-height: 1.55;
+      font-size: 18px;
+      line-height: 1.6;
       white-space: normal;
     }
 
-    .hint{
+    .notes{
+      margin-top: 10px;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
-      margin-top: 10px;
+      white-space: pre-wrap;
     }
 
     .pill{
@@ -126,7 +137,7 @@
       font-family: var(--mono);
       font-size: 11px;
       color: var(--muted);
-      background: rgba(255,255,255,.04);
+      background: rgba(0,0,0,.03);
     }
   </style>
 </head>
@@ -137,15 +148,13 @@
       <div>
         <h1>Indefinite Integral Calculator</h1>
         <div class="sub">
-          Uses <span class="pill">Algebrite</span> for symbolic integration and formats common “ugly log” outputs into a
-          cleaner, student-friendly form when possible.
+          Enter an integrand and a variable of integration, then click <b>Integrate</b>.
         </div>
       </div>
-      <div class="status" id="status"></div>
     </header>
 
     <section class="card">
-      <label for="expr">Integrand \(f(\,\cdot\,)\)</label>
+      <label for="expr">Integrand</label>
       <textarea id="expr" spellcheck="false">1/(y*(1-y/800))</textarea>
 
       <div class="row">
@@ -154,34 +163,23 @@
           <input id="variable" value="y" spellcheck="false"/>
         </div>
         <div>
-          <label>Verification display</label>
-          <input id="previewText" value="(updates automatically)" disabled />
+          <label for="previewText">Preview</label>
+          <input id="previewText" value="∫ ( … ) d…" disabled />
         </div>
+      </div>
+
+      <div class="callout">
+        <b>IMPORTANT:</b> Use <span class="pill">*</span> signs when multiplying (e.g., <span class="pill">2*x</span>), or the compiler may throw an error.
       </div>
 
       <div class="btns">
         <button id="btnIntegrate">Integrate</button>
-      </div>
-
-      <div class="hint">
-        <span class="pill">Syntax</span> Use <span class="pill">^</span> for powers and functions like
-        <span class="pill">sin(x)</span>, <span class="pill">log(x)</span>, <span class="pill">exp(x)</span>.
-        (Algebrite uses <span class="pill">log</span> for natural log.)
+        <div class="status" id="status"></div>
       </div>
 
       <div class="out">
-        <h3>Integral being computed</h3>
-        <div class="math" id="outIntegral">—</div>
-      </div>
-
-      <div class="out">
-        <h3>Antiderivative</h3>
-        <div class="math" id="outResult">—</div>
-      </div>
-
-      <div class="out">
-        <h3>Notes / Errors</h3>
-        <div class="math" id="outNotes">—</div>
+        <div class="math" id="outLine">—</div>
+        <div class="notes" id="outNotes">—</div>
       </div>
     </section>
   </div>
@@ -207,14 +205,21 @@
     }
   }
 
-  // Algebrite -> TeX
+  // Algebrite -> TeX, then swap \log -> \ln for student-facing convention.
   function toLatex(exprStr){
-    try { return Algebrite.latex(exprStr); }
-    catch { return exprStr; }
+    try {
+      let tex = Algebrite.latex(exprStr);
+      // KaTeX uses \ln; Algebrite typically emits \log for natural log.
+      tex = tex.replace(/\\log/g, "\\\\ln");
+      return tex;
+    } catch {
+      // Last resort: show raw
+      return String(exprStr);
+    }
   }
 
-  function showMath(el, latex, display=false){
-    el.innerHTML = display ? `\\[${latex}\\]` : `\\(${latex}\\)`;
+  function showMathInline(el, latex){
+    el.innerHTML = `\\(${latex}\\)`;
   }
 
   function vname(){
@@ -230,48 +235,32 @@
     $("outNotes").textContent = "—";
   }
 
-  function note(msg, isErr=false){
+  function note(msg){
     const cur = $("outNotes").textContent === "—" ? "" : $("outNotes").textContent + "\n";
-    $("outNotes").textContent = cur + (isErr ? "Error: " : "") + msg;
+    $("outNotes").textContent = cur + msg;
   }
 
-  function updateIntegralPreview(){
+  function updatePreview(){
     const v = vname();
     const expr = exprText();
-
     $("previewText").value = `∫ (${expr}) d${v}`;
-
-    let tex = expr;
-    try { tex = toLatex(expr); } catch {}
-    showMath($("outIntegral"), `\\int ${tex}\\, d${v}`, true);
-
-    renderAllMath();
   }
 
-  // --- Canonicalize common log weirdness for student-friendly output ---
-  // Goal: prefer sums/differences of logs of simple linear factors.
-  //
+  // Canonicalize common log weirdness for this course-friendly case
   // Specifically fixes your case:
-  //   -log(-1/800 + 1/y)  (or re-ordered)  ->  log(y) - log(800 - y)
-  //   (constant absorbed into +C)
+  //   -log(-1/800 + 1/y)  ->  log(y) - log(800 - y)  (constant absorbed into C)
   function canonicalizeLogs(F, v){
     const s = String(F).replace(/\s+/g, "");
 
     const patterns = [
       `-log(-1/800+1/${v})`,
-      `-log(1/${v}-1/800)`,
-      `-log(-1/800+(${1}/${v}))`,
-      `-log((${1}/${v})-1/800)`
+      `-log(1/${v}-1/800)`
     ].map(p => p.replace(/\s+/g, ""));
 
     if (patterns.includes(s)){
       return `log(${v})-log(800-${v})`;
     }
 
-    // Also catch equivalent with explicit parentheses Algebrite sometimes emits:
-    // -log((800-y)/(800*y))  -> log(y) - log(800-y)  (constant absorbed)
-    // -log((800-y)/(800*y)) = -log(800-y)+log(800)+log(y)
-    // Canonical: log(y)-log(800-y)
     const re1 = new RegExp(`^\\-log\\(\\(800\\-${v}\\)\\/\\(800\\*${v}\\)\\)$`);
     const re2 = new RegExp(`^\\-log\\(\\(800\\-${v}\\)\\/\\(${v}\\*800\\)\\)$`);
     if (re1.test(s) || re2.test(s)){
@@ -283,7 +272,7 @@
 
   function integrate(){
     clearNotes();
-    updateIntegralPreview();
+    updatePreview();
 
     const v = vname();
     const expr = exprText();
@@ -292,38 +281,38 @@
       // Algebrite: integral(f, x)
       let F = Algebrite.integral(expr, v).toString();
 
-      // Simplify first
+      // Simplify
       try { F = Algebrite.simplify(F).toString(); } catch {}
 
-      // Canonicalize common ugly log forms
+      // Canonicalize common ugly log outputs
       F = canonicalizeLogs(F, v);
 
-      const texF = toLatex(F);
-      showMath($("outResult"), `${texF} + C`, true);
+      // Build one-line display: ∫ f dv = F + C
+      const left = `\\int ${toLatex(expr)}\\, d${v}`;
+      const right = `${toLatex(F)} + C`;
+      showMathInline($("outLine"), `${left} \\,=\\, ${right}`);
 
-      // Helpful note if we rewrote something
-      if (String(F).replace(/\s+/g,"") === `log(${v})-log(800-${v})`.replace(/\s+/g,"")
-          && expr.replace(/\s+/g,"").includes(`1/(${v}*(1-${v}/800))`.replace(/\s+/g,""))){
-        note("Formatted into the equivalent (and cleaner) form: log(y) − log(800−y) (constant absorbed into C).", false);
+      // Optional: small helpful note if canonicalization occurred
+      if (String(F).replace(/\s+/g,"") === `log(${v})-log(800-${v})`.replace(/\s+/g,"")){
+        note("Equivalent log constants are absorbed into +C.");
       }
 
-      setStatus("Integrated successfully.");
+      setStatus("Done.");
     } catch(e){
-      $("outResult").textContent = "—";
-      note(e.message || String(e), true);
-      setStatus("Could not integrate that expression symbolically.", false);
+      $("outLine").textContent = "—";
+      note("Error: " + (e.message || String(e)));
+      setStatus("Could not integrate that expression.", false);
     }
 
     renderAllMath();
   }
 
   $("btnIntegrate").addEventListener("click", integrate);
-  $("expr").addEventListener("input", updateIntegralPreview);
-  $("variable").addEventListener("input", updateIntegralPreview);
+  $("expr").addEventListener("input", updatePreview);
+  $("variable").addEventListener("input", updatePreview);
 
-  updateIntegralPreview();
-  $("outResult").textContent = "—";
-  $("outNotes").textContent = "—";
+  // Init
+  updatePreview();
   setStatus("Ready.");
   window.addEventListener("load", renderAllMath);
 </script>
