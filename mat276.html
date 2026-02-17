@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Indefinite Integral Calculator • Verified</title>
+  <title>Indefinite Integral Calculator • Algebrite + KaTeX</title>
 
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 
-  <!-- Nerdamer (symbolic CAS) -->
-  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/all.min.js"></script>
+  <!-- Algebrite (symbolic CAS) -->
+  <script src="https://cdn.jsdelivr.net/npm/algebrite@1.4.0/dist/algebrite.bundle-for-browser.min.js"></script>
 
   <style>
     :root{
@@ -24,24 +24,19 @@
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-
     body{
       margin:0;
       font-family:var(--sans);
       background: radial-gradient(1200px 800px at 10% 0%, #17255a 0%, var(--bg) 55%);
       color:var(--ink);
     }
-
     .wrap{ max-width: 980px; margin: 0 auto; padding: 22px; }
-
     header{
       display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
       gap: 12px; margin-bottom: 14px;
     }
-
     h1{ font-size: 20px; margin:0; letter-spacing:.2px; }
     .sub{ color:var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.35; }
-
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
       border: 1px solid var(--line);
@@ -49,9 +44,7 @@
       padding: 16px;
       box-shadow: 0 18px 50px rgba(0,0,0,.35);
     }
-
     label{ display:block; color: var(--muted); font-size: 12px; margin: 10px 0 6px; }
-
     input, textarea{
       width: 100%;
       box-sizing:border-box;
@@ -65,12 +58,9 @@
       font-size: 14px;
     }
     textarea{ min-height: 70px; resize: vertical; }
-
     .row{ display:grid; grid-template-columns: .38fr 1fr; gap: 10px; }
     @media (max-width: 600px){ .row{ grid-template-columns: 1fr; } }
-
     .btns{ display:flex; flex-wrap:wrap; gap: 10px; margin-top: 12px; }
-
     button{
       border: 1px solid var(--line);
       background: rgba(139, 211, 255, .12);
@@ -80,15 +70,11 @@
       cursor:pointer;
       font-weight: 700;
       letter-spacing: .15px;
-      transition: transform .02s ease, background .15s ease;
     }
     button:hover{ background: rgba(139, 211, 255, .18); }
-    button:active{ transform: translateY(1px); }
-
     .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
     .ok{ color: var(--good); }
     .err{ color: var(--bad); }
-
     .out{
       background: rgba(0,0,0,.22);
       border: 1px solid var(--line);
@@ -136,8 +122,8 @@
       <div>
         <h1>Indefinite Integral Calculator</h1>
         <div class="sub">
-          Uses <span class="pill">Nerdamer</span> for symbolic math, but the final answer is
-          <b>forced-correct</b> by differentiating and checking against the original integrand.
+          Uses <span class="pill">Algebrite</span> for symbolic integration and <span class="pill">KaTeX</span> for rendering.
+          This avoids the sign-flip behavior you hit with Nerdamer on some rational/log forms.
         </div>
       </div>
       <div class="status" id="status"></div>
@@ -164,7 +150,8 @@
 
       <div class="hint">
         <span class="pill">Syntax</span> Use <span class="pill">^</span> for powers and functions like
-        <span class="pill">sin(x)</span>, <span class="pill">ln(x)</span>, <span class="pill">exp(x)</span>.
+        <span class="pill">sin(x)</span>, <span class="pill">log(x)</span>, <span class="pill">exp(x)</span>.
+        (Algebrite uses <span class="pill">log</span> for natural log.)
       </div>
 
       <div class="out">
@@ -205,9 +192,15 @@
     }
   }
 
-  function toLatex(exprStr){
-    try { return nerdamer(exprStr).toTeX(); }
-    catch { return exprStr; }
+  // Algebrite -> TeX
+  function toLatexFromAlgebrite(exprStr){
+    try {
+      // algebrite.tostring gives plain; latex(...) gives TeX
+      return Algebrite.latex(exprStr);
+    } catch {
+      // fallback: show raw
+      return exprStr;
+    }
   }
 
   function showMath(el, latex, display=false){
@@ -236,61 +229,15 @@
     const v = vname();
     const expr = exprText();
     $("previewText").value = `∫ (${expr}) d${v}`;
-    showMath($("outIntegral"), `\\int ${toLatex(expr)}\\, d${v}`, true);
+    // Use KaTeX directly with a best-effort TeX conversion
+    // For preview, we just show the raw expression in TeX-ish form via Algebrite.latex
+    let tex = expr;
+    try { tex = toLatexFromAlgebrite(expr); } catch {}
+    showMath($("outIntegral"), `\\int ${tex}\\, d${v}`, true);
     renderAllMath();
   }
 
-  // --- Key fix: verify via derivative ratio ---
-  // We check r = simplify( d/dv(F) / expr ).
-  // If r = 1 -> correct.
-  // If r = -1 -> flip sign.
-  // This avoids the "diff difference doesn't simplify to 0" and avoids sign flips from rewriting (800-y) vs (y-800).
-  function verifyAndCorrect(expr, v, F){
-    const dF = nerdamer(`diff(${F}, ${v})`).simplify();
-    // Use ratio test against the ORIGINAL input expression (not a simplified version that might flip sign).
-    const r = nerdamer(`simplify( (${dF.toString()}) / (${expr}) )`).toString();
-
-    if (r === "1") return { F, corrected:false, verified:true, ratio:r };
-    if (r === "-1") return { F: nerdamer(`-(${F})`).toString(), corrected:true, verified:true, ratio:r };
-
-    // Fallback: also try ratio against a simplified copy of expr (sometimes helps)
-    let exprS = expr;
-    try { exprS = nerdamer(expr).simplify().toString(); } catch {}
-    const r2 = nerdamer(`simplify( (${dF.toString()}) / (${exprS}) )`).toString();
-    if (r2 === "1") return { F, corrected:false, verified:true, ratio:r2 };
-    if (r2 === "-1") return { F: nerdamer(`-(${F})`).toString(), corrected:true, verified:true, ratio:r2 };
-
-    return { F, corrected:false, verified:false, ratio:r, ratio2:r2 };
-  }
-
-  function integrateSmart(expr, v){
-    // Strategy:
-    // 1) Try to partial-fraction first (internally) because it stabilizes rational integrals.
-    // 2) Integrate the PF form (or original if PF fails).
-    // 3) Verify by differentiating and using the ratio check; correct sign if needed.
-
-    let useExpr = expr;
-
-    // Try PF quietly; if it works, use it for integration
-    try {
-      const pf = nerdamer(`partfrac(${expr}, ${v})`).toString();
-      // Only use PF if it actually changed something meaningfully
-      if (pf && pf !== expr) useExpr = pf;
-    } catch {}
-
-    const Fraw = nerdamer(`integrate(${useExpr}, ${v})`).toString();
-
-    // Verify/correct against ORIGINAL expr
-    const checked = verifyAndCorrect(expr, v, Fraw);
-
-    // Light cleanup for display
-    let Fpretty = checked.F;
-    try { Fpretty = nerdamer(Fpretty).simplify().toString(); } catch {}
-
-    return { ...checked, Fpretty, used: useExpr };
-  }
-
-  function actionIntegrate(){
+  function integrate(){
     clearNotes();
     updateIntegralPreview();
 
@@ -298,23 +245,17 @@
     const expr = exprText();
 
     try{
-      const res = integrateSmart(expr, v);
+      // Algebrite: integral(f, x)
+      const F = Algebrite.integral(expr, v).toString();
 
-      showMath($("outResult"), `${toLatex(res.Fpretty)} + C`, true);
+      // Simplify for cleaner display
+      let Fs = F;
+      try { Fs = Algebrite.simplify(F).toString(); } catch {}
 
-      if (res.verified && res.corrected){
-        note("The CAS initially produced an answer whose derivative was the negative of the integrand. The app flipped the sign to force correctness.", false);
-        setStatus("Integrated (sign corrected by derivative check).");
-      } else if (res.verified){
-        setStatus("Integrated (verified by derivative check).");
-      } else {
-        note("Warning: Could not conclusively verify by simplification. (This can happen with logs/branch cuts/absolute values.)", false);
-        setStatus("Integrated, but verification inconclusive.", false);
-      }
+      const texF = toLatexFromAlgebrite(Fs);
+      showMath($("outResult"), `${texF} + C`, true);
 
-      // For your specific troublesome case, this will now output:
-      // ln|y| - ln|800-y| + C (equivalently ln|y/(800-y)| + C)
-
+      setStatus("Integrated successfully.");
     } catch(e){
       $("outResult").textContent = "—";
       note(e.message || String(e), true);
@@ -324,12 +265,10 @@
     renderAllMath();
   }
 
-  // Wire up
-  $("btnIntegrate").addEventListener("click", actionIntegrate);
+  $("btnIntegrate").addEventListener("click", integrate);
   $("expr").addEventListener("input", updateIntegralPreview);
   $("variable").addEventListener("input", updateIntegralPreview);
 
-  // Init
   updateIntegralPreview();
   $("outResult").textContent = "—";
   $("outNotes").textContent = "—";
