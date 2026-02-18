@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>MAT276 • Indefinite Integral Calculator</title>
+  <title>MAT276 — Indefinite Integral Calculator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- KaTeX for rendering -->
+  <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 
-  <!-- Pyodide (Python + SymPy in browser) -->
+  <!-- Pyodide -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
 
   <style>
@@ -21,25 +21,17 @@
       --muted:#4b5563;
       --line:#d1d5db;
       --accent:#2563eb;
-      --good:#0f766e;
       --bad:#b91c1c;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
       --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-
     body{
       margin:0;
       font-family:var(--sans);
       background: radial-gradient(1200px 800px at 10% 0%, #e7efff 0%, var(--bg) 55%);
       color:var(--ink);
     }
-
-    .wrap{
-      max-width:980px;
-      margin:0 auto;
-      padding:24px;
-    }
-
+    .wrap{ max-width:980px; margin:0 auto; padding:24px; }
     h1{ margin:0 0 6px; font-size:22px; }
     .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; line-height:1.35; }
 
@@ -51,27 +43,6 @@
       box-shadow:0 10px 26px rgba(0,0,0,.06);
     }
 
-    .callout{
-      margin-top:12px;
-      padding:10px 12px;
-      border-radius:10px;
-      background:#eef2ff;
-      border:1px solid #c7d2fe;
-      font-size:13px;
-      line-height:1.35;
-    }
-    .callout b{ color:var(--accent); }
-    .pill{
-      display:inline-block;
-      padding:2px 8px;
-      border:1px solid rgba(17,24,39,.12);
-      border-radius:999px;
-      font-family:var(--mono);
-      font-size:12px;
-      background:rgba(0,0,0,.03);
-    }
-
-    /* Integral input row */
     .integral-row{
       display:flex;
       align-items:center;
@@ -83,19 +54,12 @@
       border-radius:12px;
       background:#fff;
     }
-
     .int-symbol{
       font-size:30px;
       line-height:1;
       padding:0 4px;
       user-select:none;
     }
-
-    .mono{
-      font-family:var(--mono);
-      font-size:14px;
-    }
-
     input[type="text"]{
       font-family:var(--mono);
       font-size:14px;
@@ -108,20 +72,13 @@
       min-width: 220px;
       flex: 1 1 360px;
     }
-
     .dx{
       display:flex;
       align-items:center;
       gap:8px;
       flex: 0 0 auto;
     }
-
-    .dchar{
-      font-family:var(--mono);
-      font-size:16px;
-      color:var(--ink);
-    }
-
+    .dchar{ font-family:var(--mono); font-size:16px; }
     .varbox{
       width:90px;
       min-width:90px;
@@ -129,11 +86,29 @@
       text-align:center;
       font-weight:700;
     }
-
     @media (max-width: 600px){
       input[type="text"]{ flex-basis: 100%; min-width: 0; }
       .dx{ width: 100%; justify-content:flex-start; }
       .varbox{ width: 120px; flex: 0 0 120px; }
+    }
+
+    .callout{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:10px;
+      background:#eef2ff;
+      border:1px solid #c7d2fe;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .pill{
+      display:inline-block;
+      padding:2px 8px;
+      border:1px solid rgba(17,24,39,.12);
+      border-radius:999px;
+      font-family:var(--mono);
+      font-size:12px;
+      background:rgba(0,0,0,.03);
     }
 
     button{
@@ -149,11 +124,7 @@
     button:hover{ background:#dbe5ff; }
     button:disabled{ opacity:.65; cursor:not-allowed; }
 
-    .status{
-      margin-top:10px;
-      font-size:13px;
-      color:var(--muted);
-    }
+    .status{ margin-top:10px; font-size:13px; color:var(--muted); }
 
     .out{
       margin-top:18px;
@@ -163,12 +134,7 @@
       background:#fff;
       overflow:auto;
     }
-
-    .math{
-      font-size:18px;
-      line-height:1.6;
-      white-space:normal;
-    }
+    .math{ font-size:18px; line-height:1.6; white-space:normal; }
 
     .msg{
       margin-top:10px;
@@ -180,6 +146,7 @@
       font-size:13px;
       line-height:1.35;
       display:none;
+      white-space:pre-wrap;
     }
 
     details.debug{
@@ -210,15 +177,13 @@
   </div>
 
   <div class="card">
-    <div class="integral-row" aria-label="Integral input">
+    <div class="integral-row">
       <div class="int-symbol">∫</div>
 
-      <!-- Integrand input (single line) -->
       <input id="expr" type="text" spellcheck="false" autocomplete="off"
              value="1/(y*(1-y/800))"
              placeholder="Enter f(x), e.g. sin(x)^2 or 1/(x*(x+2))" />
 
-      <!-- d(variable) input -->
       <div class="dx">
         <div class="dchar">d</div>
         <input id="variable" class="varbox" type="text" spellcheck="false" autocomplete="off"
@@ -227,8 +192,10 @@
     </div>
 
     <div class="callout">
-      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying (e.g. <span class="pill">2*x</span>, <span class="pill">(x+1)*(x-3)</span>).
-      Also make sure you set the variable after the <span class="pill">d</span> (for example, <span class="pill">dx</span> means integrate with respect to <span class="pill">x</span>).
+      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying
+      (e.g. <span class="pill">2*x</span>, <span class="pill">(x+1)*(x-3)</span>).
+      Also make sure you set the variable after the <span class="pill">d</span>
+      (for example, <span class="pill">dx</span> means integrate with respect to <span class="pill">x</span>).
     </div>
 
     <button id="btnIntegrate" disabled>Loading engine…</button>
@@ -239,7 +206,7 @@
     <div class="out">
       <div class="math" id="output">—</div>
 
-      <!-- optional instructor/debug details (hidden by default) -->
+      <!-- Instructor-only debug: hidden unless an error happens -->
       <details class="debug" id="debugDetails" style="display:none;">
         <summary>Show technical details (instructor)</summary>
         <pre id="debugText"></pre>
@@ -260,6 +227,10 @@ function renderMath(){
     ],
     throwOnError:false
   });
+}
+
+function setStatus(text){
+  document.getElementById("status").textContent = text;
 }
 
 function showFriendlyError(msg, debug=null){
@@ -286,14 +257,14 @@ function clearFriendlyError(){
   document.getElementById("debugText").textContent = "";
 }
 
-function setStatus(text){
-  document.getElementById("status").textContent = text;
+function sanitizeForPythonTripleQuotes(s){
+  return String(s).replace(/'''/g, "\\'\\'\\'");
 }
 
-function sanitizeForPythonTripleQuotes(s){
-  // We embed the student expression inside a Python raw triple-quoted string.
-  // The only real hazard is accidentally closing the triple quote.
-  return String(s).replace(/'''/g, "\\'\\'\\'");
+function replaceLogWithLn(tex){
+  // SymPy LaTeX uses \log for natural log by default.
+  // This makes it display as \ln for students.
+  return String(tex).replace(/\\log/g, "\\ln");
 }
 
 async function initPyodide(){
@@ -323,30 +294,35 @@ async function integrate(){
 
   setStatus("Computing…");
 
-  // Use SymPy exactly (engine unchanged); return LaTeX for rendering.
   const exprSafe = sanitizeForPythonTripleQuotes(expr);
 
+  // IMPORTANT CHANGE:
+  // We ask SymPy to LaTeX BOTH the integrand and the antiderivative.
+  // That removes the need for any homemade TeX conversion and prevents the \\int/\\cdot issues.
   const code = `
 import sympy as sp
 var = sp.Symbol('${v}')
 expr = sp.sympify(r'''${exprSafe}''')
 F = sp.integrate(expr, var)
 F = sp.simplify(F)
-sp.latex(F)
+expr_tex = sp.latex(expr)
+F_tex = sp.latex(F)
+expr_tex + "|||"+ F_tex
 `;
 
   try{
-    const tex = await pyodide.runPythonAsync(code);
+    const joined = await pyodide.runPythonAsync(code);
+    const parts = String(joined).split("|||");
+    const exprTex = replaceLogWithLn(parts[0] || "");
+    const FTex = replaceLogWithLn(parts[1] || "");
 
-    // Display: ∫ f(x) dx = F + C, with ln instead of log
-    const left = `\\\\int ${texifyForDisplay(expr)}\\\\, d${v}`;
-    const right = `${String(tex).replace(/\\\\log/g,"\\\\ln")} + C`;
+    // Note: use SINGLE backslash TeX commands inside \(...\)
+    const latexLine = `\\int ${exprTex}\\, d${v} = ${FTex} + C`;
+    document.getElementById("output").innerHTML = `\\(${latexLine}\\)`;
 
-    document.getElementById("output").innerHTML = `\\(${left} = ${right}\\)`;
     setStatus("Done.");
     renderMath();
   } catch(e){
-    // Friendly message only (no scary Python), plus optional hidden details.
     showFriendlyError(
       "I couldn’t parse that expression. Double-check:\n" +
       "• Use * for multiplication (example: 2*x, (x+1)*(x-3))\n" +
@@ -360,18 +336,9 @@ sp.latex(F)
   }
 }
 
-// Small helper just to make the left-hand display nicer.
-// (This does not affect computation; it’s display-only.)
-function texifyForDisplay(s){
-  // Minimal “safe” prettification:
-  // - show * as \cdot
-  // - keep everything else as typed
-  return String(s).replace(/\*/g, "\\\\cdot ").replace(/\s+/g," ");
-}
-
 document.getElementById("btnIntegrate").addEventListener("click", integrate);
 
-// Let Enter integrate when focused in either input (nice for students)
+// Enter key convenience
 document.getElementById("expr").addEventListener("keydown", (ev) => {
   if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
 });
