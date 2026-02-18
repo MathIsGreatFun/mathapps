@@ -14,97 +14,189 @@
   <script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"></script>
 
   <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#4b5563;
+      --line:#d1d5db;
+      --accent:#2563eb;
+      --good:#0f766e;
+      --bad:#b91c1c;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
     body{
       margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:#f6f7fb;
-      color:#111827;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 800px at 10% 0%, #e7efff 0%, var(--bg) 55%);
+      color:var(--ink);
     }
+
     .wrap{
-      max-width:960px;
+      max-width:980px;
       margin:0 auto;
       padding:24px;
     }
+
     h1{ margin:0 0 6px; font-size:22px; }
-    .sub{ color:#4b5563; font-size:14px; margin-bottom:18px; }
+    .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; line-height:1.35; }
 
     .card{
-      background:#fff;
-      border:1px solid #d1d5db;
+      background:var(--card);
+      border:1px solid var(--line);
       border-radius:14px;
       padding:16px;
-      box-shadow:0 8px 24px rgba(0,0,0,.06);
-    }
-
-    label{
-      display:block;
-      font-size:12px;
-      color:#4b5563;
-      margin:12px 0 6px;
-    }
-
-    textarea,input{
-      width:100%;
-      font-family:ui-monospace,Consolas,Menlo,monospace;
-      font-size:14px;
-      padding:10px 12px;
-      border:1px solid #d1d5db;
-      border-radius:10px;
-      box-sizing:border-box;
-    }
-
-    textarea{ min-height:70px; resize:vertical; }
-
-    .row{
-      display:grid;
-      grid-template-columns:140px 1fr;
-      gap:10px;
-      margin-top:6px;
-    }
-    @media (max-width:600px){
-      .row{ grid-template-columns:1fr; }
+      box-shadow:0 10px 26px rgba(0,0,0,.06);
     }
 
     .callout{
-      margin-top:14px;
+      margin-top:12px;
       padding:10px 12px;
       border-radius:10px;
       background:#eef2ff;
       border:1px solid #c7d2fe;
       font-size:13px;
+      line-height:1.35;
+    }
+    .callout b{ color:var(--accent); }
+    .pill{
+      display:inline-block;
+      padding:2px 8px;
+      border:1px solid rgba(17,24,39,.12);
+      border-radius:999px;
+      font-family:var(--mono);
+      font-size:12px;
+      background:rgba(0,0,0,.03);
+    }
+
+    /* Integral input row */
+    .integral-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+    }
+
+    .int-symbol{
+      font-size:30px;
+      line-height:1;
+      padding:0 4px;
+      user-select:none;
+    }
+
+    .mono{
+      font-family:var(--mono);
+      font-size:14px;
+    }
+
+    input[type="text"]{
+      font-family:var(--mono);
+      font-size:14px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      outline:none;
+      background:#fff;
+      color:var(--ink);
+      min-width: 220px;
+      flex: 1 1 360px;
+    }
+
+    .dx{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex: 0 0 auto;
+    }
+
+    .dchar{
+      font-family:var(--mono);
+      font-size:16px;
+      color:var(--ink);
+    }
+
+    .varbox{
+      width:90px;
+      min-width:90px;
+      flex: 0 0 90px;
+      text-align:center;
+      font-weight:700;
+    }
+
+    @media (max-width: 600px){
+      input[type="text"]{ flex-basis: 100%; min-width: 0; }
+      .dx{ width: 100%; justify-content:flex-start; }
+      .varbox{ width: 120px; flex: 0 0 120px; }
     }
 
     button{
       margin-top:14px;
       padding:10px 16px;
       font-size:14px;
-      font-weight:700;
+      font-weight:800;
       border-radius:10px;
       border:1px solid #c7d2fe;
       background:#e0e7ff;
       cursor:pointer;
     }
-    button:disabled{
-      opacity:.6;
-      cursor:not-allowed;
-    }
+    button:hover{ background:#dbe5ff; }
+    button:disabled{ opacity:.65; cursor:not-allowed; }
 
     .status{
-      margin-top:8px;
+      margin-top:10px;
       font-size:13px;
-      color:#4b5563;
+      color:var(--muted);
     }
 
     .out{
       margin-top:18px;
       padding:14px;
       border-radius:12px;
-      border:1px solid #d1d5db;
+      border:1px solid var(--line);
       background:#fff;
+      overflow:auto;
     }
 
     .math{
       font-size:18px;
+      line-height:1.6;
+      white-space:normal;
+    }
+
+    .msg{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(185,28,28,.25);
+      background:rgba(185,28,28,.06);
+      color:var(--bad);
+      font-size:13px;
+      line-height:1.35;
+      display:none;
+    }
+
+    details.debug{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    details.debug pre{
+      white-space:pre-wrap;
+      background:rgba(0,0,0,.03);
+      border:1px solid rgba(17,24,39,.10);
+      border-radius:10px;
+      padding:10px;
+      overflow:auto;
+      font-family:var(--mono);
+      font-size:12px;
+      color:#111827;
     }
   </style>
 </head>
@@ -113,31 +205,45 @@
 <div class="wrap">
   <h1>MAT276 — Indefinite Integral Calculator</h1>
   <div class="sub">
-    Powered by <b>SymPy</b> (via Pyodide).  
-    This is a full computer algebra system, not a lightweight JS parser.
+    Enter your integrand and the variable after the <span class="pill">d</span>, then click <b>Integrate</b>.
+    Natural logarithms are displayed as <b>ln</b>.
   </div>
 
   <div class="card">
-    <label>Integrand</label>
-    <textarea id="expr">1/(y*(1-y/800))</textarea>
+    <div class="integral-row" aria-label="Integral input">
+      <div class="int-symbol">∫</div>
 
-    <div class="row">
-      <div>
-        <label>Variable</label>
-        <input id="variable" value="y">
+      <!-- Integrand input (single line) -->
+      <input id="expr" type="text" spellcheck="false" autocomplete="off"
+             value="1/(y*(1-y/800))"
+             placeholder="Enter f(x), e.g. sin(x)^2 or 1/(x*(x+2))" />
+
+      <!-- d(variable) input -->
+      <div class="dx">
+        <div class="dchar">d</div>
+        <input id="variable" class="varbox" type="text" spellcheck="false" autocomplete="off"
+               value="y" placeholder="x" />
       </div>
     </div>
 
     <div class="callout">
-      <b>IMPORTANT:</b> Use <code>*</code> when multiplying (e.g. <code>2*x</code>).  
-      Natural logarithms are displayed as <b>log</b>.
+      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying (e.g. <span class="pill">2*x</span>, <span class="pill">(x+1)*(x-3)</span>).
+      Also make sure you set the variable after the <span class="pill">d</span> (for example, <span class="pill">dx</span> means integrate with respect to <span class="pill">x</span>).
     </div>
 
     <button id="btnIntegrate" disabled>Loading engine…</button>
     <div class="status" id="status">Initializing SymPy…</div>
 
+    <div class="msg" id="friendlyError"></div>
+
     <div class="out">
       <div class="math" id="output">—</div>
+
+      <!-- optional instructor/debug details (hidden by default) -->
+      <details class="debug" id="debugDetails" style="display:none;">
+        <summary>Show technical details (instructor)</summary>
+        <pre id="debugText"></pre>
+      </details>
     </div>
   </div>
 </div>
@@ -146,57 +252,135 @@
 let pyodide = null;
 
 function renderMath(){
-  renderMathInElement(document.body,{
-    delimiters:[
-      {left:"\\(",right:"\\)",display:false},
-      {left:"\\[",right:"\\]",display:true}
+  if (!window.renderMathInElement) return;
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left:"\\(", right:"\\)", display:false},
+      {left:"\\[", right:"\\]", display:true}
     ],
     throwOnError:false
   });
 }
 
+function showFriendlyError(msg, debug=null){
+  const box = document.getElementById("friendlyError");
+  box.style.display = "block";
+  box.textContent = msg;
+
+  const dbg = document.getElementById("debugDetails");
+  const dbgText = document.getElementById("debugText");
+  if (debug){
+    dbg.style.display = "block";
+    dbgText.textContent = String(debug);
+  } else {
+    dbg.style.display = "none";
+    dbgText.textContent = "";
+  }
+}
+
+function clearFriendlyError(){
+  const box = document.getElementById("friendlyError");
+  box.style.display = "none";
+  box.textContent = "";
+  document.getElementById("debugDetails").style.display = "none";
+  document.getElementById("debugText").textContent = "";
+}
+
+function setStatus(text){
+  document.getElementById("status").textContent = text;
+}
+
+function sanitizeForPythonTripleQuotes(s){
+  // We embed the student expression inside a Python raw triple-quoted string.
+  // The only real hazard is accidentally closing the triple quote.
+  return String(s).replace(/'''/g, "\\'\\'\\'");
+}
+
 async function initPyodide(){
   pyodide = await loadPyodide();
   await pyodide.loadPackage("sympy");
-  document.getElementById("btnIntegrate").disabled = false;
-  document.getElementById("btnIntegrate").textContent = "Integrate";
-  document.getElementById("status").textContent = "Ready.";
+
+  const btn = document.getElementById("btnIntegrate");
+  btn.disabled = false;
+  btn.textContent = "Integrate";
+  setStatus("Ready.");
 }
 
 async function integrate(){
-  const expr = document.getElementById("expr").value.trim();
-  const v = document.getElementById("variable").value.trim() || "x";
+  clearFriendlyError();
 
-  document.getElementById("status").textContent = "Computing…";
+  const expr = document.getElementById("expr").value.trim();
+  const v = (document.getElementById("variable").value.trim() || "x").replace(/\s+/g,"");
+
+  if (!expr){
+    showFriendlyError("Please enter an integrand (the function inside the integral).");
+    return;
+  }
+  if (!/^[A-Za-z_]\w*$/.test(v)){
+    showFriendlyError("Please enter a valid variable of integration (examples: x, y, t).");
+    return;
+  }
+
+  setStatus("Computing…");
+
+  // Use SymPy exactly (engine unchanged); return LaTeX for rendering.
+  const exprSafe = sanitizeForPythonTripleQuotes(expr);
 
   const code = `
 import sympy as sp
-${v} = sp.symbols('${v}')
-expr = sp.sympify(r'''${expr}''')
-F = sp.integrate(expr, ${v})
+var = sp.Symbol('${v}')
+expr = sp.sympify(r'''${exprSafe}''')
+F = sp.integrate(expr, var)
 F = sp.simplify(F)
 sp.latex(F)
 `;
 
   try{
     const tex = await pyodide.runPythonAsync(code);
-    document.getElementById("output").innerHTML =
-      `\\( \\int ${texify(expr)}\\, d${v} = ${tex.replace(/\\\\log/g,"\\\\ln")} + C \\)`;
-    document.getElementById("status").textContent = "Done.";
+
+    // Display: ∫ f(x) dx = F + C, with ln instead of log
+    const left = `\\\\int ${texifyForDisplay(expr)}\\\\, d${v}`;
+    const right = `${String(tex).replace(/\\\\log/g,"\\\\ln")} + C`;
+
+    document.getElementById("output").innerHTML = `\\(${left} = ${right}\\)`;
+    setStatus("Done.");
     renderMath();
-  }catch(e){
-    document.getElementById("output").textContent = "Error computing integral.";
-    document.getElementById("status").textContent = e.toString();
+  } catch(e){
+    // Friendly message only (no scary Python), plus optional hidden details.
+    showFriendlyError(
+      "I couldn’t parse that expression. Double-check:\n" +
+      "• Use * for multiplication (example: 2*x, (x+1)*(x-3))\n" +
+      "• Use ^ for powers (example: x^2)\n" +
+      "• Make sure the variable after the d is correct (dx, dy, dt)\n" +
+      "Then try again.",
+      e
+    );
+    setStatus("Not computed.");
+    document.getElementById("output").textContent = "—";
   }
 }
 
-function texify(s){
-  // minimal cleanup for display
-  return s.replace(/\*/g,"\\cdot ");
+// Small helper just to make the left-hand display nicer.
+// (This does not affect computation; it’s display-only.)
+function texifyForDisplay(s){
+  // Minimal “safe” prettification:
+  // - show * as \cdot
+  // - keep everything else as typed
+  return String(s).replace(/\*/g, "\\\\cdot ").replace(/\s+/g," ");
 }
 
 document.getElementById("btnIntegrate").addEventListener("click", integrate);
+
+// Let Enter integrate when focused in either input (nice for students)
+document.getElementById("expr").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
+});
+document.getElementById("variable").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
+});
+
 initPyodide();
+window.addEventListener("load", renderMath);
 </script>
 </body>
 </html>
