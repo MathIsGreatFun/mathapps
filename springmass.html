@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MAT276 — Damped Spring–Mass Animation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#111827;
+      --muted:#4b5563;
+      --line:#d1d5db;
+      --accent:#2563eb;
+      --bad:#b91c1c;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 800px at 10% 0%, #e7efff 0%, var(--bg) 55%);
+      color:var(--ink);
+    }
+    .wrap{ max-width:980px; margin:0 auto; padding:24px; }
+    h1{ margin:0 0 6px; font-size:22px; }
+    .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; line-height:1.35; }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:16px;
+      box-shadow:0 10px 26px rgba(0,0,0,.06);
+    }
+
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:flex-end;
+      margin-top:10px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+    }
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width: 140px;
+      flex: 1 1 160px;
+    }
+    .field label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+    input[type="number"]{
+      font-family:var(--mono);
+      font-size:14px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      outline:none;
+      background:#fff;
+      color:var(--ink);
+      width:100%;
+      box-sizing:border-box;
+    }
+
+    .btns{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-start;
+      flex: 0 0 auto;
+    }
+    button{
+      padding:10px 14px;
+      font-size:14px;
+      font-weight:800;
+      border-radius:10px;
+      border:1px solid #c7d2fe;
+      background:#e0e7ff;
+      cursor:pointer;
+      user-select:none;
+    }
+    button:hover{ background:#dbe5ff; }
+
+    .msg{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(185,28,28,.25);
+      background:rgba(185,28,28,.06);
+      color:var(--bad);
+      font-size:13px;
+      line-height:1.35;
+      display:none;
+      white-space:pre-wrap;
+    }
+
+    .viz{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap:12px;
+    }
+    @media (max-width: 820px){
+      .viz{ grid-template-columns: 1fr; }
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .panel .phdr{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      font-weight:900;
+      font-size:13px;
+      color:var(--muted);
+      background:linear-gradient(#ffffff, #fbfcff);
+    }
+    canvas{
+      display:block;
+      width:100%;
+      height:320px;
+      background:#fff;
+    }
+    .footnote{
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill{
+      display:inline-block;
+      padding:2px 8px;
+      border:1px solid rgba(17,24,39,.12);
+      border-radius:999px;
+      font-family:var(--mono);
+      font-size:12px;
+      background:rgba(0,0,0,.03);
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>MAT276 — Damped Spring–Mass System</h1>
+  <div class="sub">
+    Enter <span class="pill">m</span>, <span class="pill">b</span>, <span class="pill">k</span> for
+    <span class="pill">m y'' + b y' + k y = 0</span>, then press <b>Run</b>.
+    (Uses fixed initial conditions <span class="pill">y(0)=1</span>, <span class="pill">y'(0)=0</span>.)
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="m">m (mass)</label>
+        <input id="m" type="number" step="any" value="1" min="0">
+      </div>
+      <div class="field">
+        <label for="b">b (damping)</label>
+        <input id="b" type="number" step="any" value="0.6" min="0">
+      </div>
+      <div class="field">
+        <label for="k">k (spring constant)</label>
+        <input id="k" type="number" step="any" value="4" min="0">
+      </div>
+
+      <div class="btns">
+        <button id="btnRun">Run</button>
+        <button id="btnPlay">Pause</button>
+        <button id="btnReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="msg" id="err"></div>
+
+    <div class="viz">
+      <div class="panel">
+        <div class="phdr">Animation</div>
+        <canvas id="anim"></canvas>
+      </div>
+      <div class="panel">
+        <div class="phdr">Graph: y(t)</div>
+        <canvas id="plot"></canvas>
+      </div>
+    </div>
+
+    <div class="footnote">
+      Tip: Increase <span class="pill">b</span> to see overdamping, or decrease it to see oscillations.
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Model (closed-form y(t))
+   Fixed IC: y(0)=1, y'(0)=0
+   ========================= */
+function makeSolution(m, b, k){
+  const y0 = 1;
+  const v0 = 0;
+
+  const disc = b*b - 4*m*k;
+
+  if (disc > 1e-12){
+    // Overdamped: y = c1 e^{r1 t} + c2 e^{r2 t}
+    const sqrtD = Math.sqrt(disc);
+    const r1 = (-b + sqrtD) / (2*m);
+    const r2 = (-b - sqrtD) / (2*m);
+
+    // Solve:
+    // c1 + c2 = y0
+    // c1 r1 + c2 r2 = v0
+    const c1 = (v0 - y0*r2) / (r1 - r2);
+    const c2 = y0 - c1;
+
+    return {
+      type: "over",
+      y: (t) => c1*Math.exp(r1*t) + c2*Math.exp(r2*t),
+      // a heuristic period-like scale for plotting
+      tScale: 8 / Math.max(1e-6, Math.min(Math.abs(r1), Math.abs(r2)))
+    };
+  } else if (disc < -1e-12){
+    // Underdamped: y = e^{-α t}(C1 cos(ω t)+ C2 sin(ω t))
+    const alpha = b/(2*m);
+    const omega = Math.sqrt(4*m*k - b*b)/(2*m);
+
+    // y(0)=C1=y0
+    // y'(t)=e^{-αt}[ -α(C1 cos ωt + C2 sin ωt) + (-C1 ω sin ωt + C2 ω cos ωt)]
+    // y'(0)= -α C1 + ω C2 = v0  => C2 = (v0 + α C1)/ω
+    const C1 = y0;
+    const C2 = (v0 + alpha*C1)/omega;
+
+    return {
+      type: "under",
+      y: (t) => Math.exp(-alpha*t) * (C1*Math.cos(omega*t) + C2*Math.sin(omega*t)),
+      tScale: (Math.PI*8)/omega
+    };
+  } else {
+    // Critically damped: y = (c1 + c2 t)e^{rt}, r = -b/(2m)
+    const r = -b/(2*m);
+    // y(0)=c1=y0
+    // y'(t)=(c2 + r(c1 + c2 t))e^{rt}
+    // y'(0)= (c2 + r c1)=v0 => c2 = v0 - r c1
+    const c1 = y0;
+    const c2 = v0 - r*c1;
+
+    return {
+      type: "critical",
+      y: (t) => (c1 + c2*t)*Math.exp(r*t),
+      tScale: 10 / Math.max(1e-6, Math.abs(r))
+    };
+  }
+}
+
+/* =========================
+   UI helpers
+   ========================= */
+function showError(msg){
+  const box = document.getElementById("err");
+  box.style.display = msg ? "block" : "none";
+  box.textContent = msg || "";
+}
+
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+
+/* =========================
+   Canvas setup
+   ========================= */
+const animCanvas = document.getElementById("anim");
+const plotCanvas = document.getElementById("plot");
+const animCtx = animCanvas.getContext("2d");
+const plotCtx = plotCanvas.getContext("2d");
+
+function resizeCanvas(canvas){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor(rect.height * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+function resizeAll(){
+  resizeCanvas(animCanvas);
+  resizeCanvas(plotCanvas);
+}
+window.addEventListener("resize", resizeAll);
+
+/* =========================
+   Plotting
+   ========================= */
+function computeSamples(sol, T, N){
+  const xs = new Array(N);
+  const ys = new Array(N);
+  for (let i=0;i<N;i++){
+    const t = (T*i)/(N-1);
+    xs[i] = t;
+    ys[i] = sol.y(t);
+  }
+  // Determine y-range with padding
+  let ymin = Infinity, ymax = -Infinity;
+  for (const v of ys){ ymin = Math.min(ymin, v); ymax = Math.max(ymax, v); }
+  if (!isFinite(ymin) || !isFinite(ymax) || Math.abs(ymax-ymin) < 1e-9){
+    ymin = -1; ymax = 1;
+  }
+  const pad = 0.12*(ymax - ymin);
+  return {xs, ys, ymin: ymin-pad, ymax: ymax+pad};
+}
+
+function drawPlot(ctx, samples, tNow, yNow){
+  const w = plotCanvas.getBoundingClientRect().width;
+  const h = plotCanvas.getBoundingClientRect().height;
+
+  ctx.clearRect(0,0,w,h);
+
+  const margin = {l:44, r:18, t:14, b:34};
+  const x0 = margin.l, y0 = margin.t;
+  const pw = w - margin.l - margin.r;
+  const ph = h - margin.t - margin.b;
+
+  // Frame
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#d1d5db";
+  ctx.strokeRect(x0, y0, pw, ph);
+
+  const T = samples.xs[samples.xs.length-1];
+  const ymin = samples.ymin, ymax = samples.ymax;
+
+  const X = (t) => x0 + (t/T)*pw;
+  const Y = (y) => y0 + (1 - (y - ymin)/(ymax - ymin))*ph;
+
+  // Axes (t-axis at y=0 if visible)
+  ctx.strokeStyle = "#9ca3af";
+  ctx.lineWidth = 1;
+
+  // y-axis line at left already implied; draw t-axis if 0 in range
+  if (ymin < 0 && ymax > 0){
+    const yAxis = Y(0);
+    ctx.beginPath();
+    ctx.moveTo(x0, yAxis);
+    ctx.lineTo(x0+pw, yAxis);
+    ctx.stroke();
+  }
+
+  // Curve
+  ctx.strokeStyle = "#111827";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i=0;i<samples.xs.length;i++){
+    const px = X(samples.xs[i]);
+    const py = Y(samples.ys[i]);
+    if (i===0) ctx.moveTo(px,py);
+    else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  // Moving highlight
+  const hx = X(clamp(tNow, 0, T));
+  const hy = Y(yNow);
+
+  // vertical guide
+  ctx.strokeStyle = "rgba(37, 99, 235, 0.55)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(hx, y0);
+  ctx.lineTo(hx, y0+ph);
+  ctx.stroke();
+
+  // point
+  ctx.fillStyle = "#2563eb";
+  ctx.beginPath();
+  ctx.arc(hx, hy, 5, 0, Math.PI*2);
+  ctx.fill();
+
+  // labels (minimal)
+  ctx.fillStyle = "#4b5563";
+  ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  ctx.fillText("t", x0+pw-8, y0+ph+24);
+  ctx.fillText("y", 12, y0+12);
+}
+
+/* =========================
+   Spring animation
+   ========================= */
+function drawSpringMass(ctx, yNow, yMaxAbs){
+  const w = animCanvas.getBoundingClientRect().width;
+  const h = animCanvas.getBoundingClientRect().height;
+
+  ctx.clearRect(0,0,w,h);
+
+  const midY = h*0.55;
+  const leftX = 70;
+  const wallX = 40;
+
+  // scale y -> pixels
+  const ampPx = 90; // visual max shift
+  const yScaled = (yMaxAbs > 1e-9) ? (yNow / yMaxAbs) : yNow;
+  const dx = clamp(yScaled, -1, 1) * ampPx;
+
+  // Wall
+  ctx.fillStyle = "#111827";
+  ctx.fillRect(wallX, midY-80, 8, 160);
+
+  // Anchor point
+  const anchorX = wallX + 8;
+  const anchorY = midY;
+
+  // Mass
+  const massW = 80;
+  const massH = 60;
+  const massX = leftX + 160 + dx;
+  const massY = midY - massH/2;
+
+  // Spring: zig-zag from anchor to mass left face
+  const springStartX = anchorX;
+  const springEndX = massX;
+  const coils = 10;
+  const springY = midY;
+
+  const springLen = springEndX - springStartX;
+  const coilDx = springLen / (coils*2);
+  const coilAmp = 16;
+
+  ctx.strokeStyle = "#111827";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(springStartX, springY);
+
+  let x = springStartX;
+  for (let i=0;i<coils*2;i++){
+    x += coilDx;
+    const y = springY + (i%2===0 ? -coilAmp : coilAmp);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(springEndX, springY);
+  ctx.stroke();
+
+  // Connector to mass
+  ctx.strokeStyle = "#111827";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(springEndX, springY);
+  ctx.lineTo(massX, springY);
+  ctx.stroke();
+
+  // Mass block
+  ctx.fillStyle = "#e0e7ff";
+  ctx.strokeStyle = "#c7d2fe";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(massX, massY, massW, massH, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  // Small marker dot on mass
+  ctx.fillStyle = "#2563eb";
+  ctx.beginPath();
+  ctx.arc(massX + massW*0.5, massY + massH*0.5, 5, 0, Math.PI*2);
+  ctx.fill();
+
+  // Floor line (subtle)
+  ctx.strokeStyle = "#d1d5db";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, midY+80);
+  ctx.lineTo(w, midY+80);
+  ctx.stroke();
+}
+
+/* =========================
+   Animation loop
+   ========================= */
+let sol = makeSolution(1, 0.6, 4);
+let T = 12;
+let samples = computeSamples(sol, T, 700);
+
+let running = true;
+let tNow = 0;
+let lastTs = null;
+
+// For scaling mass animation nicely
+let yMaxAbs = 1;
+function recomputeYMaxAbs(){
+  yMaxAbs = 0;
+  for (const v of samples.ys) yMaxAbs = Math.max(yMaxAbs, Math.abs(v));
+  if (yMaxAbs < 1e-9) yMaxAbs = 1;
+}
+
+function frame(ts){
+  if (lastTs == null) lastTs = ts;
+  const dt = (ts - lastTs)/1000;
+  lastTs = ts;
+
+  if (running){
+  // Run animation ~70% faster than real time
+  tNow += 1.7 * dt;
+
+  // Loop
+  if (tNow > T) tNow = 0;
+}
+
+  const yNow = sol.y(tNow);
+
+  // Render
+  drawSpringMass(animCtx, yNow, yMaxAbs);
+  drawPlot(plotCtx, samples, tNow, yNow);
+
+  requestAnimationFrame(frame);
+}
+
+/* =========================
+   Controls
+   ========================= */
+function readParams(){
+  const m = Number(document.getElementById("m").value);
+  const b = Number(document.getElementById("b").value);
+  const k = Number(document.getElementById("k").value);
+
+  if (!isFinite(m) || !isFinite(b) || !isFinite(k)) throw new Error("Please enter numeric values for m, b, and k.");
+  if (m <= 0) throw new Error("m must be positive.");
+  if (k <= 0) throw new Error("k must be positive.");
+  if (b < 0)  throw new Error("b must be nonnegative.");
+
+  return {m, b, k};
+}
+
+function run(){
+  try{
+    showError("");
+    const {m, b, k} = readParams();
+
+    sol = makeSolution(m, b, k);
+
+    // Choose a plotting window T that shows several cycles / decay
+    // Keep it bounded for usability.
+    const guessT = sol.tScale;
+    T = clamp(guessT, 6, 30);
+
+    samples = computeSamples(sol, T, 900);
+    recomputeYMaxAbs();
+
+    tNow = 0;
+    lastTs = null;
+    running = true;
+    document.getElementById("btnPlay").textContent = "Pause";
+  } catch(e){
+    showError(String(e.message || e));
+  }
+}
+
+document.getElementById("btnRun").addEventListener("click", run);
+
+document.getElementById("btnPlay").addEventListener("click", () => {
+  running = !running;
+  document.getElementById("btnPlay").textContent = running ? "Pause" : "Play";
+});
+
+document.getElementById("btnReset").addEventListener("click", () => {
+  tNow = 0;
+  lastTs = null;
+});
+
+["m","b","k"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter"){ ev.preventDefault(); run(); }
+  });
+});
+
+// Canvas roundRect polyfill (older browsers)
+if (!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.arcTo(x+w, y, x+w, y+h, r);
+    this.arcTo(x+w, y+h, x, y+h, r);
+    this.arcTo(x, y+h, x, y, r);
+    this.arcTo(x, y, x+w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+
+// init
+resizeAll();
+run();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
