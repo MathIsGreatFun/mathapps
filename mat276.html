@@ -348,6 +348,124 @@ document.getElementById("variable").addEventListener("keydown", (ev) => {
 
 initPyodide();
 window.addEventListener("load", renderMath);
+
+
+<!-- App for calculating quadratic roots -->
+
+function showQuadraticError(msg){
+  const box = document.getElementById("quadraticError");
+  box.style.display = "block";
+  box.textContent = msg;
+}
+
+function clearQuadraticError(){
+  const box = document.getElementById("quadraticError");
+  box.style.display = "none";
+  box.textContent = "";
+}
+
+function setQuadraticStatus(text){
+  document.getElementById("quadraticStatus").textContent = text;
+}
+
+async function computeQuadraticRoots(){
+  clearQuadraticError();
+
+  const aText = document.getElementById("qa").value.trim();
+  const bText = document.getElementById("qb").value.trim();
+  const cText = document.getElementById("qc").value.trim();
+
+  if (aText === "" || bText === "" || cText === ""){
+    showQuadraticError("Please enter values for a, b, and c.");
+    return;
+  }
+
+  const a = Number(aText);
+  const b = Number(bText);
+  const c = Number(cText);
+
+  if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)){
+    showQuadraticError("Please enter valid numbers for a, b, and c.");
+    return;
+  }
+
+  if (a === 0){
+    showQuadraticError("The value of a cannot be 0 for a quadratic equation.");
+    return;
+  }
+
+  setQuadraticStatus("Computing...");
+
+  const discriminant = b*b - 4*a*c;
+  let latexLine = "";
+
+  if (discriminant > 0){
+    const root1 = (-b + Math.sqrt(discriminant)) / (2*a);
+    const root2 = (-b - Math.sqrt(discriminant)) / (2*a);
+
+    latexLine =
+      `\\text{Equation: } ${a}x^2 + (${b})x + (${c}) = 0` +
+      `<br>` +
+      `\\text{Discriminant: } ${discriminant}` +
+      `<br>` +
+      `\\text{Two real roots: } x=${root1},\\; x=${root2}`;
+  }
+  else if (discriminant === 0){
+    const root = -b / (2*a);
+
+    latexLine =
+      `\\text{Equation: } ${a}x^2 + (${b})x + (${c}) = 0` +
+      `<br>` +
+      `\\text{Discriminant: } ${discriminant}` +
+      `<br>` +
+      `\\text{One repeated real root: } x=${root}`;
+  }
+  else{
+    const realPart = -b / (2*a);
+    const imagPart = Math.sqrt(-discriminant) / (2*a);
+
+    latexLine =
+      `\\text{Equation: } ${a}x^2 + (${b})x + (${c}) = 0` +
+      `<br>` +
+      `\\text{Discriminant: } ${discriminant}` +
+      `<br>` +
+      `\\text{Two complex roots: } x=${realPart}+${imagPart}i,\\; x=${realPart}-${imagPart}i`;
+  }
+
+  document.getElementById("quadraticOutput").innerHTML = `\\(${latexLine}\\)`;
+  setQuadraticStatus("Done.");
+  renderMath();
+}
+
+document.getElementById("btnQuadratic").addEventListener("click", computeQuadraticRoots);
+
+document.getElementById("qa").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") {
+    ev.preventDefault();
+    computeQuadraticRoots();
+  }
+});
+
+document.getElementById("qb").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") {
+    ev.preventDefault();
+    computeQuadraticRoots();
+  }
+});
+
+document.getElementById("qc").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") {
+    ev.preventDefault();
+    computeQuadraticRoots();
+  }
+});
+
+  
+<!-- END quadratic roots calculator -->
+
+
+
+
 </script>
 </body>
 </html>
