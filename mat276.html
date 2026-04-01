@@ -243,6 +243,105 @@
   </div>
 </div>
 
+  <div style="height:18px;"></div>
+
+  <h1>Partial Fraction Decomposition Calculator</h1>
+  <div class="sub">
+    Enter a rational expression in one variable, then click <b>Decompose</b>.
+  </div>
+
+  <div class="card">
+    <div class="integral-row">
+      <input id="pfdExpr" type="text" spellcheck="false" autocomplete="off"
+             value="(3*x+5)/((x-1)*(x+2))"
+             placeholder="Enter a rational expression, e.g. (3*x+5)/((x-1)*(x+2))" />
+      <div class="dx">
+        <div class="dchar">variable</div>
+        <input id="pfdVar" class="varbox" type="text" spellcheck="false" autocomplete="off"
+               value="x" placeholder="x" />
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying.
+    </div>
+
+    <button id="btnPFD">Decompose</button>
+    <div class="status" id="pfdStatus">Ready.</div>
+
+    <div class="msg" id="pfdError"></div>
+
+    <div class="out">
+      <div class="math" id="pfdOutput">—</div>
+    </div>
+  </div>
+
+  <div style="height:18px;"></div>
+
+  <h1>2×2 System of Linear Equations Solver</h1>
+  <div class="sub">
+    Solve the system
+    <span class="pill">a k_1 + b k_2 = f_1</span>
+    and
+    <span class="pill">c k_1 + d k_2 = f_2</span>.
+  </div>
+
+  <div class="card">
+    <div class="integral-row">
+      <input id="sysA" type="text" spellcheck="false" autocomplete="off" value="2" placeholder="a" />
+      <input id="sysB" type="text" spellcheck="false" autocomplete="off" value="3" placeholder="b" />
+      <input id="sysF1" type="text" spellcheck="false" autocomplete="off" value="7" placeholder="f1" />
+    </div>
+
+    <div class="integral-row">
+      <input id="sysC" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="c" />
+      <input id="sysD" type="text" spellcheck="false" autocomplete="off" value="-1" placeholder="d" />
+      <input id="sysF2" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="f2" />
+    </div>
+
+    <div class="callout">
+      This solves for <span class="pill">k_1</span> and <span class="pill">k_2</span>.
+    </div>
+
+    <button id="btnSystemSolve">Solve System</button>
+    <div class="status" id="systemStatus">Ready.</div>
+
+    <div class="msg" id="systemError"></div>
+
+    <div class="out">
+      <div class="math" id="systemOutput">—</div>
+    </div>
+  </div>
+
+  <div style="height:18px;"></div>
+
+  <h1>Complete the Square Calculator</h1>
+  <div class="sub">
+    Enter values for <span class="pill">a</span>, <span class="pill">b</span>, and <span class="pill">c</span> in
+    <span class="pill">ax^2 + bx + c</span>, then click <b>Complete the Square</b>.
+  </div>
+
+  <div class="card">
+    <div class="integral-row">
+      <input id="ctsA" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="a" />
+      <input id="ctsB" type="text" spellcheck="false" autocomplete="off" value="6" placeholder="b" />
+      <input id="ctsC" type="text" spellcheck="false" autocomplete="off" value="5" placeholder="c" />
+    </div>
+
+    <div class="callout">
+      <b>IMPORTANT:</b> The value of <span class="pill">a</span> cannot be zero, or else the expression is not quadratic.
+    </div>
+
+    <button id="btnCTS">Complete the Square</button>
+    <div class="status" id="ctsStatus">Ready.</div>
+
+    <div class="msg" id="ctsError"></div>
+
+    <div class="out">
+      <div class="math" id="ctsOutput">—</div>
+    </div>
+  </div>
+  
 <script>
 let pyodide = null;
 
