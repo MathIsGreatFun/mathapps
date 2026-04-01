@@ -3,375 +3,238 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Complete the Square Calculator</title>
+  <title>Partial Fraction Decomposition Calculator</title>
 
   <!-- KaTeX -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
-    onload="renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '\\(', right: '\\)', display: false}
-      ]
-    });"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <!-- Nerdamer -->
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/nerdamer.core.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Solve.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Extra.js"></script>
 
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
-      background: #f4f6f8;
+      background: #f6f7fb;
       margin: 0;
       padding: 24px;
       color: #222;
     }
 
     .app {
-      max-width: 900px;
+      max-width: 860px;
       margin: 0 auto;
       background: white;
       border-radius: 14px;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.08);
-      padding: 28px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
     }
 
     h1 {
       margin-top: 0;
       margin-bottom: 10px;
-      font-size: 2rem;
-      text-align: center;
+      font-size: 1.8rem;
     }
 
     .subtitle {
-      text-align: center;
-      color: #555;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
-    .math-line {
-      text-align: center;
-      font-size: 1.1rem;
       margin-bottom: 22px;
+      color: #444;
+      line-height: 1.45;
     }
 
-    .inputs {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(140px, 1fr));
-      gap: 16px;
-      margin-bottom: 20px;
+    .mathline {
+      font-size: 1.15rem;
+      margin: 10px 0 18px 0;
+      padding: 10px 12px;
+      background: #f8f9fc;
+      border-radius: 10px;
     }
 
-    .input-group {
+    .row {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 14px;
     }
 
     label {
       font-weight: 600;
-      font-size: 1rem;
     }
 
-    input {
+    input[type="text"] {
+      flex: 1;
+      min-width: 260px;
       font-size: 1rem;
       padding: 10px 12px;
-      border: 1px solid #c9ced6;
+      border: 1px solid #cfd5e2;
       border-radius: 8px;
-      outline: none;
-    }
-
-    input:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-    }
-
-    .buttons {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
+      box-sizing: border-box;
     }
 
     button {
+      background: #2563eb;
+      color: white;
       border: none;
       border-radius: 8px;
       padding: 11px 18px;
       font-size: 1rem;
-      font-weight: 600;
       cursor: pointer;
     }
 
-    .primary {
-      background: #2563eb;
-      color: white;
+    button:hover {
+      background: #1d4ed8;
     }
 
-    .secondary {
-      background: #e5e7eb;
-      color: #111827;
+    .examples {
+      margin-top: 14px;
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      background: #f8f9fc;
+      border-radius: 10px;
+      line-height: 1.6;
     }
 
-    .panel {
-      background: #fafafa;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
+    .output {
+      margin-top: 22px;
       padding: 18px;
-      margin-top: 16px;
+      background: #fcfcff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      min-height: 80px;
     }
 
-    .panel h2 {
-      margin-top: 0;
-      font-size: 1.2rem;
-      margin-bottom: 14px;
-    }
-
-    .math-output {
-      overflow-x: auto;
-      padding: 6px 0;
+    .output-title {
+      font-weight: 700;
+      margin-bottom: 10px;
     }
 
     .error {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-      padding: 12px 14px;
-      border-radius: 10px;
-      margin-top: 12px;
+      color: #b00020;
+      font-weight: 600;
     }
 
-    .note {
-      color: #4b5563;
-      font-size: 0.96rem;
-      line-height: 1.5;
+    .katex-display {
+      margin: 0.9em 0;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
-    @media (max-width: 720px) {
-      .inputs {
-        grid-template-columns: 1fr;
-      }
+    .small {
+      color: #555;
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
 
-      .app {
-        padding: 18px;
-      }
+    code {
+      background: #eef2ff;
+      padding: 2px 6px;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <h1>Complete the Square Calculator</h1>
+    <h1>Partial Fraction Decomposition Calculator</h1>
     <div class="subtitle">
-      Enter the coefficients of a quadratic expression of the form
-      \( ax^2 + bx + c \), and the calculator will rewrite it in completed-square form.
+      Enter a rational expression in terms of <code>x</code>. The calculator will output its partial fraction decomposition.
     </div>
 
-    <div class="math-line">
-      \( ax^2 + bx + c \)
+    <div class="mathline" id="intro-math">
+      \( \text{Enter an expression such as } \frac{2x+3}{(x-1)(x+2)} \)
     </div>
 
-    <div class="inputs">
-      <div class="input-group">
-        <label for="a">\(a=\)</label>
-        <input id="a" type="number" step="any" value="1">
-      </div>
-      <div class="input-group">
-        <label for="b">\(b=\)</label>
-        <input id="b" type="number" step="any" value="6">
-      </div>
-      <div class="input-group">
-        <label for="c">\(c=\)</label>
-        <input id="c" type="number" step="any" value="5">
-      </div>
+    <div class="row">
+      <label for="expr">Expression =</label>
+      <input id="expr" type="text" value="(2x+3)/((x-1)(x+2))" />
+      <button id="decomposeBtn">Decompose</button>
     </div>
 
-    <div class="buttons">
-      <button class="primary" onclick="calculate()">Complete the Square</button>
-      <button class="secondary" onclick="clearAll()">Clear</button>
-      <button class="secondary" onclick="loadExample()">Example</button>
+    <div class="examples">
+      <strong>Examples:</strong><br>
+      <code>(2x+3)/((x-1)(x+2))</code><br>
+      <code>(x^2+5x+3)/(x(x+1)(x+3))</code><br>
+      <code>(3x+1)/((x-2)^2(x+4))</code>
     </div>
 
-    <div id="message"></div>
-    <div id="output"></div>
+    <div class="output" id="output">
+      <div class="output-title">Result</div>
+      <div id="result-math">Enter an expression and click <strong>Decompose</strong>.</div>
+    </div>
   </div>
 
   <script>
-    function gcd(a, b) {
-      a = Math.abs(a);
-      b = Math.abs(b);
-      while (b > 1e-12) {
-        const t = b;
-        b = a % b;
-        a = t;
-      }
-      return a;
+    function toLatexFromNerdamer(expr) {
+      return nerdamer(expr).toTeX();
     }
 
-    function toFraction(x, tol = 1e-10) {
-      if (!isFinite(x)) return null;
-      if (Math.abs(x) < tol) return { num: 0, den: 1 };
-
-      const sign = x < 0 ? -1 : 1;
-      x = Math.abs(x);
-
-      if (Math.abs(x - Math.round(x)) < tol) {
-        return { num: sign * Math.round(x), den: 1 };
-      }
-
-      let h1 = 1, h2 = 0, k1 = 0, k2 = 1;
-      let b = x;
-      let iter = 0;
-
-      do {
-        const a = Math.floor(b);
-        let h = a * h1 + h2;
-        let k = a * k1 + k2;
-        h2 = h1; h1 = h;
-        k2 = k1; k1 = k;
-        const frac = b - a;
-        if (Math.abs(frac) < tol) break;
-        b = 1 / frac;
-        iter++;
-      } while (iter < 20);
-
-      return { num: sign * h1, den: k1 };
-    }
-
-    function simplifyFraction(frac) {
-      if (!frac) return null;
-      if (frac.den === 0) return frac;
-      const g = gcd(frac.num, frac.den);
-      let num = frac.num / g;
-      let den = frac.den / g;
-      if (den < 0) {
-        num *= -1;
-        den *= -1;
-      }
-      return { num, den };
-    }
-
-    function fracToLatex(frac) {
-      frac = simplifyFraction(frac);
-      if (frac.den === 1) return `${frac.num}`;
-      return `\\frac{${frac.num}}{${frac.den}}`;
-    }
-
-    function decimalString(x) {
-      return Number(x).toFixed(4).replace(/\.?0+$/, "");
-    }
-
-    function valueToLatex(x) {
-      const frac = simplifyFraction(toFraction(x));
-      if (!frac) return decimalString(x);
-      const approx = frac.num / frac.den;
-      if (Math.abs(approx - x) < 1e-9) {
-        return fracToLatex(frac);
-      }
-      return decimalString(x);
-    }
-
-    function signedLatex(x) {
-      const latex = valueToLatex(Math.abs(x));
-      return x >= 0 ? `+ ${latex}` : `- ${latex}`;
-    }
-
-    function expressionLatex(a, b, c) {
-      let parts = [];
-
-      if (a !== 0) {
-        if (a === 1) parts.push("x^2");
-        else if (a === -1) parts.push("-x^2");
-        else parts.push(`${valueToLatex(a)}x^2`);
-      }
-
-      if (b !== 0) {
-        let term = Math.abs(b) === 1 ? "x" : `${valueToLatex(Math.abs(b))}x`;
-        if (parts.length === 0) {
-          parts.push(b < 0 ? `-${term}` : term);
-        } else {
-          parts.push(b < 0 ? `- ${term}` : `+ ${term}`);
-        }
-      }
-
-      if (c !== 0 || parts.length === 0) {
-        const term = valueToLatex(Math.abs(c));
-        if (parts.length === 0) {
-          parts.push(c < 0 ? `-${term}` : term);
-        } else {
-          parts.push(c < 0 ? `- ${term}` : `+ ${term}`);
-        }
-      }
-
-      return parts.join(" ");
-    }
-
-    function renderKatexInElement(el) {
+    function renderMathInElementById(id) {
+      const el = document.getElementById(id);
       renderMathInElement(el, {
         delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '\\(', right: '\\)', display: false}
-        ]
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ],
+        throwOnError: false
       });
     }
 
-    function calculate() {
-      const a = parseFloat(document.getElementById("a").value);
-      const b = parseFloat(document.getElementById("b").value);
-      const c = parseFloat(document.getElementById("c").value);
+    function decompose() {
+      const input = document.getElementById('expr').value.trim();
+      const resultBox = document.getElementById('result-math');
 
-      const message = document.getElementById("message");
-      const output = document.getElementById("output");
-      message.innerHTML = "";
-      output.innerHTML = "";
-
-      if ([a, b, c].some(v => Number.isNaN(v))) {
-        message.innerHTML = `<div class="error">Please enter valid numbers for \(a\), \(b\), and \(c\).</div>`;
-        renderKatexInElement(message);
+      if (!input) {
+        resultBox.innerHTML = '<div class="error">Please enter an expression.</div>';
         return;
       }
 
-      if (a === 0) {
-        message.innerHTML = `<div class="error">\(a\) must not be 0.</div>`;
-        renderKatexInElement(message);
-        return;
-      }
+      try {
+        // Compute partial fraction decomposition
+        const decomposition = nerdamer(`partfrac(${input}, x)`).toString();
 
-      const h = b / (2 * a);
-      const k = c - (b * b) / (4 * a);
+        // Build nice math display
+        const originalLatex = toLatexFromNerdamer(input);
+        const decomposedLatex = toLatexFromNerdamer(decomposition);
 
-      const original = expressionLatex(a, b, c);
-      const inside = `x ${signedLatex(h)}`.replace("+ -", "- ");
-      const squareForm = `${valueToLatex(a)}\\left(${inside}\\right)^2 ${signedLatex(k)}`
-        .replace(/^1/, "")
-        .replace(/\+ -/g, "- ");
-
-      output.innerHTML = `
-        <div class="panel">
-          <h2>Result</h2>
-          <div class="math-output">
-            $$ ${original} = ${squareForm} $$
+        resultBox.innerHTML = `
+          <div>
+            \\[
+              ${originalLatex}
+              =
+              ${decomposedLatex}
+            \\]
           </div>
-        </div>
-      `;
+        `;
 
-      renderKatexInElement(output);
+        renderMathInElementById('result-math');
+      } catch (err) {
+        resultBox.innerHTML = `
+          <div class="error">Could not compute the partial fraction decomposition.</div>
+          <div class="small">Please make sure the expression is a rational function in <code>x</code>.</div>
+        `;
+      }
     }
 
-    function clearAll() {
-      document.getElementById("a").value = "";
-      document.getElementById("b").value = "";
-      document.getElementById("c").value = "";
-      document.getElementById("message").innerHTML = "";
-      document.getElementById("output").innerHTML = "";
-    }
+    document.getElementById('decomposeBtn').addEventListener('click', decompose);
 
-    function loadExample() {
-      document.getElementById("a").value = "1";
-      document.getElementById("b").value = "6";
-      document.getElementById("c").value = "5";
-      calculate();
-    }
+    document.getElementById('expr').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') decompose();
+    });
 
-    window.addEventListener("load", () => {
-      calculate();
+    window.addEventListener('load', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ],
+        throwOnError: false
+      });
+      decompose();
     });
   </script>
 </body>
