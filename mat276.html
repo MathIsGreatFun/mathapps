@@ -20,10 +20,9 @@
       --ink:#111827;
       --muted:#4b5563;
       --line:#d1d5db;
-      --accent:#2563eb;
       --bad:#b91c1c;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --mono: ui-monospace, Menlo, Consolas, monospace;
+      --sans: system-ui, Arial, sans-serif;
     }
     body{
       margin:0;
@@ -33,543 +32,199 @@
     }
     .wrap{ max-width:980px; margin:0 auto; padding:24px; }
     h1{ margin:0 0 6px; font-size:22px; }
-    .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; line-height:1.35; }
-
+    .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; }
     .card{
       background:var(--card);
       border:1px solid var(--line);
       border-radius:14px;
       padding:16px;
-      box-shadow:0 10px 26px rgba(0,0,0,.06);
+      margin-bottom:20px;
     }
-
     .integral-row{
       display:flex;
-      align-items:center;
       gap:10px;
       flex-wrap:wrap;
       margin-top:10px;
-      padding:12px;
-      border:1px solid var(--line);
-      border-radius:12px;
-      background:#fff;
     }
-    .int-symbol{
-      font-size:30px;
-      line-height:1;
-      padding:0 4px;
-      user-select:none;
-    }
-    input[type="text"]{
-      font-family:var(--mono);
-      font-size:14px;
-      padding:10px 12px;
+    input{
+      padding:10px;
       border:1px solid var(--line);
       border-radius:10px;
-      outline:none;
-      background:#fff;
-      color:var(--ink);
-      min-width: 220px;
-      flex: 1 1 360px;
-    }
-    .dx{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex: 0 0 auto;
-    }
-    .dchar{ font-family:var(--mono); font-size:16px; }
-    .varbox{
-      width:90px;
-      min-width:90px;
-      flex: 0 0 90px;
-      text-align:center;
-      font-weight:700;
-    }
-    @media (max-width: 600px){
-      input[type="text"]{ flex-basis: 100%; min-width: 0; }
-      .dx{ width: 100%; justify-content:flex-start; }
-      .varbox{ width: 120px; flex: 0 0 120px; }
-    }
-
-    .callout{
-      margin-top:12px;
-      padding:10px 12px;
-      border-radius:10px;
-      background:#eef2ff;
-      border:1px solid #c7d2fe;
-      font-size:13px;
-      line-height:1.35;
-    }
-    .pill{
-      display:inline-block;
-      padding:2px 8px;
-      border:1px solid rgba(17,24,39,.12);
-      border-radius:999px;
       font-family:var(--mono);
-      font-size:12px;
-      background:rgba(0,0,0,.03);
     }
-
     button{
-      margin-top:14px;
+      margin-top:12px;
       padding:10px 16px;
-      font-size:14px;
-      font-weight:800;
+      font-weight:700;
       border-radius:10px;
       border:1px solid #c7d2fe;
       background:#e0e7ff;
       cursor:pointer;
     }
-    button:hover{ background:#dbe5ff; }
-    button:disabled{ opacity:.65; cursor:not-allowed; }
-
     .status{ margin-top:10px; font-size:13px; color:var(--muted); }
-
     .out{
-      margin-top:18px;
-      padding:14px;
-      border-radius:12px;
+      margin-top:14px;
+      padding:12px;
       border:1px solid var(--line);
+      border-radius:10px;
       background:#fff;
-      overflow:auto;
     }
-    .math{ font-size:18px; line-height:1.6; white-space:normal; }
-
+    .math{ font-size:18px; }
     .msg{
       margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
+      padding:10px;
+      border-radius:10px;
       border:1px solid rgba(185,28,28,.25);
       background:rgba(185,28,28,.06);
       color:var(--bad);
-      font-size:13px;
-      line-height:1.35;
       display:none;
-      white-space:pre-wrap;
     }
-
-    details.debug{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:12px;
-    }
-    details.debug pre{
-      white-space:pre-wrap;
-      background:rgba(0,0,0,.03);
-      border:1px solid rgba(17,24,39,.10);
-      border-radius:10px;
-      padding:10px;
-      overflow:auto;
+    .pill{
+      padding:2px 8px;
+      border-radius:999px;
+      background:#eee;
       font-family:var(--mono);
-      font-size:12px;
-      color:#111827;
     }
   </style>
 </head>
 
 <body>
 <div class="wrap">
-  <h1>MAT276 — Indefinite Integral Calculator</h1>
-  <div class="sub">
-    Enter your integrand and the variable after the <span class="pill">d</span>, then click <b>Integrate</b>.
-    Natural logarithms are displayed as <b>ln</b>.
+
+<h1>Indefinite Integral Calculator</h1>
+<div class="sub">Enter function and variable.</div>
+
+<div class="card">
+  <div class="integral-row">
+    <input id="expr" value="x^2" />
+    <input id="variable" value="x" style="width:80px;" />
   </div>
 
-  <div class="card">
-    <div class="integral-row">
-      <div class="int-symbol">∫</div>
+  <button id="btnIntegrate" disabled>Loading…</button>
+  <div class="status" id="status">Loading SymPy…</div>
 
-      <input id="expr" type="text" spellcheck="false" autocomplete="off"
-             value="1/(y*(1-y/800))"
-             placeholder="Enter f(x), e.g. sin(x)^2 or 1/(x*(x+2))" />
+  <div class="msg" id="friendlyError"></div>
 
-      <div class="dx">
-        <div class="dchar">d</div>
-        <input id="variable" class="varbox" type="text" spellcheck="false" autocomplete="off"
-               value="y" placeholder="x" />
-      </div>
-    </div>
-
-    <div class="callout">
-      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying
-      (e.g. <span class="pill">2*x</span>, <span class="pill">(x+1)*(x-3)</span>).
-      Also make sure you set the variable after the <span class="pill">d</span>
-      (for example, <span class="pill">dx</span> means integrate with respect to <span class="pill">x</span>).
-    </div>
-
-    <button id="btnIntegrate" disabled>Loading engine…</button>
-    <div class="status" id="status">Initializing SymPy…</div>
-
-    <div class="msg" id="friendlyError"></div>
-
-    <div class="out">
-      <div class="math" id="output">—</div>
-
-      <details class="debug" id="debugDetails" style="display:none;">
-        <summary>Show technical details (instructor)</summary>
-        <pre id="debugText"></pre>
-      </details>
-    </div>
-  </div>
-
-  <div style="height:18px;"></div>
-
-  <h1>Quadratic Root Calculator</h1>
-  <div class="sub">
-    Enter values for <span class="pill">a</span>, <span class="pill">b</span>, and <span class="pill">c</span> in
-    <span class="pill">ax^2 + bx + c = 0</span>, then click <b>Compute Roots</b>.
-  </div>
-
-  <div class="card">
-    <div class="integral-row">
-      <input id="qa" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="a" />
-      <input id="qb" type="text" spellcheck="false" autocomplete="off" value="0" placeholder="b" />
-      <input id="qc" type="text" spellcheck="false" autocomplete="off" value="-4" placeholder="c" />
-    </div>
-
-    <div class="callout">
-      <b>IMPORTANT:</b> The value of <span class="pill">a</span> cannot be zero, or else the equation is not quadratic.
-    </div>
-
-    <button id="btnQuadratic">Compute Roots</button>
-    <div class="status" id="quadraticStatus">Ready.</div>
-
-    <div class="msg" id="quadraticError"></div>
-
-    <div class="out">
-      <div class="math" id="quadraticOutput">—</div>
-    </div>
+  <div class="out">
+    <div id="output" class="math">—</div>
   </div>
 </div>
 
-  <div style="height:18px;"></div>
+<h1>Quadratic Root Calculator</h1>
+<div class="sub">Solve \(ax^2 + bx + c = 0\)</div>
 
-  <h1>Partial Fraction Decomposition Calculator</h1>
-  <div class="sub">
-    Enter a rational expression in one variable, then click <b>Decompose</b>.
+<div class="card">
+  <div class="integral-row">
+    <input id="qa" value="1">
+    <input id="qb" value="0">
+    <input id="qc" value="-4">
   </div>
 
-  <div class="card">
-    <div class="integral-row">
-      <input id="pfdExpr" type="text" spellcheck="false" autocomplete="off"
-             value="(3*x+5)/((x-1)*(x+2))"
-             placeholder="Enter a rational expression, e.g. (3*x+5)/((x-1)*(x+2))" />
-      <div class="dx">
-        <div class="dchar">variable</div>
-        <input id="pfdVar" class="varbox" type="text" spellcheck="false" autocomplete="off"
-               value="x" placeholder="x" />
-      </div>
-    </div>
+  <button id="btnQuadratic">Compute Roots</button>
+  <div class="status" id="quadraticStatus">Ready.</div>
 
-    <div class="callout">
-      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying.
-    </div>
+  <div class="msg" id="quadraticError"></div>
 
-    <button id="btnPFD">Decompose</button>
-    <div class="status" id="pfdStatus">Ready.</div>
-
-    <div class="msg" id="pfdError"></div>
-
-    <div class="out">
-      <div class="math" id="pfdOutput">—</div>
-    </div>
+  <div class="out">
+    <div id="quadraticOutput" class="math">—</div>
   </div>
+</div>
 
-  <div style="height:18px;"></div>
+<h1>Partial Fractions</h1>
+<div class="card">
+  <input id="pfdExpr" value="(3*x+5)/((x-1)*(x+2))">
+  <button id="btnPFD">Decompose</button>
+  <div class="out"><div id="pfdOutput"></div></div>
+</div>
 
-  <h1>2×2 System of Linear Equations Solver</h1>
-  <div class="sub">
-    Solve the system
-    <span class="pill">a k_1 + b k_2 = f_1</span>
-    and
-    <span class="pill">c k_1 + d k_2 = f_2</span>.
-  </div>
+<h1>System Solver</h1>
+<div class="card">
+  <input id="sysA" value="2">
+  <input id="sysB" value="3">
+  <input id="sysF1" value="7"><br><br>
+  <input id="sysC" value="1">
+  <input id="sysD" value="-1">
+  <input id="sysF2" value="1">
+  <button id="btnSystemSolve">Solve</button>
+  <div class="out"><div id="systemOutput"></div></div>
+</div>
 
-  <div class="card">
-    <div class="integral-row">
-      <input id="sysA" type="text" spellcheck="false" autocomplete="off" value="2" placeholder="a" />
-      <input id="sysB" type="text" spellcheck="false" autocomplete="off" value="3" placeholder="b" />
-      <input id="sysF1" type="text" spellcheck="false" autocomplete="off" value="7" placeholder="f1" />
-    </div>
+<h1>Complete the Square</h1>
+<div class="card">
+  <input id="ctsA" value="1">
+  <input id="ctsB" value="6">
+  <input id="ctsC" value="5">
+  <button id="btnCTS">Compute</button>
+  <div class="out"><div id="ctsOutput"></div></div>
+</div>
 
-    <div class="integral-row">
-      <input id="sysC" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="c" />
-      <input id="sysD" type="text" spellcheck="false" autocomplete="off" value="-1" placeholder="d" />
-      <input id="sysF2" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="f2" />
-    </div>
+</div>
 
-    <div class="callout">
-      This solves for <span class="pill">k_1</span> and <span class="pill">k_2</span>.
-    </div>
-
-    <button id="btnSystemSolve">Solve System</button>
-    <div class="status" id="systemStatus">Ready.</div>
-
-    <div class="msg" id="systemError"></div>
-
-    <div class="out">
-      <div class="math" id="systemOutput">—</div>
-    </div>
-  </div>
-
-  <div style="height:18px;"></div>
-
-  <h1>Complete the Square Calculator</h1>
-  <div class="sub">
-    Enter values for <span class="pill">a</span>, <span class="pill">b</span>, and <span class="pill">c</span> in
-    <span class="pill">ax^2 + bx + c</span>, then click <b>Complete the Square</b>.
-  </div>
-
-  <div class="card">
-    <div class="integral-row">
-      <input id="ctsA" type="text" spellcheck="false" autocomplete="off" value="1" placeholder="a" />
-      <input id="ctsB" type="text" spellcheck="false" autocomplete="off" value="6" placeholder="b" />
-      <input id="ctsC" type="text" spellcheck="false" autocomplete="off" value="5" placeholder="c" />
-    </div>
-
-    <div class="callout">
-      <b>IMPORTANT:</b> The value of <span class="pill">a</span> cannot be zero, or else the expression is not quadratic.
-    </div>
-
-    <button id="btnCTS">Complete the Square</button>
-    <div class="status" id="ctsStatus">Ready.</div>
-
-    <div class="msg" id="ctsError"></div>
-
-    <div class="out">
-      <div class="math" id="ctsOutput">—</div>
-    </div>
-  </div>
-  
 <script>
 let pyodide = null;
 
 function renderMath(){
   if (!window.renderMathInElement) return;
-  renderMathInElement(document.body, {
-    delimiters: [
-      {left:"\\(", right:"\\)", display:false},
-      {left:"\\[", right:"\\]", display:true}
-    ],
-    throwOnError:false
-  });
-}
-
-function setStatus(text){
-  document.getElementById("status").textContent = text;
-}
-
-function showFriendlyError(msg, debug=null){
-  const box = document.getElementById("friendlyError");
-  box.style.display = "block";
-  box.textContent = msg;
-
-  const dbg = document.getElementById("debugDetails");
-  const dbgText = document.getElementById("debugText");
-  if (debug){
-    dbg.style.display = "block";
-    dbgText.textContent = String(debug);
-  } else {
-    dbg.style.display = "none";
-    dbgText.textContent = "";
-  }
-}
-
-function clearFriendlyError(){
-  const box = document.getElementById("friendlyError");
-  box.style.display = "none";
-  box.textContent = "";
-  document.getElementById("debugDetails").style.display = "none";
-  document.getElementById("debugText").textContent = "";
-}
-
-function sanitizeForPythonTripleQuotes(s){
-  return String(s).replace(/'''/g, "\\'\\'\\'");
-}
-
-function replaceLogWithLn(tex){
-  return String(tex).replace(/\\log/g, "\\ln");
+  renderMathInElement(document.body,{delimiters:[{left:"\\(",right:"\\)",display:false}]});
 }
 
 async function initPyodide(){
   pyodide = await loadPyodide();
   await pyodide.loadPackage("sympy");
-
-  const btn = document.getElementById("btnIntegrate");
-  btn.disabled = false;
-  btn.textContent = "Integrate";
-  setStatus("Ready.");
+  document.getElementById("btnIntegrate").disabled = false;
 }
 
 async function integrate(){
-  clearFriendlyError();
-
-  const expr = document.getElementById("expr").value.trim();
-  const v = (document.getElementById("variable").value.trim() || "x").replace(/\s+/g,"");
-
-  if (!expr){
-    showFriendlyError("Please enter an integrand (the function inside the integral).");
-    return;
-  }
-  if (!/^[A-Za-z_]\\w*$/.test(v)){
-    showFriendlyError("Please enter a valid variable of integration (examples: x, y, t).");
-    return;
-  }
-
-  setStatus("Computing…");
-
-  const exprSafe = sanitizeForPythonTripleQuotes(expr);
+  const expr = document.getElementById("expr").value;
+  const v = document.getElementById("variable").value;
 
   const code = `
 import sympy as sp
-var = sp.Symbol('${v}')
-expr = sp.sympify(r'''${exprSafe}''')
-F = sp.integrate(expr, var)
-F = sp.simplify(F)
-expr_tex = sp.latex(expr)
-F_tex = sp.latex(F)
-expr_tex + "|||"+ F_tex
+x=sp.Symbol('${v}')
+expr=sp.sympify(r'''${expr}''')
+sp.latex(sp.integrate(expr,x))
 `;
 
-  try{
-    const joined = await pyodide.runPythonAsync(code);
-    const parts = String(joined).split("|||");
-    const exprTex = replaceLogWithLn(parts[0] || "");
-    const FTex = replaceLogWithLn(parts[1] || "");
-
-    const latexLine = `\\int ${exprTex}\\, d${v} = ${FTex} + C`;
-    document.getElementById("output").innerHTML = `\\(${latexLine}\\)`;
-
-    setStatus("Done.");
-    renderMath();
-  } catch(e){
-    showFriendlyError(
-      "I couldn’t parse that expression. Double-check:\n" +
-      "• Use * for multiplication (example: 2*x, (x+1)*(x-3))\n" +
-      "• Use ^ for powers (example: x^2)\n" +
-      "• Make sure the variable after the d is correct (dx, dy, dt)\n" +
-      "Then try again.",
-      e
-    );
-    setStatus("Not computed.");
-    document.getElementById("output").textContent = "—";
-  }
-}
-
-document.getElementById("btnIntegrate").addEventListener("click", integrate);
-
-document.getElementById("expr").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
-});
-document.getElementById("variable").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
-});
-
-// Quadratic roots calculator
-
-function showQuadraticError(msg){
-  const box = document.getElementById("quadraticError");
-  box.style.display = "block";
-  box.textContent = msg;
-}
-
-function clearQuadraticError(){
-  const box = document.getElementById("quadraticError");
-  box.style.display = "none";
-  box.textContent = "";
-}
-
-function setQuadraticStatus(text){
-  document.getElementById("quadraticStatus").textContent = text;
-}
-
-function formatNumberForDisplay(num){
-  if (Number.isInteger(num)) return String(num);
-  return String(Number(num.toFixed(10)));
-}
-
-async function computeQuadraticRoots(){
-  clearQuadraticError();
-
-  const aText = document.getElementById("qa").value.trim();
-  const bText = document.getElementById("qb").value.trim();
-  const cText = document.getElementById("qc").value.trim();
-
-  if (aText === "" || bText === "" || cText === ""){
-    showQuadraticError("Please enter values for a, b, and c.");
-    return;
-  }
-
-  const a = Number(aText);
-  const b = Number(bText);
-  const c = Number(cText);
-
-  if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)){
-    showQuadraticError("Please enter valid numbers for a, b, and c.");
-    return;
-  }
-
-  if (a === 0){
-    showQuadraticError("The value of a cannot be 0 for a quadratic equation.");
-    return;
-  }
-
-  setQuadraticStatus("Computing…");
-
-  const discriminant = b*b - 4*a*c;
-  let lines = [];
-
-  lines.push(`\\text{Equation: } ${formatNumberForDisplay(a)}x^2 + (${formatNumberForDisplay(b)})x + (${formatNumberForDisplay(c)}) = 0`);
-  lines.push(`\\text{Discriminant: } ${formatNumberForDisplay(discriminant)}`);
-
-  if (discriminant > 0){
-    const root1 = (-b + Math.sqrt(discriminant)) / (2*a);
-    const root2 = (-b - Math.sqrt(discriminant)) / (2*a);
-    lines.push(`\\text{Two real roots: } x=${formatNumberForDisplay(root1)},\\; x=${formatNumberForDisplay(root2)}`);
-  }
-  else if (discriminant === 0){
-    const root = -b / (2*a);
-    lines.push(`\\text{One repeated real root: } x=${formatNumberForDisplay(root)}`);
-  }
-  else{
-    const realPart = -b / (2*a);
-    const imagPart = Math.sqrt(-discriminant) / (2*a);
-    lines.push(`\\text{Two complex roots: } x=${formatNumberForDisplay(realPart)}+${formatNumberForDisplay(imagPart)}i,\\; x=${formatNumberForDisplay(realPart)}-${formatNumberForDisplay(imagPart)}i`);
-  }
-
-  document.getElementById("quadraticOutput").innerHTML =
-    lines.map(line => `\\(${line}\\)`).join("<br>");
-
-  setQuadraticStatus("Done.");
+  const result = await pyodide.runPythonAsync(code);
+  document.getElementById("output").innerHTML=`\\(${result}+C\\)`;
   renderMath();
 }
 
-document.getElementById("btnQuadratic").addEventListener("click", computeQuadraticRoots);
+document.getElementById("btnIntegrate").onclick=integrate;
 
-document.getElementById("qa").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") {
-    ev.preventDefault();
-    computeQuadraticRoots();
-  }
-});
+document.getElementById("btnQuadratic").onclick=()=>{
+  let a=+qa.value,b=+qb.value,c=+qc.value;
+  let d=b*b-4*a*c;
+  quadraticOutput.innerHTML = d>=0
+    ? `\\(x=${(-b+Math.sqrt(d))/(2*a)},${(-b-Math.sqrt(d))/(2*a)}\\)`
+    : `\\(x=${-b/(2*a)}\\pm${Math.sqrt(-d)/(2*a)}i\\)`;
+  renderMath();
+};
 
-document.getElementById("qb").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") {
-    ev.preventDefault();
-    computeQuadraticRoots();
-  }
-});
+document.getElementById("btnPFD").onclick=async()=>{
+  const expr=pfdExpr.value;
+  const code=`import sympy as sp;x=sp.Symbol('x');sp.latex(sp.apart(sp.sympify(r'''${expr}'''),x))`;
+  const r=await pyodide.runPythonAsync(code);
+  pfdOutput.innerHTML=`\\(${r}\\)`;renderMath();
+};
 
-document.getElementById("qc").addEventListener("keydown", (ev) => {
-  if (ev.key === "Enter") {
-    ev.preventDefault();
-    computeQuadraticRoots();
-  }
-});
+document.getElementById("btnSystemSolve").onclick=()=>{
+  let a=+sysA.value,b=+sysB.value,c=+sysC.value,d=+sysD.value,f1=+sysF1.value,f2=+sysF2.value;
+  let det=a*d-b*c;
+  systemOutput.innerHTML = det
+    ? `k_1=${(f1*d-b*f2)/det}, k_2=${(a*f2-f1*c)/det}`
+    : "No unique solution";
+};
+
+document.getElementById("btnCTS").onclick=()=>{
+  let a=+ctsA.value,b=+ctsB.value,c=+ctsC.value;
+  let h=-b/(2*a),k=c-b*b/(4*a);
+  ctsOutput.innerHTML=`\\(${a}(x${h>=0?'-':'+'}${Math.abs(h)})^2${k>=0?'+':'-'}${Math.abs(k)}\\)`;
+  renderMath();
+};
 
 initPyodide();
-window.addEventListener("load", renderMath);
+window.onload=renderMath;
 </script>
 </body>
 </html>
