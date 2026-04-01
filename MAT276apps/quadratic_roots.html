@@ -7,7 +7,6 @@
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
   <style>
     body {
@@ -19,7 +18,7 @@
     }
 
     .app {
-      max-width: 620px;
+      max-width: 680px;
       margin: 0 auto;
       background: #fff;
       border: 1px solid #ccc;
@@ -29,8 +28,7 @@
     }
 
     h1 {
-      margin-top: 0;
-      margin-bottom: 10px;
+      margin: 0 0 10px 0;
       text-align: center;
       font-size: 1.6rem;
     }
@@ -42,8 +40,8 @@
 
     .equation {
       text-align: center;
-      font-size: 1.15rem;
       margin-bottom: 22px;
+      font-size: 1.1rem;
     }
 
     .row {
@@ -56,7 +54,6 @@
     label {
       width: 42px;
       font-weight: bold;
-      font-size: 1rem;
     }
 
     input {
@@ -86,30 +83,27 @@
 
     .result {
       margin-top: 22px;
-      padding: 18px;
+      padding: 20px;
       background: #fafafa;
       border: 1px solid #ddd;
       border-radius: 6px;
-      min-height: 90px;
-      line-height: 1.7;
+      min-height: 140px;
     }
 
     .result-title {
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
+      font-size: 1.05rem;
     }
 
-    .result-block {
-      margin-bottom: 16px;
-    }
-
-    .result-label {
+    .section-title {
       font-weight: bold;
-      margin-bottom: 6px;
+      margin: 14px 0 8px 0;
     }
 
-    .math-line {
-      margin: 6px 0;
+    .math-display {
+      margin: 10px 0;
+      overflow-x: auto;
     }
 
     .error {
@@ -122,39 +116,35 @@
   <div class="app">
     <h1>Quadratic Roots Calculator</h1>
     <div class="subtitle">Enter values for \(a\), \(b\), and \(c\) in</div>
-    <div class="equation">\(ax^2 + bx + c = 0\)</div>
+    <div class="equation" id="main-equation"></div>
 
     <div class="row">
       <label for="a">a =</label>
-      <input type="number" id="a" step="any" value="1">
+      <input type="number" id="a" step="1" value="1">
     </div>
 
     <div class="row">
       <label for="b">b =</label>
-      <input type="number" id="b" step="any" value="0">
+      <input type="number" id="b" step="1" value="0">
     </div>
 
     <div class="row">
       <label for="c">c =</label>
-      <input type="number" id="c" step="any" value="0">
+      <input type="number" id="c" step="1" value="0">
     </div>
 
     <button onclick="calculateRoots()">Calculate Roots</button>
 
-    <div class="result" id="result">
-      The roots will appear here.
-    </div>
+    <div class="result" id="result"></div>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      renderMathInElement(document.body, {
-        delimiters: [
-          { left: "\\(", right: "\\)", display: false },
-          { left: "\\[", right: "\\]", display: true }
-        ]
+    function renderMathInElementById(id, tex, displayMode = false) {
+      katex.render(tex, document.getElementById(id), {
+        throwOnError: false,
+        displayMode: displayMode
       });
-    });
+    }
 
     function gcd(a, b) {
       a = Math.abs(a);
@@ -167,26 +157,17 @@
       return a || 1;
     }
 
-    function isIntegerValue(x) {
-      return Math.abs(x - Math.round(x)) < 1e-10;
-    }
-
-    function formatRounded(x) {
-      const rounded = Math.round(x * 100) / 100;
-      return rounded.toFixed(2);
-    }
-
-    function simplifyFraction(numerator, denominator) {
-      if (denominator < 0) {
-        numerator = -numerator;
-        denominator = -denominator;
+    function simplifyFraction(n, d) {
+      if (d < 0) {
+        n = -n;
+        d = -d;
       }
-      const g = gcd(numerator, denominator);
-      numerator /= g;
-      denominator /= g;
-
-      if (denominator === 1) return `${numerator}`;
-      return `\\frac{${numerator}}{${denominator}}`;
+      const g = gcd(n, d);
+      n /= g;
+      d /= g;
+      if (d === 1) return `${n}`;
+      if (n === 0) return `0`;
+      return `\\frac{${n}}{${d}}`;
     }
 
     function integerSqrtIfPerfect(n) {
@@ -198,172 +179,150 @@
     function simplifyRadical(n) {
       let outside = 1;
       let inside = n;
-
       for (let i = 2; i * i <= inside; i++) {
         while (inside % (i * i) === 0) {
           outside *= i;
           inside /= i * i;
         }
       }
-
       return { outside, inside };
     }
 
-    function exactRealRoots(a, b, c) {
+    function formatRounded(x) {
+      const y = Math.round(x * 100) / 100;
+      return y.toFixed(2);
+    }
+
+    function realExactTex(a, b, c) {
       const disc = b * b - 4 * a * c;
       const sqrtDisc = integerSqrtIfPerfect(disc);
       const denom = 2 * a;
 
       if (sqrtDisc !== null) {
-        const num1 = -b + sqrtDisc;
-        const num2 = -b - sqrtDisc;
-        return [
-          simplifyFraction(num1, denom),
-          simplifyFraction(num2, denom)
-        ];
-      } else {
-        const rad = simplifyRadical(disc);
-        let denomTex = denom;
-        let outside = rad.outside;
-        let inside = rad.inside;
-
-        const g = gcd(gcd(Math.abs(-b), Math.abs(outside)), Math.abs(denomTex));
-        if (g > 1) {
-          const newB = -b / g;
-          outside = outside / g;
-          denomTex = denomTex / g;
-
-          return [
-            `\\frac{${newB} + ${outside === 1 ? "" : outside}\\sqrt{${inside}}}{${denomTex}}`,
-            `\\frac{${newB} - ${outside === 1 ? "" : outside}\\sqrt{${inside}}}{${denomTex}}`
-          ];
-        }
-
-        return [
-          `\\frac{${-b} + ${outside === 1 ? "" : outside}\\sqrt{${inside}}}{${denomTex}}`,
-          `\\frac{${-b} - ${outside === 1 ? "" : outside}\\sqrt{${inside}}}{${denomTex}}`
-        ];
+        const x1 = simplifyFraction(-b + sqrtDisc, denom);
+        const x2 = simplifyFraction(-b - sqrtDisc, denom);
+        return [`x_1 = ${x1}`, `x_2 = ${x2}`];
       }
+
+      const { outside, inside } = simplifyRadical(disc);
+      let coeff = outside;
+      let numConst = -b;
+      let den = denom;
+
+      const g = gcd(gcd(Math.abs(numConst), Math.abs(coeff)), Math.abs(den));
+      if (g > 1) {
+        numConst /= g;
+        coeff /= g;
+        den /= g;
+      }
+
+      const rootPart = coeff === 1 ? `\\sqrt{${inside}}` : `${coeff}\\sqrt{${inside}}`;
+
+      return [
+        `x_1 = \\frac{${numConst} + ${rootPart}}{${den}}`,
+        `x_2 = \\frac{${numConst} - ${rootPart}}{${den}}`
+      ];
     }
 
-    function exactComplexRoots(a, b, c) {
+    function complexExactTex(a, b, c) {
       const disc = b * b - 4 * a * c;
       const posDisc = -disc;
       const sqrtDisc = integerSqrtIfPerfect(posDisc);
       const denom = 2 * a;
 
       if (sqrtDisc !== null) {
-        const realTex = simplifyFraction(-b, denom);
-        const imagTex = simplifyFraction(sqrtDisc, denom);
-
+        const real = simplifyFraction(-b, denom);
+        const imag = simplifyFraction(sqrtDisc, denom);
         return [
-          `${realTex} + ${imagTex}i`,
-          `${realTex} - ${imagTex}i`
-        ];
-      } else {
-        const rad = simplifyRadical(posDisc);
-        let denomTex = denom;
-        let outside = rad.outside;
-        let inside = rad.inside;
-
-        const g = gcd(gcd(Math.abs(-b), Math.abs(outside)), Math.abs(denomTex));
-        if (g > 1) {
-          const newB = -b / g;
-          outside = outside / g;
-          denomTex = denomTex / g;
-
-          return [
-            `\\frac{${newB} + ${outside === 1 ? "" : outside}i\\sqrt{${inside}}}{${denomTex}}`,
-            `\\frac{${newB} - ${outside === 1 ? "" : outside}i\\sqrt{${inside}}}{${denomTex}}`
-          ];
-        }
-
-        return [
-          `\\frac{${-b} + ${outside === 1 ? "" : outside}i\\sqrt{${inside}}}{${denomTex}}`,
-          `\\frac{${-b} - ${outside === 1 ? "" : outside}i\\sqrt{${inside}}}{${denomTex}}`
+          `x_1 = ${real} + ${imag}i`,
+          `x_2 = ${real} - ${imag}i`
         ];
       }
+
+      const { outside, inside } = simplifyRadical(posDisc);
+      let coeff = outside;
+      let numConst = -b;
+      let den = denom;
+
+      const g = gcd(gcd(Math.abs(numConst), Math.abs(coeff)), Math.abs(den));
+      if (g > 1) {
+        numConst /= g;
+        coeff /= g;
+        den /= g;
+      }
+
+      const imagPart = coeff === 1 ? `i\\sqrt{${inside}}` : `${coeff}i\\sqrt{${inside}}`;
+
+      return [
+        `x_1 = \\frac{${numConst} + ${imagPart}}{${den}}`,
+        `x_2 = \\frac{${numConst} - ${imagPart}}{${den}}`
+      ];
     }
 
     function calculateRoots() {
-      const a = parseFloat(document.getElementById("a").value);
-      const b = parseFloat(document.getElementById("b").value);
-      const c = parseFloat(document.getElementById("c").value);
+      const a = parseInt(document.getElementById("a").value, 10);
+      const b = parseInt(document.getElementById("b").value, 10);
+      const c = parseInt(document.getElementById("c").value, 10);
       const result = document.getElementById("result");
 
       if (isNaN(a) || isNaN(b) || isNaN(c)) {
-        result.innerHTML = `<div class="error">Please enter valid numbers for \(a\), \(b\), and \(c\).</div>`;
-        renderMathInElement(result);
+        result.innerHTML = `<div class="error">Please enter integer values for a, b, and c.</div>`;
         return;
       }
 
-      if (!isIntegerValue(a) || !isIntegerValue(b) || !isIntegerValue(c)) {
-        result.innerHTML = `<div class="error">For exact forms, please use integer values for \(a\), \(b\), and \(c\).</div>`;
-        renderMathInElement(result);
+      if (a === 0) {
+        result.innerHTML = `<div class="error">This is not a quadratic equation because a = 0.</div>`;
         return;
       }
 
-      const ai = Math.round(a);
-      const bi = Math.round(b);
-      const ci = Math.round(c);
-
-      if (ai === 0) {
-        result.innerHTML = `<div class="error">This is not a quadratic equation because \(a = 0\).</div>`;
-        renderMathInElement(result);
-        return;
-      }
-
-      const disc = bi * bi - 4 * ai * ci;
-      const real1 = (-bi + Math.sqrt(disc)) / (2 * ai);
-      const real2 = (-bi - Math.sqrt(disc)) / (2 * ai);
+      const disc = b * b - 4 * a * c;
 
       if (disc >= 0) {
-        const exact = exactRealRoots(ai, bi, ci);
+        const x1 = (-b + Math.sqrt(disc)) / (2 * a);
+        const x2 = (-b - Math.sqrt(disc)) / (2 * a);
+        const exact = realExactTex(a, b, c);
 
         result.innerHTML = `
-          <div class="result-title">Real Roots</div>
+          <div class="result-title">Real roots</div>
 
-          <div class="result-block">
-            <div class="result-label">Exact form</div>
-            <div class="math-line">\(x_1 = ${exact[0]}\)</div>
-            <div class="math-line">\(x_2 = ${exact[1]}\)</div>
-          </div>
+          <div class="section-title">Exact form</div>
+          <div class="math-display" id="exact1"></div>
+          <div class="math-display" id="exact2"></div>
 
-          <div class="result-block">
-            <div class="result-label">Rounded to two decimals</div>
-            <div class="math-line">\(x_1 \\approx ${formatRounded(real1)}\)</div>
-            <div class="math-line">\(x_2 \\approx ${formatRounded(real2)}\)</div>
-          </div>
+          <div class="section-title">Rounded to two decimals</div>
+          <div class="math-display" id="approx1"></div>
+          <div class="math-display" id="approx2"></div>
         `;
+
+        katex.render(exact[0], document.getElementById("exact1"), { throwOnError: false, displayMode: true });
+        katex.render(exact[1], document.getElementById("exact2"), { throwOnError: false, displayMode: true });
+        katex.render(`x_1 \\approx ${formatRounded(x1)}`, document.getElementById("approx1"), { throwOnError: false, displayMode: true });
+        katex.render(`x_2 \\approx ${formatRounded(x2)}`, document.getElementById("approx2"), { throwOnError: false, displayMode: true });
       } else {
-        const realPart = -bi / (2 * ai);
-        const imagPart = Math.sqrt(-disc) / (2 * ai);
-        const exact = exactComplexRoots(ai, bi, ci);
+        const realPart = -b / (2 * a);
+        const imagPart = Math.sqrt(-disc) / (2 * a);
+        const exact = complexExactTex(a, b, c);
 
         result.innerHTML = `
-          <div class="result-title">Complex Roots</div>
+          <div class="result-title">Complex roots</div>
 
-          <div class="result-block">
-            <div class="result-label">Exact form</div>
-            <div class="math-line">\(x_1 = ${exact[0]}\)</div>
-            <div class="math-line">\(x_2 = ${exact[1]}\)</div>
-          </div>
+          <div class="section-title">Exact form</div>
+          <div class="math-display" id="exact1"></div>
+          <div class="math-display" id="exact2"></div>
 
-          <div class="result-block">
-            <div class="result-label">Rounded to two decimals</div>
-            <div class="math-line">\(x_1 \\approx ${formatRounded(realPart)} + ${formatRounded(imagPart)}i\)</div>
-            <div class="math-line">\(x_2 \\approx ${formatRounded(realPart)} - ${formatRounded(imagPart)}i\)</div>
-          </div>
+          <div class="section-title">Rounded to two decimals</div>
+          <div class="math-display" id="approx1"></div>
+          <div class="math-display" id="approx2"></div>
         `;
-      }
 
-      renderMathInElement(result, {
-        delimiters: [
-          { left: "\\(", right: "\\)", display: false },
-          { left: "\\[", right: "\\]", display: true }
-        ]
-      });
+        katex.render(exact[0], document.getElementById("exact1"), { throwOnError: false, displayMode: true });
+        katex.render(exact[1], document.getElementById("exact2"), { throwOnError: false, displayMode: true });
+        katex.render(`x_1 \\approx ${formatRounded(realPart)} + ${formatRounded(imagPart)}i`, document.getElementById("approx1"), { throwOnError: false, displayMode: true });
+        katex.render(`x_2 \\approx ${formatRounded(realPart)} - ${formatRounded(imagPart)}i`, document.getElementById("approx2"), { throwOnError: false, displayMode: true });
+      }
     }
+
+    renderMathInElementById("main-equation", "ax^2 + bx + c = 0", true);
   </script>
 </body>
 </html>
