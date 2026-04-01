@@ -8,16 +8,86 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
 <style>
-body { font-family: Arial; background:#f4f4f4; padding:20px; }
-.app { max-width:600px; margin:auto; background:white; padding:20px; border-radius:8px; border:1px solid #ccc; }
-h1 { text-align:center; margin-bottom:10px; }
-.center { text-align:center; margin-bottom:15px; }
-.row { display:flex; gap:10px; margin-bottom:10px; }
-label { width:40px; font-weight:bold; }
-input { flex:1; padding:6px; }
-button { width:100%; padding:10px; margin-top:10px; background:#2d6cdf; color:white; border:none; border-radius:4px; }
-.result { margin-top:20px; padding:15px; background:#fafafa; border:1px solid #ddd; border-radius:6px; }
-.math { margin:8px 0; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    padding: 20px;
+    margin: 0;
+  }
+
+  .app {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+
+  h1 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .center {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  label {
+    width: 40px;
+    font-weight: bold;
+  }
+
+  input {
+    flex: 1;
+    padding: 8px;
+    font-size: 1rem;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+  }
+
+  button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background: #2d6cdf;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #1f57b8;
+  }
+
+  .result {
+    margin-top: 20px;
+    padding: 16px;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    min-height: 120px;
+  }
+
+  .math {
+    margin: 10px 0;
+  }
+
+  .message {
+    text-align: center;
+    font-weight: bold;
+  }
 </style>
 </head>
 
@@ -25,80 +95,91 @@ button { width:100%; padding:10px; margin-top:10px; background:#2d6cdf; color:wh
 <div class="app">
   <h1>Quadratic Roots Calculator</h1>
 
-  <div class="center">Solve</div>
+  <div class="center">This calculator solves</div>
   <div id="eq" class="center"></div>
 
   <div class="row">
-    <label>a =</label>
+    <label for="a">a =</label>
     <input id="a" type="number" value="1">
   </div>
 
   <div class="row">
-    <label>b =</label>
+    <label for="b">b =</label>
     <input id="b" type="number" value="0">
   </div>
 
   <div class="row">
-    <label>c =</label>
+    <label for="c">c =</label>
     <input id="c" type="number" value="0">
   </div>
 
-  <button onclick="solve()">Calculate Roots</button>
+  <button id="calcBtn" type="button">Calculate Roots</button>
 
-  <div id="out" class="result"></div>
+  <div id="out" class="result">
+    <div class="message">The roots will appear here.</div>
+  </div>
 </div>
 
 <script>
-function render(id, tex){
-  katex.render(tex, document.getElementById(id), {displayMode:true});
-}
-
-function round2(x){
-  return (Math.round(x*100)/100).toFixed(2);
-}
-
-function solve(){
-  let a = parseFloat(aInput.value);
-  let b = parseFloat(bInput.value);
-  let c = parseFloat(cInput.value);
-
-  if(a===0){ out.innerHTML="Not quadratic"; return; }
-
-  let D = b*b - 4*a*c;
-
-  out.innerHTML = `
-    <div class="math" id="e1"></div>
-    <div class="math" id="e2"></div>
-    <div class="math" id="r1"></div>
-    <div class="math" id="r2"></div>
-  `;
-
-  if(D>=0){
-    let x1 = (-b + Math.sqrt(D))/(2*a);
-    let x2 = (-b - Math.sqrt(D))/(2*a);
-
-    render("e1", `x_1 = \\frac{-${b} + \\sqrt{${D}}}{${2*a}}`);
-    render("e2", `x_2 = \\frac{-${b} - \\sqrt{${D}}}{${2*a}}`);
-
-    render("r1", `x_1 \\approx ${round2(x1)}`);
-    render("r2", `x_2 \\approx ${round2(x2)}`);
-
-  } else {
-    let real = -b/(2*a);
-    let imag = Math.sqrt(-D)/(2*a);
-
-    render("e1", `x_1 = \\frac{-${b}}{${2*a}} + \\frac{\\sqrt{${-D}}}{${2*a}}i`);
-    render("e2", `x_2 = \\frac{-${b}}{${2*a}} - \\frac{\\sqrt{${-D}}}{${2*a}}i`);
-
-    render("r1", `x_1 \\approx ${round2(real)} + ${round2(imag)}i`);
-    render("r2", `x_2 \\approx ${round2(real)} - ${round2(imag)}i`);
+  function render(id, tex) {
+    katex.render(tex, document.getElementById(id), {
+      displayMode: true,
+      throwOnError: false
+    });
   }
-}
 
-window.onload = () => {
-  render("eq","ax^2 + bx + c = 0");
-};
+  function round2(x) {
+    return (Math.round(x * 100) / 100).toFixed(2);
+  }
+
+  function solve() {
+    const a = parseFloat(document.getElementById("a").value);
+    const b = parseFloat(document.getElementById("b").value);
+    const c = parseFloat(document.getElementById("c").value);
+    const out = document.getElementById("out");
+
+    if (isNaN(a) || isNaN(b) || isNaN(c)) {
+      out.innerHTML = `<div class="message">Please enter valid numbers.</div>`;
+      return;
+    }
+
+    if (a === 0) {
+      out.innerHTML = `<div class="message">This is not a quadratic equation.</div>`;
+      return;
+    }
+
+    const D = b * b - 4 * a * c;
+
+    out.innerHTML = `
+      <div id="e1" class="math"></div>
+      <div id="e2" class="math"></div>
+      <div id="r1" class="math"></div>
+      <div id="r2" class="math"></div>
+    `;
+
+    if (D >= 0) {
+      const x1 = (-b + Math.sqrt(D)) / (2 * a);
+      const x2 = (-b - Math.sqrt(D)) / (2 * a);
+
+      render("e1", `x_1 = \\frac{-(${b}) + \\sqrt{${D}}}{${2*a}}`);
+      render("e2", `x_2 = \\frac{-(${b}) - \\sqrt{${D}}}{${2*a}}`);
+      render("r1", `x_1 \\approx ${round2(x1)}`);
+      render("r2", `x_2 \\approx ${round2(x2)}`);
+    } else {
+      const real = -b / (2 * a);
+      const imag = Math.sqrt(-D) / (2 * a);
+
+      render("e1", `x_1 = \\frac{-(${b})}{${2*a}} + \\frac{\\sqrt{${-D}}}{${2*a}}i`);
+      render("e2", `x_2 = \\frac{-(${b})}{${2*a}} - \\frac{\\sqrt{${-D}}}{${2*a}}i`);
+      render("r1", `x_1 \\approx ${round2(real)} + ${round2(imag)}i`);
+      render("r2", `x_2 \\approx ${round2(real)} - ${round2(imag)}i`);
+    }
+  }
+
+  window.addEventListener("load", function () {
+    render("eq", "ax^2 + bx + c = 0");
+    document.getElementById("calcBtn").addEventListener("click", solve);
+  });
 </script>
-
 </body>
 </html>
