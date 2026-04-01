@@ -1,316 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quadratic Roots Calculator</title>
+<meta charset="UTF-8">
+<title>Quadratic Roots Calculator</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      margin: 0;
-      padding: 24px;
-      color: #222;
-    }
-
-    .app {
-      max-width: 760px;
-      margin: 0 auto;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      padding: 28px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    h1 {
-      margin: 0 0 10px 0;
-      text-align: center;
-      font-size: 2.1rem;
-    }
-
-    .subtitle {
-      text-align: center;
-      font-size: 1rem;
-      margin-bottom: 6px;
-    }
-
-    .equation {
-      text-align: center;
-      margin-bottom: 22px;
-      min-height: 42px;
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    label {
-      width: 52px;
-      font-size: 1rem;
-      font-weight: bold;
-    }
-
-    input {
-      flex: 1;
-      padding: 11px 12px;
-      font-size: 1rem;
-      border: 1px solid #bbb;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 12px;
-      font-size: 1rem;
-      border: none;
-      border-radius: 6px;
-      background: #2d61bf;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #244f9d;
-    }
-
-    .result {
-      margin-top: 28px;
-      padding: 22px;
-      background: #fafafa;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      min-height: 150px;
-    }
-
-    .section-title {
-      font-weight: bold;
-      margin: 0 0 10px 0;
-      font-size: 1rem;
-    }
-
-    .subheading {
-      font-weight: bold;
-      margin: 16px 0 8px 0;
-    }
-
-    .math-line {
-      margin: 8px 0;
-      min-height: 32px;
-    }
-
-    .placeholder {
-      color: #666;
-    }
-
-    .error {
-      color: #b00020;
-      font-weight: bold;
-    }
-  </style>
+<style>
+body { font-family: Arial; background:#f4f4f4; padding:20px; }
+.app { max-width:600px; margin:auto; background:white; padding:20px; border-radius:8px; border:1px solid #ccc; }
+h1 { text-align:center; margin-bottom:10px; }
+.center { text-align:center; margin-bottom:15px; }
+.row { display:flex; gap:10px; margin-bottom:10px; }
+label { width:40px; font-weight:bold; }
+input { flex:1; padding:6px; }
+button { width:100%; padding:10px; margin-top:10px; background:#2d6cdf; color:white; border:none; border-radius:4px; }
+.result { margin-top:20px; padding:15px; background:#fafafa; border:1px solid #ddd; border-radius:6px; }
+.math { margin:8px 0; }
+</style>
 </head>
+
 <body>
-  <div class="app">
-    <h1>Quadratic Roots Calculator</h1>
+<div class="app">
+  <h1>Quadratic Roots Calculator</h1>
 
-    <div class="subtitle">
-      This calculator solves the quadratic equation
-    </div>
+  <div class="center">Solve</div>
+  <div id="eq" class="center"></div>
 
-    <div class="equation" id="main-equation"></div>
-
-    <div class="row">
-      <label for="a">a =</label>
-      <input type="number" id="a" step="1" value="1">
-    </div>
-
-    <div class="row">
-      <label for="b">b =</label>
-      <input type="number" id="b" step="1" value="0">
-    </div>
-
-    <div class="row">
-      <label for="c">c =</label>
-      <input type="number" id="c" step="1" value="0">
-    </div>
-
-    <button id="calc-btn">Calculate Roots</button>
-
-    <div class="result" id="result">
-      <div class="placeholder">The roots will appear here.</div>
-    </div>
+  <div class="row">
+    <label>a =</label>
+    <input id="a" type="number" value="1">
   </div>
 
-  <script>
-    function gcd(a, b) {
-      a = Math.abs(a);
-      b = Math.abs(b);
-      while (b !== 0) {
-        const t = b;
-        b = a % b;
-        a = t;
-      }
-      return a || 1;
-    }
+  <div class="row">
+    <label>b =</label>
+    <input id="b" type="number" value="0">
+  </div>
 
-    function simplifyFraction(n, d) {
-      if (d < 0) {
-        n = -n;
-        d = -d;
-      }
-      const g = gcd(n, d);
-      n /= g;
-      d /= g;
-      if (n === 0) return "0";
-      if (d === 1) return `${n}`;
-      return `\\frac{${n}}{${d}}`;
-    }
+  <div class="row">
+    <label>c =</label>
+    <input id="c" type="number" value="0">
+  </div>
 
-    function perfectSquareRoot(n) {
-      if (n < 0) return null;
-      const r = Math.round(Math.sqrt(n));
-      return r * r === n ? r : null;
-    }
+  <button onclick="solve()">Calculate Roots</button>
 
-    function simplifyRadical(n) {
-      let outside = 1;
-      let inside = n;
+  <div id="out" class="result"></div>
+</div>
 
-      for (let i = 2; i * i <= inside; i++) {
-        while (inside % (i * i) === 0) {
-          outside *= i;
-          inside /= i * i;
-        }
-      }
+<script>
+function render(id, tex){
+  katex.render(tex, document.getElementById(id), {displayMode:true});
+}
 
-      return { outside, inside };
-    }
+function round2(x){
+  return (Math.round(x*100)/100).toFixed(2);
+}
 
-    function round2(x) {
-      return (Math.round(x * 100) / 100).toFixed(2);
-    }
+function solve(){
+  let a = parseFloat(aInput.value);
+  let b = parseFloat(bInput.value);
+  let c = parseFloat(cInput.value);
 
-    function renderTex(elementId, tex, displayMode = true) {
-      const el = document.getElementById(elementId);
-      katex.render(tex, el, {
-        throwOnError: false,
-        displayMode: displayMode
-      });
-    }
+  if(a===0){ out.innerHTML="Not quadratic"; return; }
 
-    function exactRealRoots(a, b, c) {
-      const disc = b * b - 4 * a * c;
-      const denom = 2 * a;
-      const root = perfectSquareRoot(disc);
+  let D = b*b - 4*a*c;
 
-      if (root !== null) {
-        return [
-          `x_1 = ${simplifyFraction(-b + root, denom)}`,
-          `x_2 = ${simplifyFraction(-b - root, denom)}`
-        ];
-      }
+  out.innerHTML = `
+    <div class="math" id="e1"></div>
+    <div class="math" id="e2"></div>
+    <div class="math" id="r1"></div>
+    <div class="math" id="r2"></div>
+  `;
 
-      const simp = simplifyRadical(disc);
-      const rootPart = simp.outside === 1
-        ? `\\sqrt{${simp.inside}}`
-        : `${simp.outside}\\sqrt{${simp.inside}}`;
+  if(D>=0){
+    let x1 = (-b + Math.sqrt(D))/(2*a);
+    let x2 = (-b - Math.sqrt(D))/(2*a);
 
-      return [
-        `x_1 = \\frac{${-b} + ${rootPart}}{${denom}}`,
-        `x_2 = \\frac{${-b} - ${rootPart}}{${denom}}`
-      ];
-    }
+    render("e1", `x_1 = \\frac{-${b} + \\sqrt{${D}}}{${2*a}}`);
+    render("e2", `x_2 = \\frac{-${b} - \\sqrt{${D}}}{${2*a}}`);
 
-    function exactComplexRoots(a, b, c) {
-      const disc = b * b - 4 * a * c;
-      const denom = 2 * a;
-      const posDisc = -disc;
-      const root = perfectSquareRoot(posDisc);
+    render("r1", `x_1 \\approx ${round2(x1)}`);
+    render("r2", `x_2 \\approx ${round2(x2)}`);
 
-      if (root !== null) {
-        const real = simplifyFraction(-b, denom);
-        const imag = simplifyFraction(root, denom);
-        return [
-          `x_1 = ${real} + ${imag}i`,
-          `x_2 = ${real} - ${imag}i`
-        ];
-      }
+  } else {
+    let real = -b/(2*a);
+    let imag = Math.sqrt(-D)/(2*a);
 
-      const simp = simplifyRadical(posDisc);
-      const imagPart = simp.outside === 1
-        ? `i\\sqrt{${simp.inside}}`
-        : `${simp.outside}i\\sqrt{${simp.inside}}`;
+    render("e1", `x_1 = \\frac{-${b}}{${2*a}} + \\frac{\\sqrt{${-D}}}{${2*a}}i`);
+    render("e2", `x_2 = \\frac{-${b}}{${2*a}} - \\frac{\\sqrt{${-D}}}{${2*a}}i`);
 
-      return [
-        `x_1 = \\frac{${-b} + ${imagPart}}{${denom}}`,
-        `x_2 = \\frac{${-b} - ${imagPart}}{${denom}}`
-      ];
-    }
+    render("r1", `x_1 \\approx ${round2(real)} + ${round2(imag)}i`);
+    render("r2", `x_2 \\approx ${round2(real)} - ${round2(imag)}i`);
+  }
+}
 
-    function calculateRoots() {
-      const a = parseInt(document.getElementById("a").value, 10);
-      const b = parseInt(document.getElementById("b").value, 10);
-      const c = parseInt(document.getElementById("c").value, 10);
-      const result = document.getElementById("result");
+window.onload = () => {
+  render("eq","ax^2 + bx + c = 0");
+};
+</script>
 
-      if (isNaN(a) || isNaN(b) || isNaN(c)) {
-        result.innerHTML = `<div class="error">Please enter integer values for a, b, and c.</div>`;
-        return;
-      }
-
-      if (a === 0) {
-        result.innerHTML = `<div class="error">This is not a quadratic equation because a = 0.</div>`;
-        return;
-      }
-
-      const disc = b * b - 4 * a * c;
-
-      result.innerHTML = `
-        <div class="section-title">${disc >= 0 ? "Real Roots" : "Complex Roots"}</div>
-
-        <div class="subheading">Exact form</div>
-        <div id="exact1" class="math-line"></div>
-        <div id="exact2" class="math-line"></div>
-
-        <div class="subheading">Rounded to two decimals</div>
-        <div id="approx1" class="math-line"></div>
-        <div id="approx2" class="math-line"></div>
-      `;
-
-      if (disc >= 0) {
-        const exact = exactRealRoots(a, b, c);
-        const x1 = (-b + Math.sqrt(disc)) / (2 * a);
-        const x2 = (-b - Math.sqrt(disc)) / (2 * a);
-
-        renderTex("exact1", exact[0]);
-        renderTex("exact2", exact[1]);
-        renderTex("approx1", `x_1 \\approx ${round2(x1)}`);
-        renderTex("approx2", `x_2 \\approx ${round2(x2)}`);
-      } else {
-        const exact = exactComplexRoots(a, b, c);
-        const real = -b / (2 * a);
-        const imag = Math.sqrt(-disc) / (2 * a);
-
-        renderTex("exact1", exact[0]);
-        renderTex("exact2", exact[1]);
-        renderTex("approx1", `x_1 \\approx ${round2(real)} + ${round2(imag)}i`);
-        renderTex("approx2", `x_2 \\approx ${round2(real)} - ${round2(imag)}i`);
-      }
-    }
-
-    window.addEventListener("DOMContentLoaded", function () {
-      renderTex("main-equation", "ax^2 + bx + c = 0");
-      document.getElementById("calc-btn").addEventListener("click", calculateRoots);
-    });
-  </script>
 </body>
 </html>
