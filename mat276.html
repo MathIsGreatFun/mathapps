@@ -22,182 +22,197 @@
       --line:#d1d5db;
       --accent:#2563eb;
       --bad:#b91c1c;
-      --mono: ui-monospace, Menlo, Consolas, monospace;
-      --sans: system-ui, Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-
     body{
       margin:0;
       font-family:var(--sans);
       background: radial-gradient(1200px 800px at 10% 0%, #e7efff 0%, var(--bg) 55%);
       color:var(--ink);
     }
-
     .wrap{ max-width:980px; margin:0 auto; padding:24px; }
-
     h1{ margin:0 0 6px; font-size:22px; }
-
-    .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; }
+    .sub{ color:var(--muted); font-size:14px; margin-bottom:18px; line-height:1.35; }
 
     .card{
       background:var(--card);
       border:1px solid var(--line);
       border-radius:14px;
       padding:16px;
-      margin-bottom:20px;
+      box-shadow:0 10px 26px rgba(0,0,0,.06);
     }
 
-    .row{
+    .integral-row{
       display:flex;
       align-items:center;
       gap:10px;
       flex-wrap:wrap;
       margin-top:10px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
     }
-
-    .label{
+    .int-symbol{
+      font-size:30px;
+      line-height:1;
+      padding:0 4px;
+      user-select:none;
+    }
+    input[type="text"]{
       font-family:var(--mono);
+      font-size:14px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      outline:none;
+      background:#fff;
+      color:var(--ink);
+      min-width: 220px;
+      flex: 1 1 360px;
+    }
+    .dx{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex: 0 0 auto;
+    }
+    .dchar{ font-family:var(--mono); font-size:16px; }
+    .varbox{
+      width:90px;
+      min-width:90px;
+      flex: 0 0 90px;
+      text-align:center;
       font-weight:700;
     }
-
-    input{
-      padding:8px;
-      border:1px solid var(--line);
-      border-radius:8px;
-      font-family:var(--mono);
-      width:80px;
-      text-align:center;
+    @media (max-width: 600px){
+      input[type="text"]{ flex-basis: 100%; min-width: 0; }
+      .dx{ width: 100%; justify-content:flex-start; }
+      .varbox{ width: 120px; flex: 0 0 120px; }
     }
 
-    input.long{
-      width:260px;
-      text-align:left;
+    .callout{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:10px;
+      background:#eef2ff;
+      border:1px solid #c7d2fe;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .pill{
+      display:inline-block;
+      padding:2px 8px;
+      border:1px solid rgba(17,24,39,.12);
+      border-radius:999px;
+      font-family:var(--mono);
+      font-size:12px;
+      background:rgba(0,0,0,.03);
     }
 
     button{
-      margin-top:12px;
+      margin-top:14px;
       padding:10px 16px;
-      font-weight:700;
+      font-size:14px;
+      font-weight:800;
       border-radius:10px;
       border:1px solid #c7d2fe;
       background:#e0e7ff;
       cursor:pointer;
     }
+    button:hover{ background:#dbe5ff; }
+    button:disabled{ opacity:.65; cursor:not-allowed; }
 
     .status{ margin-top:10px; font-size:13px; color:var(--muted); }
 
     .out{
-      margin-top:14px;
-      padding:12px;
+      margin-top:18px;
+      padding:14px;
+      border-radius:12px;
       border:1px solid var(--line);
-      border-radius:10px;
       background:#fff;
+      overflow:auto;
     }
-
-    .math{ font-size:18px; }
+    .math{ font-size:18px; line-height:1.6; white-space:normal; }
 
     .msg{
       margin-top:10px;
-      padding:10px;
-      border-radius:10px;
+      padding:10px 12px;
+      border-radius:12px;
       border:1px solid rgba(185,28,28,.25);
       background:rgba(185,28,28,.06);
       color:var(--bad);
+      font-size:13px;
+      line-height:1.35;
       display:none;
+      white-space:pre-wrap;
+    }
+
+    details.debug{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+    details.debug pre{
+      white-space:pre-wrap;
+      background:rgba(0,0,0,.03);
+      border:1px solid rgba(17,24,39,.10);
+      border-radius:10px;
+      padding:10px;
+      overflow:auto;
+      font-family:var(--mono);
+      font-size:12px;
+      color:#111827;
     }
   </style>
 </head>
 
 <body>
 <div class="wrap">
-
-<!-- INTEGRAL (UNCHANGED FUNCTIONALITY) -->
-<h1>Indefinite Integral Calculator</h1>
-<div class="sub">Enter function and variable.</div>
-
-<div class="card">
-  <div class="row">
-    <span class="label">∫</span>
-    <input id="expr" class="long" value="1/(y*(1-y/800))">
-    <span class="label">d</span>
-    <input id="variable" value="y">
+  <h1>MAT276 — Indefinite Integral Calculator</h1>
+  <div class="sub">
+    Enter your integrand and the variable after the <span class="pill">d</span>, then click <b>Integrate</b>.
+    Natural logarithms are displayed as <b>ln</b>.
   </div>
 
-  <button id="btnIntegrate" disabled>Loading…</button>
-  <div class="status" id="status">Loading SymPy…</div>
+  <div class="card">
+    <div class="integral-row">
+      <div class="int-symbol">∫</div>
 
-  <div class="msg" id="friendlyError"></div>
+      <input id="expr" type="text" spellcheck="false" autocomplete="off"
+             value="1/(y*(1-y/800))"
+             placeholder="Enter f(x), e.g. sin(x)^2 or 1/(x*(x+2))" />
 
-  <div class="out">
-    <div id="output" class="math">—</div>
+      <div class="dx">
+        <div class="dchar">d</div>
+        <input id="variable" class="varbox" type="text" spellcheck="false" autocomplete="off"
+               value="y" placeholder="x" />
+      </div>
+    </div>
+
+    <div class="callout">
+      <b>IMPORTANT:</b> Use <span class="pill">*</span> when multiplying
+      (e.g. <span class="pill">2*x</span>, <span class="pill">(x+1)*(x-3)</span>).
+      Also make sure you set the variable after the <span class="pill">d</span>
+      (for example, <span class="pill">dx</span> means integrate with respect to <span class="pill">x</span>).
+    </div>
+
+    <button id="btnIntegrate" disabled>Loading engine…</button>
+    <div class="status" id="status">Initializing SymPy…</div>
+
+    <div class="msg" id="friendlyError"></div>
+
+    <div class="out">
+      <div class="math" id="output">—</div>
+
+      <!-- Instructor-only debug: hidden unless an error happens -->
+      <details class="debug" id="debugDetails" style="display:none;">
+        <summary>Show technical details (instructor)</summary>
+        <pre id="debugText"></pre>
+      </details>
+    </div>
   </div>
-</div>
-
-<!-- QUADRATIC -->
-<h1>Quadratic Root Calculator</h1>
-<div class="sub">Solve \(ax^2 + bx + c = 0\)</div>
-
-<div class="card">
-  <div class="row">
-    <span class="label">a =</span><input id="qa" value="1">
-    <span class="label">b =</span><input id="qb" value="0">
-    <span class="label">c =</span><input id="qc" value="-4">
-  </div>
-
-  <button id="btnQuadratic">Compute Roots</button>
-
-  <div class="out">
-    <div id="quadraticOutput" class="math">—</div>
-  </div>
-</div>
-
-<!-- PARTIAL FRACTIONS -->
-<h1>Partial Fractions</h1>
-<div class="card">
-  <div class="row">
-    <span class="label">f(x) =</span>
-    <input id="pfdExpr" class="long" value="(3*x+5)/((x-1)*(x+2))">
-  </div>
-
-  <button id="btnPFD">Decompose</button>
-
-  <div class="out"><div id="pfdOutput"></div></div>
-</div>
-
-<!-- SYSTEM -->
-<h1>2×2 System Solver</h1>
-<div class="card">
-  <div class="row">
-    <span class="label">a =</span><input id="sysA" value="2">
-    <span class="label">b =</span><input id="sysB" value="3">
-    <span class="label">f₁ =</span><input id="sysF1" value="7">
-  </div>
-
-  <div class="row">
-    <span class="label">c =</span><input id="sysC" value="1">
-    <span class="label">d =</span><input id="sysD" value="-1">
-    <span class="label">f₂ =</span><input id="sysF2" value="1">
-  </div>
-
-  <button id="btnSystemSolve">Solve</button>
-
-  <div class="out"><div id="systemOutput"></div></div>
-</div>
-
-<!-- COMPLETE THE SQUARE -->
-<h1>Complete the Square</h1>
-<div class="card">
-  <div class="row">
-    <span class="label">a =</span><input id="ctsA" value="1">
-    <span class="label">b =</span><input id="ctsB" value="6">
-    <span class="label">c =</span><input id="ctsC" value="5">
-  </div>
-
-  <button id="btnCTS">Compute</button>
-
-  <div class="out"><div id="ctsOutput"></div></div>
-</div>
-
 </div>
 
 <script>
@@ -205,58 +220,134 @@ let pyodide = null;
 
 function renderMath(){
   if (!window.renderMathInElement) return;
-  renderMathInElement(document.body,{delimiters:[{left:"\\(",right:"\\)",display:false}]});
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left:"\\(", right:"\\)", display:false},
+      {left:"\\[", right:"\\]", display:true}
+    ],
+    throwOnError:false
+  });
+}
+
+function setStatus(text){
+  document.getElementById("status").textContent = text;
+}
+
+function showFriendlyError(msg, debug=null){
+  const box = document.getElementById("friendlyError");
+  box.style.display = "block";
+  box.textContent = msg;
+
+  const dbg = document.getElementById("debugDetails");
+  const dbgText = document.getElementById("debugText");
+  if (debug){
+    dbg.style.display = "block";
+    dbgText.textContent = String(debug);
+  } else {
+    dbg.style.display = "none";
+    dbgText.textContent = "";
+  }
+}
+
+function clearFriendlyError(){
+  const box = document.getElementById("friendlyError");
+  box.style.display = "none";
+  box.textContent = "";
+  document.getElementById("debugDetails").style.display = "none";
+  document.getElementById("debugText").textContent = "";
+}
+
+function sanitizeForPythonTripleQuotes(s){
+  return String(s).replace(/'''/g, "\\'\\'\\'");
+}
+
+function replaceLogWithLn(tex){
+  // SymPy LaTeX uses \log for natural log by default.
+  // This makes it display as \ln for students.
+  return String(tex).replace(/\\log/g, "\\ln");
 }
 
 async function initPyodide(){
   pyodide = await loadPyodide();
   await pyodide.loadPackage("sympy");
-  btnIntegrate.disabled = false;
+
+  const btn = document.getElementById("btnIntegrate");
+  btn.disabled = false;
+  btn.textContent = "Integrate";
+  setStatus("Ready.");
 }
 
-btnIntegrate.onclick = async () => {
+async function integrate(){
+  clearFriendlyError();
+
+  const expr = document.getElementById("expr").value.trim();
+  const v = (document.getElementById("variable").value.trim() || "x").replace(/\s+/g,"");
+
+  if (!expr){
+    showFriendlyError("Please enter an integrand (the function inside the integral).");
+    return;
+  }
+  if (!/^[A-Za-z_]\w*$/.test(v)){
+    showFriendlyError("Please enter a valid variable of integration (examples: x, y, t).");
+    return;
+  }
+
+  setStatus("Computing…");
+
+  const exprSafe = sanitizeForPythonTripleQuotes(expr);
+
+  // IMPORTANT CHANGE:
+  // We ask SymPy to LaTeX BOTH the integrand and the antiderivative.
+  // That removes the need for any homemade TeX conversion and prevents the \\int/\\cdot issues.
   const code = `
 import sympy as sp
-x=sp.Symbol('${variable.value}')
-expr=sp.sympify(r'''${expr.value}''')
-sp.latex(sp.integrate(expr,x))
+var = sp.Symbol('${v}')
+expr = sp.sympify(r'''${exprSafe}''')
+F = sp.integrate(expr, var)
+F = sp.simplify(F)
+expr_tex = sp.latex(expr)
+F_tex = sp.latex(F)
+expr_tex + "|||"+ F_tex
 `;
-  const r = await pyodide.runPythonAsync(code);
-  output.innerHTML = `\\(${r}+C\\)`; renderMath();
-};
 
-btnQuadratic.onclick = ()=>{
-  let a=+qa.value,b=+qb.value,c=+qc.value;
-  let d=b*b-4*a*c;
-  quadraticOutput.innerHTML = d>=0
-    ? `\\(x=${(-b+Math.sqrt(d))/(2*a)}, ${(-b-Math.sqrt(d))/(2*a)}\\)`
-    : `\\(x=${-b/(2*a)}\\pm${Math.sqrt(-d)/(2*a)}i\\)`;
-  renderMath();
-};
+  try{
+    const joined = await pyodide.runPythonAsync(code);
+    const parts = String(joined).split("|||");
+    const exprTex = replaceLogWithLn(parts[0] || "");
+    const FTex = replaceLogWithLn(parts[1] || "");
 
-btnPFD.onclick = async ()=>{
-  const code=`import sympy as sp;x=sp.Symbol('x');sp.latex(sp.apart(sp.sympify(r'''${pfdExpr.value}'''),x))`;
-  const r=await pyodide.runPythonAsync(code);
-  pfdOutput.innerHTML=`\\(${r}\\)`; renderMath();
-};
+    // Note: use SINGLE backslash TeX commands inside \(...\)
+    const latexLine = `\\int ${exprTex}\\, d${v} = ${FTex} + C`;
+    document.getElementById("output").innerHTML = `\\(${latexLine}\\)`;
 
-btnSystemSolve.onclick = ()=>{
-  let a=+sysA.value,b=+sysB.value,c=+sysC.value,d=+sysD.value,f1=+sysF1.value,f2=+sysF2.value;
-  let det=a*d-b*c;
-  systemOutput.innerHTML = det
-    ? `k_1=${(f1*d-b*f2)/det}, k_2=${(a*f2-f1*c)/det}`
-    : "No unique solution";
-};
+    setStatus("Done.");
+    renderMath();
+  } catch(e){
+    showFriendlyError(
+      "I couldn’t parse that expression. Double-check:\n" +
+      "• Use * for multiplication (example: 2*x, (x+1)*(x-3))\n" +
+      "• Use ^ for powers (example: x^2)\n" +
+      "• Make sure the variable after the d is correct (dx, dy, dt)\n" +
+      "Then try again.",
+      e
+    );
+    setStatus("Not computed.");
+    document.getElementById("output").textContent = "—";
+  }
+}
 
-btnCTS.onclick = ()=>{
-  let a=+ctsA.value,b=+ctsB.value,c=+ctsC.value;
-  let h=-b/(2*a),k=c-b*b/(4*a);
-  ctsOutput.innerHTML=`\\(${a}(x${h>=0?'-':'+'}${Math.abs(h)})^2${k>=0?'+':'-'}${Math.abs(k)}\\)`;
-  renderMath();
-};
+document.getElementById("btnIntegrate").addEventListener("click", integrate);
+
+// Enter key convenience
+document.getElementById("expr").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
+});
+document.getElementById("variable").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") { ev.preventDefault(); integrate(); }
+});
 
 initPyodide();
-window.onload=renderMath;
+window.addEventListener("load", renderMath);
 </script>
 </body>
 </html>
