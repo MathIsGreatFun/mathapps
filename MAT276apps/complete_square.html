@@ -125,24 +125,6 @@
       margin-bottom: 14px;
     }
 
-    .step {
-      margin-bottom: 18px;
-      padding-bottom: 18px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .step:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .step-title {
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #1f2937;
-    }
-
     .math-output {
       overflow-x: auto;
       padding: 6px 0;
@@ -294,19 +276,14 @@
     function expressionLatex(a, b, c) {
       let parts = [];
 
-      // ax^2 term
       if (a !== 0) {
         if (a === 1) parts.push("x^2");
         else if (a === -1) parts.push("-x^2");
         else parts.push(`${valueToLatex(a)}x^2`);
       }
 
-      // bx term
       if (b !== 0) {
-        let term = "";
-        if (Math.abs(b) === 1) term = "x";
-        else term = `${valueToLatex(Math.abs(b))}x`;
-
+        let term = Math.abs(b) === 1 ? "x" : `${valueToLatex(Math.abs(b))}x`;
         if (parts.length === 0) {
           parts.push(b < 0 ? `-${term}` : term);
         } else {
@@ -314,7 +291,6 @@
         }
       }
 
-      // c term
       if (c !== 0 || parts.length === 0) {
         const term = valueToLatex(Math.abs(c));
         if (parts.length === 0) {
@@ -353,7 +329,7 @@
       }
 
       if (a === 0) {
-        message.innerHTML = `<div class="error">To complete the square, \(a\) must not be \(0\), because the expression must be quadratic.</div>`;
+        message.innerHTML = `<div class="error">\(a\) must not be 0.</div>`;
         renderKatexInElement(message);
         return;
       }
@@ -363,67 +339,15 @@
 
       const original = expressionLatex(a, b, c);
       const inside = `x ${signedLatex(h)}`.replace("+ -", "- ");
-      const squareForm = `${valueToLatex(a)}\\left(${inside}\\right)^2 ${signedLatex(k)}`.replace(/^1/, "").replace(/\+ -/g, "- ");
-      const step2Inside = `x^2 ${signedLatex(b / a)}x`;
-      const halfCoeff = b / (2 * a);
-      const halfCoeffSq = halfCoeff * halfCoeff;
+      const squareForm = `${valueToLatex(a)}\\left(${inside}\\right)^2 ${signedLatex(k)}`
+        .replace(/^1/, "")
+        .replace(/\+ -/g, "- ");
 
       output.innerHTML = `
         <div class="panel">
           <h2>Result</h2>
           <div class="math-output">
             $$ ${original} = ${squareForm} $$
-          </div>
-          <div class="note">
-            The quadratic written in completed-square form is shown above.
-          </div>
-        </div>
-
-        <div class="panel">
-          <h2>Steps</h2>
-
-          <div class="step">
-            <div class="step-title">Step 1: Start with the quadratic expression</div>
-            <div class="math-output">
-              $$ ${original} $$
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="step-title">Step 2: Factor out \(a\) from the \(x^2\) and \(x\) terms</div>
-            <div class="math-output">
-              $$ ${original} = ${valueToLatex(a)}\\left(${step2Inside}\\right) ${signedLatex(c)} $$
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="step-title">Step 3: Take half of the coefficient of \(x\) inside the parentheses and square it</div>
-            <div class="math-output">
-              $$ \\frac{1}{2}\\left(${valueToLatex(b / a)}\\right) = ${valueToLatex(halfCoeff)} $$
-              $$ \\left(${valueToLatex(halfCoeff)}\\right)^2 = ${valueToLatex(halfCoeffSq)} $$
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="step-title">Step 4: Add and subtract that value inside the structure</div>
-            <div class="math-output">
-              $$ ${original}
-              = ${valueToLatex(a)}\\left(x^2 ${signedLatex(b / a)}x ${signedLatex(halfCoeffSq)} ${signedLatex(-halfCoeffSq)}\\right) ${signedLatex(c)} $$
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="step-title">Step 5: Rewrite the trinomial as a perfect square</div>
-            <div class="math-output">
-              $$ = ${valueToLatex(a)}\\left(${inside}\\right)^2 ${signedLatex(-a * halfCoeffSq + c)} $$
-            </div>
-          </div>
-
-          <div class="step">
-            <div class="step-title">Final Answer</div>
-            <div class="math-output">
-              $$ ${original} = ${squareForm} $$
-            </div>
           </div>
         </div>
       `;
