@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Complete the Square Calculator</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '\\(', right: '\\)', display: false}
+      ]
+    });"></script>
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 24px;
+      color: #222;
+    }
+
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+      padding: 28px;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #555;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .math-line {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 22px;
+    }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(140px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    input {
+      font-size: 1rem;
+      padding: 10px 12px;
+      border: 1px solid #c9ced6;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .panel {
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      margin-bottom: 14px;
+    }
+
+    .step {
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .step:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .step-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1f2937;
+    }
+
+    .math-output {
+      overflow-x: auto;
+      padding: 6px 0;
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+
+    .note {
+      color: #4b5563;
+      font-size: 0.96rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 720px) {
+      .inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .app {
+        padding: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Complete the Square Calculator</h1>
+    <div class="subtitle">
+      Enter the coefficients of a quadratic expression of the form
+      \( ax^2 + bx + c \), and the calculator will rewrite it in completed-square form.
+    </div>
+
+    <div class="math-line">
+      \( ax^2 + bx + c \)
+    </div>
+
+    <div class="inputs">
+      <div class="input-group">
+        <label for="a">\(a=\)</label>
+        <input id="a" type="number" step="any" value="1">
+      </div>
+      <div class="input-group">
+        <label for="b">\(b=\)</label>
+        <input id="b" type="number" step="any" value="6">
+      </div>
+      <div class="input-group">
+        <label for="c">\(c=\)</label>
+        <input id="c" type="number" step="any" value="5">
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="primary" onclick="calculate()">Complete the Square</button>
+      <button class="secondary" onclick="clearAll()">Clear</button>
+      <button class="secondary" onclick="loadExample()">Example</button>
+    </div>
+
+    <div id="message"></div>
+    <div id="output"></div>
+  </div>
+
+  <script>
+    function gcd(a, b) {
+      a = Math.abs(a);
+      b = Math.abs(b);
+      while (b > 1e-12) {
+        const t = b;
+        b = a % b;
+        a = t;
+      }
+      return a;
+    }
+
+    function toFraction(x, tol = 1e-10) {
+      if (!isFinite(x)) return null;
+      if (Math.abs(x) < tol) return { num: 0, den: 1 };
+
+      const sign = x < 0 ? -1 : 1;
+      x = Math.abs(x);
+
+      if (Math.abs(x - Math.round(x)) < tol) {
+        return { num: sign * Math.round(x), den: 1 };
+      }
+
+      let h1 = 1, h2 = 0, k1 = 0, k2 = 1;
+      let b = x;
+      let iter = 0;
+
+      do {
+        const a = Math.floor(b);
+        let h = a * h1 + h2;
+        let k = a * k1 + k2;
+        h2 = h1; h1 = h;
+        k2 = k1; k1 = k;
+        const frac = b - a;
+        if (Math.abs(frac) < tol) break;
+        b = 1 / frac;
+        iter++;
+      } while (iter < 20);
+
+      return { num: sign * h1, den: k1 };
+    }
+
+    function simplifyFraction(frac) {
+      if (!frac) return null;
+      if (frac.den === 0) return frac;
+      const g = gcd(frac.num, frac.den);
+      let num = frac.num / g;
+      let den = frac.den / g;
+      if (den < 0) {
+        num *= -1;
+        den *= -1;
+      }
+      return { num, den };
+    }
+
+    function fracToLatex(frac) {
+      frac = simplifyFraction(frac);
+      if (frac.den === 1) return `${frac.num}`;
+      return `\\frac{${frac.num}}{${frac.den}}`;
+    }
+
+    function decimalString(x) {
+      return Number(x).toFixed(4).replace(/\.?0+$/, "");
+    }
+
+    function valueToLatex(x) {
+      const frac = simplifyFraction(toFraction(x));
+      if (!frac) return decimalString(x);
+      const approx = frac.num / frac.den;
+      if (Math.abs(approx - x) < 1e-9) {
+        return fracToLatex(frac);
+      }
+      return decimalString(x);
+    }
+
+    function signedLatex(x) {
+      const latex = valueToLatex(Math.abs(x));
+      return x >= 0 ? `+ ${latex}` : `- ${latex}`;
+    }
+
+    function expressionLatex(a, b, c) {
+      let parts = [];
+
+      // ax^2 term
+      if (a !== 0) {
+        if (a === 1) parts.push("x^2");
+        else if (a === -1) parts.push("-x^2");
+        else parts.push(`${valueToLatex(a)}x^2`);
+      }
+
+      // bx term
+      if (b !== 0) {
+        let term = "";
+        if (Math.abs(b) === 1) term = "x";
+        else term = `${valueToLatex(Math.abs(b))}x`;
+
+        if (parts.length === 0) {
+          parts.push(b < 0 ? `-${term}` : term);
+        } else {
+          parts.push(b < 0 ? `- ${term}` : `+ ${term}`);
+        }
+      }
+
+      // c term
+      if (c !== 0 || parts.length === 0) {
+        const term = valueToLatex(Math.abs(c));
+        if (parts.length === 0) {
+          parts.push(c < 0 ? `-${term}` : term);
+        } else {
+          parts.push(c < 0 ? `- ${term}` : `+ ${term}`);
+        }
+      }
+
+      return parts.join(" ");
+    }
+
+    function renderKatexInElement(el) {
+      renderMathInElement(el, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '\\(', right: '\\)', display: false}
+        ]
+      });
+    }
+
+    function calculate() {
+      const a = parseFloat(document.getElementById("a").value);
+      const b = parseFloat(document.getElementById("b").value);
+      const c = parseFloat(document.getElementById("c").value);
+
+      const message = document.getElementById("message");
+      const output = document.getElementById("output");
+      message.innerHTML = "";
+      output.innerHTML = "";
+
+      if ([a, b, c].some(v => Number.isNaN(v))) {
+        message.innerHTML = `<div class="error">Please enter valid numbers for \(a\), \(b\), and \(c\).</div>`;
+        renderKatexInElement(message);
+        return;
+      }
+
+      if (a === 0) {
+        message.innerHTML = `<div class="error">To complete the square, \(a\) must not be \(0\), because the expression must be quadratic.</div>`;
+        renderKatexInElement(message);
+        return;
+      }
+
+      const h = b / (2 * a);
+      const k = c - (b * b) / (4 * a);
+
+      const original = expressionLatex(a, b, c);
+      const inside = `x ${signedLatex(h)}`.replace("+ -", "- ");
+      const squareForm = `${valueToLatex(a)}\\left(${inside}\\right)^2 ${signedLatex(k)}`.replace(/^1/, "").replace(/\+ -/g, "- ");
+      const step2Inside = `x^2 ${signedLatex(b / a)}x`;
+      const halfCoeff = b / (2 * a);
+      const halfCoeffSq = halfCoeff * halfCoeff;
+
+      output.innerHTML = `
+        <div class="panel">
+          <h2>Result</h2>
+          <div class="math-output">
+            $$ ${original} = ${squareForm} $$
+          </div>
+          <div class="note">
+            The quadratic written in completed-square form is shown above.
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Steps</h2>
+
+          <div class="step">
+            <div class="step-title">Step 1: Start with the quadratic expression</div>
+            <div class="math-output">
+              $$ ${original} $$
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-title">Step 2: Factor out \(a\) from the \(x^2\) and \(x\) terms</div>
+            <div class="math-output">
+              $$ ${original} = ${valueToLatex(a)}\\left(${step2Inside}\\right) ${signedLatex(c)} $$
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-title">Step 3: Take half of the coefficient of \(x\) inside the parentheses and square it</div>
+            <div class="math-output">
+              $$ \\frac{1}{2}\\left(${valueToLatex(b / a)}\\right) = ${valueToLatex(halfCoeff)} $$
+              $$ \\left(${valueToLatex(halfCoeff)}\\right)^2 = ${valueToLatex(halfCoeffSq)} $$
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-title">Step 4: Add and subtract that value inside the structure</div>
+            <div class="math-output">
+              $$ ${original}
+              = ${valueToLatex(a)}\\left(x^2 ${signedLatex(b / a)}x ${signedLatex(halfCoeffSq)} ${signedLatex(-halfCoeffSq)}\\right) ${signedLatex(c)} $$
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-title">Step 5: Rewrite the trinomial as a perfect square</div>
+            <div class="math-output">
+              $$ = ${valueToLatex(a)}\\left(${inside}\\right)^2 ${signedLatex(-a * halfCoeffSq + c)} $$
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-title">Final Answer</div>
+            <div class="math-output">
+              $$ ${original} = ${squareForm} $$
+            </div>
+          </div>
+        </div>
+      `;
+
+      renderKatexInElement(output);
+    }
+
+    function clearAll() {
+      document.getElementById("a").value = "";
+      document.getElementById("b").value = "";
+      document.getElementById("c").value = "";
+      document.getElementById("message").innerHTML = "";
+      document.getElementById("output").innerHTML = "";
+    }
+
+    function loadExample() {
+      document.getElementById("a").value = "1";
+      document.getElementById("b").value = "6";
+      document.getElementById("c").value = "5";
+      calculate();
+    }
+
+    window.addEventListener("load", () => {
+      calculate();
+    });
+  </script>
+</body>
+</html>
