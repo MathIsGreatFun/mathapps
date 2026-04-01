@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2×2 System Solver</title>
+
+  <!-- KaTeX -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"
+  />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --border: #d8dee9;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --good: #166534;
+      --good-bg: #ecfdf5;
+      --bad: #991b1b;
+      --bad-bg: #fef2f2;
+      --shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      margin: 0 0 24px 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .math-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 22px;
+      overflow-x: auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(90px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 0.96rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 12px;
+      font-size: 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      outline: none;
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+
+    .equation-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .eq-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      background: #fcfdff;
+    }
+
+    .eq-title {
+      margin-bottom: 12px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 10px 0 22px 0;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .solve-btn {
+      background: var(--accent);
+      color: white;
+    }
+
+    .clear-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .solve-btn:hover { filter: brightness(0.96); }
+    .clear-btn:hover { filter: brightness(0.97); }
+
+    .result, .steps {
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      margin-top: 16px;
+    }
+
+    .result h2, .steps h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+    }
+
+    .result.good {
+      background: var(--good-bg);
+      color: var(--good);
+      border-color: #bbf7d0;
+    }
+
+    .result.bad {
+      background: var(--bad-bg);
+      color: var(--bad);
+      border-color: #fecaca;
+    }
+
+    .steps {
+      background: #f8fafc;
+    }
+
+    .steps p {
+      margin: 10px 0;
+      line-height: 1.55;
+    }
+
+    .small-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 700px) {
+      .equation-row {
+        grid-template-columns: 1fr;
+      }
+      .grid {
+        grid-template-columns: repeat(2, minmax(90px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>2×2 System Solver</h1>
+      <p class="subtitle">
+        Enter the coefficients for the system
+        \(a k_1 + b k_2 = f_1\) and \(c k_1 + d k_2 = f_2\).
+        Then click <strong>Solve</strong>.
+      </p>
+
+      <div class="math-box">
+        $$
+        \begin{cases}
+        a k_1 + b k_2 = f_1 \\
+        c k_1 + d k_2 = f_2
+        \end{cases}
+        $$
+      </div>
+
+      <div class="equation-row">
+        <div class="eq-card">
+          <div class="eq-title">Equation 1</div>
+          <div class="grid">
+            <div class="field">
+              <label for="a">\(a\)</label>
+              <input id="a" type="number" step="any" value="2" />
+            </div>
+            <div class="field">
+              <label for="b">\(b\)</label>
+              <input id="b" type="number" step="any" value="3" />
+            </div>
+            <div class="field">
+              <label for="f1">\(f_1\)</label>
+              <input id="f1" type="number" step="any" value="7" />
+            </div>
+          </div>
+          <div id="eq1-preview" class="math-box"></div>
+        </div>
+
+        <div class="eq-card">
+          <div class="eq-title">Equation 2</div>
+          <div class="grid">
+            <div class="field">
+              <label for="c">\(c\)</label>
+              <input id="c" type="number" step="any" value="1" />
+            </div>
+            <div class="field">
+              <label for="d">\(d\)</label>
+              <input id="d" type="number" step="any" value="-4" />
+            </div>
+            <div class="field">
+              <label for="f2">\(f_2\)</label>
+              <input id="f2" type="number" step="any" value="-5" />
+            </div>
+          </div>
+          <div id="eq2-preview" class="math-box"></div>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button class="solve-btn" onclick="solveSystem()">Solve</button>
+        <button class="clear-btn" onclick="clearAll()">Clear</button>
+      </div>
+
+      <div id="result"></div>
+      <div id="steps"></div>
+
+      <div class="small-note">
+        This solver uses Cramer's Rule:
+        \[
+        \Delta = ad - bc, \qquad
+        k_1 = \frac{f_1d - bf_2}{\Delta}, \qquad
+        k_2 = \frac{af_2 - f_1c}{\Delta}.
+        \]
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function fmt(x) {
+      if (!isFinite(x)) return String(x);
+      if (Math.abs(x) < 1e-12) x = 0;
+      return Number(x.toFixed(10)).toString();
+    }
+
+    function readNum(id) {
+      return parseFloat(document.getElementById(id).value);
+    }
+
+    function updatePreviews() {
+      const a = document.getElementById("a").value || "0";
+      const b = document.getElementById("b").value || "0";
+      const c = document.getElementById("c").value || "0";
+      const d = document.getElementById("d").value || "0";
+      const f1 = document.getElementById("f1").value || "0";
+      const f2 = document.getElementById("f2").value || "0";
+
+      document.getElementById("eq1-preview").innerHTML =
+        `\\[
+          ${a}k_1 + (${b})k_2 = ${f1}
+        \\]`;
+
+      document.getElementById("eq2-preview").innerHTML =
+        `\\[
+          ${c}k_1 + (${d})k_2 = ${f2}
+        \\]`;
+
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ]
+      });
+    }
+
+    function solveSystem() {
+      const a = readNum("a");
+      const b = readNum("b");
+      const c = readNum("c");
+      const d = readNum("d");
+      const f1 = readNum("f1");
+      const f2 = readNum("f2");
+
+      const resultDiv = document.getElementById("result");
+      const stepsDiv = document.getElementById("steps");
+
+      const values = [a,b,c,d,f1,f2];
+      if (values.some(v => Number.isNaN(v))) {
+        resultDiv.className = "result bad";
+        resultDiv.innerHTML = `
+          <h2>Result</h2>
+          <p>Please enter a number in every box.</p>
+        `;
+        stepsDiv.innerHTML = "";
+        return;
+      }
+
+      const delta = a * d - b * c;
+      const delta1 = f1 * d - b * f2;
+      const delta2 = a * f2 - f1 * c;
+
+      if (Math.abs(delta) < 1e-12) {
+        resultDiv.className = "result bad";
+        resultDiv.innerHTML = `
+          <h2>Result</h2>
+          <p>This system does not have a unique solution because \\(\\Delta = 0\\).</p>
+        `;
+
+        stepsDiv.className = "steps";
+        stepsDiv.innerHTML = `
+          <h2>Work</h2>
+          <p>\\[
+            \\Delta = ad - bc = (${fmt(a)})(${fmt(d)}) - (${fmt(b)})(${fmt(c)}) = ${fmt(delta)}
+          \\]</p>
+          <p>Since \\(\\Delta = 0\\), the system may have either no solution or infinitely many solutions, but it does not have exactly one solution.</p>
+        `;
+
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "\\[", right: "\\]", display: true }
+          ]
+        });
+        return;
+      }
+
+      const k1 = delta1 / delta;
+      const k2 = delta2 / delta;
+
+      resultDiv.className = "result good";
+      resultDiv.innerHTML = `
+        <h2>Solution</h2>
+        <p>\\[
+          k_1 = ${fmt(k1)}, \\qquad k_2 = ${fmt(k2)}
+        \\]</p>
+      `;
+
+      stepsDiv.className = "steps";
+      stepsDiv.innerHTML = `
+        <h2>Work</h2>
+        <p>Compute the determinant:</p>
+        <p>\\[
+          \\Delta = ad - bc = (${fmt(a)})(${fmt(d)}) - (${fmt(b)})(${fmt(c)}) = ${fmt(delta)}
+        \\]</p>
+
+        <p>Compute the numerator for \\(k_1\\):</p>
+        <p>\\[
+          \\Delta_1 = f_1d - bf_2 = (${fmt(f1)})(${fmt(d)}) - (${fmt(b)})(${fmt(f2)}) = ${fmt(delta1)}
+        \\]</p>
+
+        <p>Compute the numerator for \\(k_2\\):</p>
+        <p>\\[
+          \\Delta_2 = af_2 - f_1c = (${fmt(a)})(${fmt(f2)}) - (${fmt(f1)})(${fmt(c)}) = ${fmt(delta2)}
+        \\]</p>
+
+        <p>Now divide:</p>
+        <p>\\[
+          k_1 = \\frac{\\Delta_1}{\\Delta} = \\frac{${fmt(delta1)}}{${fmt(delta)}} = ${fmt(k1)}
+        \\]</p>
+        <p>\\[
+          k_2 = \\frac{\\Delta_2}{\\Delta} = \\frac{${fmt(delta2)}}{${fmt(delta)}} = ${fmt(k2)}
+        \\]</p>
+      `;
+
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ]
+      });
+    }
+
+    function clearAll() {
+      ["a", "b", "c", "d", "f1", "f2"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("steps").innerHTML = "";
+      updatePreviews();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ]
+      });
+
+      ["a", "b", "c", "d", "f1", "f2"].forEach(id => {
+        document.getElementById(id).addEventListener("input", updatePreviews);
+      });
+
+      updatePreviews();
+    });
+  </script>
+</body>
+</html>
