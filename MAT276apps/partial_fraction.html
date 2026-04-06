@@ -7,13 +7,6 @@
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/nerdamer.core.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Solve.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Extra.js"></script>
 
   <style>
     body {
@@ -40,18 +33,18 @@
     }
 
     .subtitle {
-      margin-bottom: 22px;
+      margin-bottom: 18px;
       color: #444;
       line-height: 1.45;
     }
 
-    .mathline {
-      font-size: 1.15rem;
-      margin: 10px 0 18px 0;
-      padding: 10px 12px;
+    .notice {
+      margin-bottom: 18px;
+      padding: 12px 14px;
       background: #f8f9fc;
       border-radius: 10px;
-      overflow-x: auto;
+      line-height: 1.55;
+      color: #333;
     }
 
     .row {
@@ -63,14 +56,15 @@
     }
 
     label {
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 1rem;
     }
 
     input[type="text"] {
       flex: 1;
-      min-width: 260px;
+      min-width: 280px;
       font-size: 1rem;
-      padding: 10px 12px;
+      padding: 11px 12px;
       border: 1px solid #cfd5e2;
       border-radius: 8px;
       box-sizing: border-box;
@@ -90,39 +84,18 @@
       background: #1d4ed8;
     }
 
-    .examples {
-      margin-top: 14px;
-      margin-bottom: 18px;
-      padding: 12px 14px;
-      background: #f8f9fc;
-      border-radius: 10px;
-      line-height: 1.7;
-    }
-
-    .output {
-      margin-top: 22px;
-      padding: 18px;
+    .examples, .output {
+      margin-top: 18px;
+      padding: 16px 18px;
       background: #fcfcff;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
-      min-height: 80px;
     }
 
-    .output-title {
+    .section-title {
       font-weight: 700;
       margin-bottom: 10px;
-    }
-
-    .error {
-      color: #b00020;
-      font-weight: 600;
-    }
-
-    .small {
-      color: #555;
-      font-size: 0.95rem;
-      margin-top: 8px;
-      line-height: 1.5;
+      font-size: 1rem;
     }
 
     code {
@@ -131,10 +104,31 @@
       border-radius: 6px;
     }
 
-    .katex-display {
-      margin: 0.9em 0;
+    .example-line {
+      margin: 8px 0;
+    }
+
+    .small {
+      color: #555;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .error {
+      color: #b00020;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .result-math {
+      margin-top: 10px;
       overflow-x: auto;
-      overflow-y: hidden;
+    }
+
+    .used-input {
+      margin-top: 8px;
+      color: #444;
+      font-size: 0.95rem;
     }
   </style>
 </head>
@@ -143,11 +137,15 @@
     <h1>Partial Fraction Decomposition Calculator</h1>
 
     <div class="subtitle">
-      Enter a rational expression in terms of <code>x</code>. The calculator will output its partial fraction decomposition.
+      Enter a proper rational expression in terms of <code>x</code>.
     </div>
 
-    <div class="mathline" id="intro-math">
-      \( \text{Enter an expression such as } \frac{2x+3}{(x-1)(x+2)} \)
+    <div class="notice">
+      This version is intentionally limited to denominators that are already factored into linear factors,
+      including repeated linear factors. Examples:
+      <code>(2x+3)/((x-1)(x+2))</code>,
+      <code>0.75/(x(x+0.6))</code>,
+      <code>(3x+1)/((x-2)^2(x+4))</code>.
     </div>
 
     <div class="row">
@@ -157,43 +155,39 @@
     </div>
 
     <div class="examples">
-      <strong>Examples:</strong><br>
-      <code>(2x+3)/((x-1)(x+2))</code><br>
-      <code>0.75/(x(x+0.6))</code><br>
-      <code>(3x+1)/((x-2)^2(x+4))</code>
+      <div class="section-title">Examples</div>
+      <div class="example-line"><code>(2x+3)/((x-1)(x+2))</code></div>
+      <div class="example-line"><code>0.75/(x(x+0.6))</code></div>
+      <div class="example-line"><code>(3x+1)/((x-2)^2(x+4))</code></div>
     </div>
 
     <div class="output">
-      <div class="output-title">Result</div>
-      <div id="result-math">Enter an expression and click <strong>Decompose</strong>.</div>
+      <div class="section-title">Result</div>
+      <div id="result"></div>
+      <div id="usedInput" class="used-input"></div>
     </div>
   </div>
 
   <script>
-    function renderMathInElementById(id) {
-      const el = document.getElementById(id);
-      renderMathInElement(el, {
-        delimiters: [
-          { left: "\\(", right: "\\)", display: false },
-          { left: "\\[", right: "\\]", display: true }
-        ],
-        throwOnError: false
+    function renderLatex(element, latex, displayMode = true) {
+      katex.render(latex, element, {
+        throwOnError: false,
+        displayMode: displayMode
       });
     }
 
-    function simplifyStr(expr) {
-      return nerdamer(`simplify(${expr})`).toString();
+    function escapeHtml(s) {
+      return s
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
     }
 
-    function tex(expr) {
-      return nerdamer(`simplify(${expr})`).toTeX();
-    }
-
-    function stripOuterParens(s) {
-      s = s.trim();
-      while (s.startsWith("(") && s.endsWith(")") && hasSingleOuterParens(s)) {
-        s = s.slice(1, -1).trim();
-      }
+    function normalizeInput(input) {
+      let s = input.replace(/\s+/g, "");
+      s = s.replace(/(\d)([a-zA-Z])/g, "$1*$2");
+      s = s.replace(/([a-zA-Z0-9\)])\(/g, "$1*(");
+      s = s.replace(/\)([a-zA-Z0-9])/g, ")*$1");
       return s;
     }
 
@@ -208,42 +202,15 @@
       return depth === 0;
     }
 
-    function normalizeInput(input) {
-      let s = input.replace(/\s+/g, "");
-
-      // Insert explicit multiplication where users commonly omit it
-      // 2x -> 2*x
-      s = s.replace(/(\d)([a-zA-Z])/g, "$1*$2");
-
-      // x(x+1), 2(x+1), )(  -> add *
-      s = s.replace(/([a-zA-Z0-9\)])\(/g, "$1*(");
-
-      // )(x), )2, )x -> add *
-      s = s.replace(/\)([a-zA-Z0-9])/g, ")*$1");
-
+    function stripOuterParens(s) {
+      s = s.trim();
+      while (s.startsWith("(") && s.endsWith(")") && hasSingleOuterParens(s)) {
+        s = s.slice(1, -1).trim();
+      }
       return s;
     }
 
-    function splitTopLevelTerms(expr) {
-      const parts = [];
-      let depth = 0;
-      let start = 0;
-
-      for (let i = 1; i < expr.length; i++) {
-        const ch = expr[i];
-        if (ch === "(") depth++;
-        else if (ch === ")") depth--;
-        else if ((ch === "+" || ch === "-") && depth === 0) {
-          parts.push(expr.slice(start, i));
-          start = i;
-        }
-      }
-
-      parts.push(expr.slice(start));
-      return parts.map(s => s.trim()).filter(Boolean);
-    }
-
-    function splitTopLevelProduct(expr) {
+    function splitTopLevel(expr, separator) {
       const parts = [];
       let depth = 0;
       let start = 0;
@@ -252,7 +219,7 @@
         const ch = expr[i];
         if (ch === "(") depth++;
         else if (ch === ")") depth--;
-        else if (ch === "*" && depth === 0) {
+        else if (ch === separator && depth === 0) {
           parts.push(expr.slice(start, i));
           start = i + 1;
         }
@@ -273,9 +240,18 @@
       return -1;
     }
 
-    function isNumericAtom(s) {
-      s = stripOuterParens(s);
-      return /^[+-]?\d+(\.\d+)?(\/\d+(\.\d+)?)?$/.test(s);
+    function toJsExpression(expr) {
+      return normalizeInput(expr).replace(/\^/g, "**");
+    }
+
+    function safeEval(expr, x) {
+      const normalized = toJsExpression(expr);
+
+      if (!/^[0-9xX+\-*/().*^]+$/.test(normalized)) {
+        throw new Error("Unsupported characters in expression.");
+      }
+
+      return Function("x", `return (${normalized});`)(x);
     }
 
     function parseLinearFactor(rawFactor) {
@@ -288,202 +264,282 @@
         power = parseInt(powerMatch[2], 10);
       }
 
-      s = simplifyStr(s);
-
       if (s === "x") {
-        return { scale: "1", shift: "0", power: power };
+        return { scale: 1, shift: 0, power };
       }
 
-      let m = s.match(/^([+-]?\d+(?:\/\d+)?)\*x([+-]\d+(?:\/\d+)?)$/);
+      let m = s.match(/^x([+-]\d+(?:\.\d+)?)$/);
       if (m) {
-        return {
-          scale: m[1],
-          shift: simplifyStr(`(${m[2]})/(${m[1]})`),
-          power: power
-        };
+        return { scale: 1, shift: parseFloat(m[1]), power };
       }
 
-      m = s.match(/^x([+-]\d+(?:\/\d+)?)$/);
+      m = s.match(/^([+-]?\d+(?:\.\d+)?)\*x([+-]\d+(?:\.\d+)?)$/);
       if (m) {
-        return {
-          scale: "1",
-          shift: m[1],
-          power: power
-        };
+        const a = parseFloat(m[1]);
+        const b = parseFloat(m[2]);
+        return { scale: a, shift: b / a, power };
       }
 
-      m = s.match(/^([+-]?\d+(?:\/\d+)?)\*x$/);
+      m = s.match(/^([+-]?\d+(?:\.\d+)?)\*x$/);
       if (m) {
-        return {
-          scale: m[1],
-          shift: "0",
-          power: power
-        };
+        return { scale: parseFloat(m[1]), shift: 0, power };
       }
 
       return null;
     }
 
-    function monicFactorLatex(shift, power) {
-      let inner = "x";
-
-      if (shift !== "0") {
-        if (shift.startsWith("-")) {
-          inner = `x-(${shift.slice(1)})`;
-        } else {
-          inner = `x+(${shift})`;
-        }
-      }
-
-      const innerLatex = tex(inner);
-
-      if (power === 1) {
-        return `\\left(${innerLatex}\\right)`;
-      }
-
-      return `\\left(${innerLatex}\\right)^{${power}}`;
-    }
-
-    function cleanSingleTermToLatex(term) {
-      let sign = "";
-      let t = term.trim();
-
-      if (t.startsWith("+")) {
-        sign = "+";
-        t = t.slice(1);
-      } else if (t.startsWith("-")) {
-        sign = "-";
-        t = t.slice(1);
-      }
-
-      const slashIndex = findTopLevelSlash(t);
-
-      if (slashIndex === -1) {
-        return { sign, body: tex(t) };
-      }
-
-      let numerator = stripOuterParens(t.slice(0, slashIndex));
-      let denominator = stripOuterParens(t.slice(slashIndex + 1));
-
-      let coeff = simplifyStr(numerator);
-      const denominatorPieces = [];
-
-      const factors = splitTopLevelProduct(denominator);
+    function buildTermList(denominator) {
+      const factors = splitTopLevel(stripOuterParens(denominator), "*");
+      const terms = [];
 
       for (const factor of factors) {
-        const f = stripOuterParens(factor);
-
-        if (isNumericAtom(f)) {
-          denominatorPieces.push(tex(f));
-          continue;
+        const parsed = parseLinearFactor(factor);
+        if (!parsed) {
+          throw new Error(`Unsupported denominator factor: ${factor}`);
         }
 
-        const linear = parseLinearFactor(f);
-
-        if (linear) {
-          const scalePower = simplifyStr(`(${linear.scale})^${linear.power}`);
-          coeff = simplifyStr(`(${coeff})/(${scalePower})`);
-          denominatorPieces.push(monicFactorLatex(linear.shift, linear.power));
-        } else {
-          denominatorPieces.push(tex(f));
+        for (let j = 1; j <= parsed.power; j++) {
+          terms.push({
+            shift: parsed.shift,
+            power: j
+          });
         }
       }
 
-      const denomLatex = denominatorPieces.join("");
-      let body = "";
-
-      if (!denomLatex) {
-        body = tex(coeff);
-      } else if (coeff === "1") {
-        body = `\\frac{1}{${denomLatex}}`;
-      } else if (coeff === "-1") {
-        body = `-\\frac{1}{${denomLatex}}`;
-      } else {
-        body = `\\frac{${tex(coeff)}}{${denomLatex}}`;
-      }
-
-      return { sign, body };
+      return terms;
     }
 
-    function cleanDecompositionLatex(raw) {
-      const terms = splitTopLevelTerms(raw);
-      const rendered = terms.map(cleanSingleTermToLatex);
+    function chooseSamplePoints(terms) {
+      const poles = terms.map(t => -t.shift);
+      const candidates = [
+        0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5,
+        0.5, -0.5, 1.5, -1.5, 2.5, -2.5,
+        6, -6, 7, -7, 8, -8, 9, -9, 10, -10
+      ];
 
-      return rendered.map((term, index) => {
-        if (index === 0) {
-          if (term.sign === "-") {
-            return term.body.startsWith("-") ? term.body : `- ${term.body}`;
+      const samples = [];
+
+      outer:
+      for (const x of candidates) {
+        for (const p of poles) {
+          if (Math.abs(x - p) < 1e-9) {
+            continue outer;
           }
-          return term.body;
+        }
+        samples.push(x);
+        if (samples.length === terms.length) break;
+      }
+
+      if (samples.length < terms.length) {
+        throw new Error("Could not find enough safe sample points.");
+      }
+
+      return samples;
+    }
+
+    function solveLinearSystem(A, b) {
+      const n = b.length;
+      const M = A.map((row, i) => row.slice().concat([b[i]]));
+
+      for (let col = 0; col < n; col++) {
+        let pivotRow = col;
+        for (let r = col + 1; r < n; r++) {
+          if (Math.abs(M[r][col]) > Math.abs(M[pivotRow][col])) {
+            pivotRow = r;
+          }
         }
 
-        if (term.sign === "-") {
-          return term.body.startsWith("-")
-            ? `- ${term.body.slice(1).trim()}`
-            : `- ${term.body}`;
+        if (Math.abs(M[pivotRow][col]) < 1e-12) {
+          throw new Error("The system became singular.");
         }
 
-        return `+ ${term.body}`;
+        [M[col], M[pivotRow]] = [M[pivotRow], M[col]];
+
+        const pivot = M[col][col];
+        for (let j = col; j <= n; j++) {
+          M[col][j] /= pivot;
+        }
+
+        for (let r = 0; r < n; r++) {
+          if (r === col) continue;
+
+          const factor = M[r][col];
+          if (Math.abs(factor) < 1e-12) continue;
+
+          for (let j = col; j <= n; j++) {
+            M[r][j] -= factor * M[col][j];
+          }
+        }
+      }
+
+      return M.map(row => row[n]);
+    }
+
+    function approximateFraction(value, maxDenominator = 1000) {
+      const sign = value < 0 ? -1 : 1;
+      const x = Math.abs(value);
+
+      const nearest = Math.round(x);
+      if (Math.abs(x - nearest) < 1e-10) {
+        return { num: sign * nearest, den: 1 };
+      }
+
+      let bestNum = 1;
+      let bestDen = 1;
+      let bestErr = Math.abs(x - 1);
+
+      for (let den = 1; den <= maxDenominator; den++) {
+        const num = Math.round(x * den);
+        const err = Math.abs(x - num / den);
+        if (err < bestErr) {
+          bestErr = err;
+          bestNum = num;
+          bestDen = den;
+          if (err < 1e-10) break;
+        }
+      }
+
+      function gcd(a, b) {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b !== 0) {
+          const t = a % b;
+          a = b;
+          b = t;
+        }
+        return a;
+      }
+
+      const g = gcd(bestNum, bestDen);
+      return {
+        num: sign * (bestNum / g),
+        den: bestDen / g
+      };
+    }
+
+    function fractionToLatex(fr) {
+      if (fr.den === 1) return `${fr.num}`;
+      return `\\frac{${fr.num}}{${fr.den}}`;
+    }
+
+    function monicFactorLatex(shift, power) {
+      const fr = approximateFraction(shift);
+
+      let inner = "x";
+      if (fr.num > 0) {
+        inner = `x+${fractionToLatex(fr)}`;
+      } else if (fr.num < 0) {
+        inner = `x-${fractionToLatex({ num: Math.abs(fr.num), den: fr.den })}`;
+      }
+
+      if (power === 1) {
+        return inner === "x" ? "x" : `\\left(${inner}\\right)`;
+      }
+
+      return `\\left(${inner}\\right)^{${power}}`;
+    }
+
+    function termLatex(coeff, shift, power) {
+      const fr = approximateFraction(coeff);
+      const negative = fr.num < 0;
+      const absFr = { num: Math.abs(fr.num), den: fr.den };
+      const denom = monicFactorLatex(shift, power);
+
+      let body = "";
+
+      if (absFr.num === absFr.den) {
+        body = `\\frac{1}{${denom}}`;
+      } else if (absFr.den === 1) {
+        body = `\\frac{${absFr.num}}{${denom}}`;
+      } else {
+        body = `${fractionToLatex(absFr)}\\cdot\\frac{1}{${denom}}`;
+      }
+
+      return { negative, body };
+    }
+
+    function decompositionLatex(coeffs, terms) {
+      return coeffs.map((coeff, i) => {
+        const t = termLatex(coeff, terms[i].shift, terms[i].power);
+
+        if (i === 0) {
+          return `${t.negative ? "- " : ""}${t.body}`;
+        }
+
+        return `${t.negative ? "-" : "+"} ${t.body}`;
       }).join(" ");
+    }
+
+    function computePartialFractions(input) {
+      const normalized = normalizeInput(input);
+      const slashIndex = findTopLevelSlash(normalized);
+
+      if (slashIndex === -1) {
+        throw new Error("Enter an expression of the form numerator/denominator.");
+      }
+
+      const denominator = normalized.slice(slashIndex + 1);
+      const terms = buildTermList(denominator);
+      const samples = chooseSamplePoints(terms);
+
+      const A = [];
+      const b = [];
+
+      for (const x of samples) {
+        A.push(
+          terms.map(term => 1 / Math.pow(x + term.shift, term.power))
+        );
+        b.push(safeEval(normalized, x));
+      }
+
+      const coeffs = solveLinearSystem(A, b);
+      return { normalized, coeffs, terms };
     }
 
     function decompose() {
       const input = document.getElementById("expr").value.trim();
-      const resultBox = document.getElementById("result-math");
+      const resultEl = document.getElementById("result");
+      const usedInputEl = document.getElementById("usedInput");
+
+      resultEl.innerHTML = "";
+      usedInputEl.innerHTML = "";
 
       if (!input) {
-        resultBox.innerHTML = '<div class="error">Please enter an expression.</div>';
+        resultEl.innerHTML = '<div class="error">Please enter an expression.</div>';
         return;
       }
 
       try {
-        const normalized = normalizeInput(input);
+        const { normalized, coeffs, terms } = computePartialFractions(input);
+        const latex = decompositionLatex(coeffs, terms);
 
-        const rawDecomposition = nerdamer(`partfrac(${normalized},x)`).toString();
+        const mathDiv = document.createElement("div");
+        mathDiv.className = "result-math";
+        resultEl.appendChild(mathDiv);
+        renderLatex(mathDiv, latex, true);
 
-        const leftLatex = tex(normalized);
-        const rightLatex = cleanDecompositionLatex(rawDecomposition);
-
-        resultBox.innerHTML = `
-          <div>
-            \\[
-              ${leftLatex}
-              =
-              ${rightLatex}
-            \\]
-          </div>
-        `;
-
-        renderMathInElementById("result-math");
+        usedInputEl.innerHTML = `Input used: <code>${escapeHtml(normalized)}</code>`;
       } catch (err) {
-        console.error(err);
-        resultBox.innerHTML = `
+        resultEl.innerHTML = `
           <div class="error">Could not compute the partial fraction decomposition.</div>
           <div class="small">
-            Try a rational expression in <code>x</code>, such as
-            <code>(2x+3)/((x-1)(x+2))</code> or <code>0.75/(x(x+0.6))</code>.
+            This version expects a <strong>proper</strong> rational expression with a denominator already factored into linear factors.
+            Try one of these:
+            <code>(2x+3)/((x-1)(x+2))</code>,
+            <code>0.75/(x(x+0.6))</code>,
+            <code>(3x+1)/((x-2)^2(x+4))</code>.
           </div>
+          <div class="small" style="margin-top:8px;">Details: ${escapeHtml(err.message)}</div>
         `;
       }
     }
 
     document.getElementById("decomposeBtn").addEventListener("click", decompose);
-
     document.getElementById("expr").addEventListener("keydown", function(e) {
       if (e.key === "Enter") decompose();
     });
 
-    window.addEventListener("load", function() {
-      renderMathInElement(document.body, {
-        delimiters: [
-          { left: "\\(", right: "\\)", display: false },
-          { left: "\\[", right: "\\]", display: true }
-        ],
-        throwOnError: false
-      });
-
-      decompose();
-    });
+    window.addEventListener("load", decompose);
   </script>
 </body>
 </html>
