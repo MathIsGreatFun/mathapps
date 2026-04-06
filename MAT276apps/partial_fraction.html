@@ -169,10 +169,6 @@
   </div>
 
  <script>
-  function toLatexFromNerdamer(expr) {
-    return nerdamer(expr).toTeX();
-  }
-
   function renderMathInElementById(id) {
     const el = document.getElementById(id);
     renderMathInElement(el, {
@@ -182,6 +178,14 @@
       ],
       throwOnError: false
     });
+  }
+
+  function simplifyStr(expr) {
+    return nerdamer(`simplify(${expr})`).toString();
+  }
+
+  function tex(expr) {
+    return nerdamer(`simplify(${expr})`).toTeX();
   }
 
   function stripOuterParens(s) {
@@ -202,9 +206,19 @@
     return depth === 0;
   }
 
+  function normalizeInput(input) {
+    let s = input.replace(/\s+/g, "");
+
+    // Insert explicit multiplication
+    s = s.replace(/(\d)([a-zA-Z])/g, "$1*$2");     // 2x -> 2*x
+    s = s.replace(/([a-zA-Z0-9\)])\(/g, "$1*(");   // x(x+1), 2(x+1), )( -> )*(
+    s = s.replace(/\)([a-zA-Z0-9])/g, ")*$1");     // )(x), )2, )x
+
+    return s;
+  }
+
   function splitTopLevelTerms(expr) {
-    expr = expr.replace(/\s+/g, "");
-    const parts = [];
+    const terms = [];
     let depth = 0;
     let start = 0;
 
@@ -213,12 +227,13 @@
       if (ch === "(") depth++;
       else if (ch === ")") depth--;
       else if ((ch === "+" || ch === "-") && depth === 0) {
-        parts.push(expr.slice(start, i));
+        terms.push(expr.slice(start, i));
         start = i;
       }
     }
-    parts.push(expr.slice(start));
-    return parts.filter(Boolean);
+
+    terms.push(expr.slice(start));
+    return terms.map(t => t.trim()).filter(Boolean);
   }
 
   function splitTopLevelProduct(expr) {
@@ -251,83 +266,48 @@
     return -1;
   }
 
-  function simplifyStr(expr) {
-    return nerdamer(`simplify(${expr})`).toString();
-  }
-
-  function tex(expr) {
-    return nerdamer(`simplify(${expr})`).toTeX();
-  }
-
-  function normalizeInput(input) {
-    let s = input.replace(/\s+/g, "");
-
-    // Convert decimal constants to exact rational form where possible
-    try {
-      s = nerdamer(`simplify(${s})`).toString();
-    } catch (_) {
-      // leave as-is if simplify fails here
-    }
-
-    // Insert explicit multiplication:
-    // 2x -> 2*x
-    s = s.replace(/(\d)([a-zA-Z])/g, "$1*$2");
-
-    // x(x+1), 2(x+1), )(, )x, )2
-    s = s.replace(/([a-zA-Z0-9\)])\(/g, "$1*(");
-    s = s.replace(/\)([a-zA-Z0-9])/g, ")*$1");
-
-    return s;
+  function isNumericFactor(s) {
+    return /^[+-]?\d+(?:\/\d+)?$/.test(stripOuterParens(s));
   }
 
   function parseLinearFactor(factor) {
     let s = stripOuterParens(factor.replace(/\s+/g, ""));
     let power = 1;
 
-    // Handle powers like (5*x+3)^2 or x^2
-    let m = s.match(/^(.*)\^(\d+)$/);
-    if (m) {
-      s = stripOuterParens(m[1]);
-      power = parseInt(m[2], 10);
+    const pm = s.match(/^(.*)\^(\d+)$/);
+    if (pm) {
+      s = stripOuterParens(pm[1]);
+      power = parseInt(pm[2], 10);
     }
 
     s = simplifyStr(s);
 
     if (s === "x") {
-      return { scale: "1", inner: "x", power: power };
+      return { scale: "1", inner: "x", power };
     }
 
-    // a*x+b or a*x-b, where a,b may be integers or rationals
-    m = s.match(/^([+-]?\d+(?:\/\d+)?)\*x([+-]\d+(?:\/\d+)?)$/);
+    let m = s.match(/^([+-]?\d+(?:\/\d+)?)\*x([+-]\d+(?:\/\d+)?)$/);
     if (m) {
       const a = m[1];
       const b = m[2];
       const c = simplifyStr(`(${b})/(${a})`);
-      return { scale: a, inner: `x+(${c})`, power: power };
+      return { scale: a, inner: `x+(${c})`, power };
     }
 
-    // x+b or x-b
     m = s.match(/^x([+-]\d+(?:\/\d+)?)$/);
     if (m) {
-      return { scale: "1", inner: `x+(${m[1]})`, power: power };
+      return { scale: "1", inner: `x+(${m[1]})`, power };
     }
 
-    // a*x
     m = s.match(/^([+-]?\d+(?:\/\d+)?)\*x$/);
     if (m) {
-      return { scale: m[1], inner: "x", power: power };
+      return { scale: m[1], inner: "x", power };
     }
 
     return null;
   }
 
-  function factorLatexFromInner(inner, power) {
-    const innerLatex = tex(inner);
-    if (power === 1) return innerLatex;
-    return `\\left(${innerLatex}\\right)^{${power}}`;
-  }
-
-  function renderCleanTerm(term) {
+  function cleanSingleTermToLatex(term) {
     let sign = "";
     let t = term.trim();
 
@@ -341,7 +321,6 @@
 
     const slash = findTopLevelSlash(t);
 
-    // Plain non-fraction term
     if (slash === -1) {
       return { sign, body: tex(t) };
     }
@@ -351,14 +330,13 @@
 
     const factors = splitTopLevelProduct(denominator);
 
-    let coeff = numerator;
+    let coeff = simplifyStr(numerator);
     const denParts = [];
 
     for (const rawFactor of factors) {
       const factor = stripOuterParens(rawFactor);
 
-      // Pure numeric denominator factor stays numeric in front
-      if (/^[+-]?\d+(?:\/\d+)?$/.test(factor)) {
+      if (isNumericFactor(factor)) {
         denParts.push(tex(factor));
         continue;
       }
@@ -366,61 +344,50 @@
       const parsed = parseLinearFactor(factor);
 
       if (parsed) {
-        // absorb only the linear coefficient a^power into numerator
         const scalePow = simplifyStr(`(${parsed.scale})^${parsed.power}`);
         coeff = simplifyStr(`(${coeff})/(${scalePow})`);
 
         const innerLatex = tex(parsed.inner);
         if (parsed.power === 1) {
-          denParts.push(innerLatex);
+          denParts.push(`\\left(${innerLatex}\\right)`);
         } else {
           denParts.push(`\\left(${innerLatex}\\right)^{${parsed.power}}`);
         }
       } else {
-        // leave other factors alone
         denParts.push(tex(factor));
       }
     }
 
-    const coeffS = simplifyStr(coeff);
     const denLatex = denParts.join("");
-
     let body = "";
 
     if (!denLatex) {
-      body = tex(coeffS);
-    } else if (coeffS === "1") {
+      body = tex(coeff);
+    } else if (coeff === "1") {
       body = `\\frac{1}{${denLatex}}`;
-    } else if (coeffS === "-1") {
+    } else if (coeff === "-1") {
       body = `-\\frac{1}{${denLatex}}`;
     } else {
-      body = `\\frac{${tex(coeffS)}}{${denLatex}}`;
+      body = `\\frac{${tex(coeff)}}{${denLatex}}`;
     }
 
     return { sign, body };
   }
 
-  function cleanDecompositionLatex(rawExpr) {
-    const terms = splitTopLevelTerms(rawExpr);
-    const rendered = terms.map(renderCleanTerm);
+  function cleanDecompositionLatex(raw) {
+    const terms = splitTopLevelTerms(raw);
+    const rendered = terms.map(cleanSingleTermToLatex);
 
     return rendered.map((term, i) => {
       if (i === 0) {
         if (term.sign === "-") {
-          if (term.body.startsWith("-")) return term.body;
-          return `- ${term.body}`;
+          return term.body.startsWith("-") ? term.body : `- ${term.body}`;
         }
         return term.body;
       }
-
-      if (term.sign === "-") {
-        if (term.body.startsWith("-")) {
-          return `- ${term.body.slice(1).trim()}`;
-        }
-        return `- ${term.body}`;
-      }
-
-      return `+ ${term.body}`;
+      return term.sign === "-" 
+        ? (term.body.startsWith("-") ? `- ${term.body.slice(1).trim()}` : `- ${term.body}`)
+        : `+ ${term.body}`;
     }).join(" ");
   }
 
@@ -435,9 +402,9 @@
 
     try {
       const normalizedInput = normalizeInput(input);
-      const raw = nerdamer(`partfrac(${normalizedInput}, x)`).toString();
+      const raw = nerdamer(`partfrac(${normalizedInput},x)`).toString();
 
-      const originalLatex = toLatexFromNerdamer(normalizedInput);
+      const originalLatex = tex(normalizedInput);
       const decomposedLatex = cleanDecompositionLatex(raw);
 
       resultBox.innerHTML = `
@@ -461,7 +428,6 @@
   }
 
   document.getElementById("decomposeBtn").addEventListener("click", decompose);
-
   document.getElementById("expr").addEventListener("keydown", function(e) {
     if (e.key === "Enter") decompose();
   });
@@ -476,6 +442,5 @@
     });
     decompose();
   });
-</script>
-</body>
+</script></body>
 </html>
