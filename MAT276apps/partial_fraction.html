@@ -169,73 +169,261 @@
   </div>
 
   <script>
-    function toLatexFromNerdamer(expr) {
-      return nerdamer(expr).toTeX();
-    }
+  function toLatexFromNerdamer(expr) {
+    return nerdamer(expr).toTeX();
+  }
 
-    function renderMathInElementById(id) {
-      const el = document.getElementById(id);
-      renderMathInElement(el, {
-        delimiters: [
-          { left: "\\(", right: "\\)", display: false },
-          { left: "\\[", right: "\\]", display: true }
-        ],
-        throwOnError: false
-      });
-    }
-
-    function decompose() {
-      const input = document.getElementById('expr').value.trim();
-      const resultBox = document.getElementById('result-math');
-
-      if (!input) {
-        resultBox.innerHTML = '<div class="error">Please enter an expression.</div>';
-        return;
-      }
-
-      try {
-        // Compute partial fraction decomposition
-        const decomposition = nerdamer(`partfrac(${input}, x)`).toString();
-
-        // Build nice math display
-        const originalLatex = toLatexFromNerdamer(input);
-        const decomposedLatex = toLatexFromNerdamer(decomposition);
-
-        resultBox.innerHTML = `
-          <div>
-            \\[
-              ${originalLatex}
-              =
-              ${decomposedLatex}
-            \\]
-          </div>
-        `;
-
-        renderMathInElementById('result-math');
-      } catch (err) {
-        resultBox.innerHTML = `
-          <div class="error">Could not compute the partial fraction decomposition.</div>
-          <div class="small">Please make sure the expression is a rational function in <code>x</code>.</div>
-        `;
-      }
-    }
-
-    document.getElementById('decomposeBtn').addEventListener('click', decompose);
-
-    document.getElementById('expr').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') decompose();
+  function renderMathInElementById(id) {
+    const el = document.getElementById(id);
+    renderMathInElement(el, {
+      delimiters: [
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true }
+      ],
+      throwOnError: false
     });
+  }
 
-    window.addEventListener('load', function() {
-      renderMathInElement(document.body, {
-        delimiters: [
-          { left: "\\(", right: "\\)", display: false },
-          { left: "\\[", right: "\\]", display: true }
-        ],
-        throwOnError: false
-      });
-      decompose();
+  function stripOuterParens(s) {
+    s = s.trim();
+    while (
+      s.startsWith("(") &&
+      s.endsWith(")") &&
+      matchingOuterParens(s)
+    ) {
+      s = s.slice(1, -1).trim();
+    }
+    return s;
+  }
+
+  function matchingOuterParens(s) {
+    let depth = 0;
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === "(") depth++;
+      else if (s[i] === ")") depth--;
+      if (depth === 0 && i < s.length - 1) return false;
+    }
+    return depth === 0;
+  }
+
+  function splitTopLevelTerms(expr) {
+    const terms = [];
+    let depth = 0;
+    let start = 0;
+
+    for (let i = 0; i < expr.length; i++) {
+      const ch = expr[i];
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if ((ch === "+" || ch === "-") && i > 0 && depth === 0) {
+        terms.push(expr.slice(start, i));
+        start = i;
+      }
+    }
+    terms.push(expr.slice(start));
+    return terms.map(t => t.trim()).filter(Boolean);
+  }
+
+  function findTopLevelSlash(term) {
+    let depth = 0;
+    for (let i = 0; i < term.length; i++) {
+      const ch = term[i];
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if (ch === "/" && depth === 0) return i;
+    }
+    return -1;
+  }
+
+  function parseLinearCore(core) {
+    // Normalize spaces and explicit multiplication
+    const s = core.replace(/\s+/g, "").replace(/\*/g, "");
+
+    // Match ax+b, ax-b, x+b, x-b, -x+b, etc.
+    const m = s.match(/^([+\-]?\d*)x([+\-]\d+)?$/);
+    if (!m) return null;
+
+    let aStr = m[1];
+    let bStr = m[2] || "0";
+
+    let a;
+    if (aStr === "" || aStr === "+") a = 1;
+    else if (aStr === "-") a = -1;
+    else a = parseInt(aStr, 10);
+
+    const b = parseInt(bStr, 10);
+
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a === 0) return null;
+
+    // We only rewrite if factoring gives x +/- constant exactly
+    if (b % a !== 0) return null;
+
+    const c = b / a; // x + c
+    const coeff = a;
+
+    let monic;
+    if (c === 0) monic = "x";
+    else if (c > 0) monic = `x+${c}`;
+    else monic = `x${c}`; // already negative
+
+    return { coeff, monic };
+  }
+
+  function parseDenominator(den) {
+    let s = stripOuterParens(den);
+
+    // Pull off exponent if present: (...)^n
+    let power = 1;
+    const powMatch = s.match(/^\((.*)\)\^(\d+)$/);
+    if (powMatch && matchingOuterParens(`(${powMatch[1]})`)) {
+      s = powMatch[1].trim();
+      power = parseInt(powMatch[2], 10);
+    }
+
+    s = stripOuterParens(s);
+
+    // Case 1: c*(linear)
+    let m = s.match(/^([+\-]?\d+)\*\((.+)\)$/);
+    if (m) {
+      const outerCoeff = parseInt(m[1], 10);
+      const parsed = parseLinearCore(m[2]);
+      if (!parsed) return null;
+      return {
+        coeff: outerCoeff * Math.pow(parsed.coeff, power),
+        monic: parsed.monic,
+        power
+      };
+    }
+
+    // Case 2: (linear)*c
+    m = s.match(/^\((.+)\)\*([+\-]?\d+)$/);
+    if (m) {
+      const outerCoeff = parseInt(m[2], 10);
+      const parsed = parseLinearCore(m[1]);
+      if (!parsed) return null;
+      return {
+        coeff: outerCoeff * Math.pow(parsed.coeff, power),
+        monic: parsed.monic,
+        power
+      };
+    }
+
+    // Case 3: plain linear, like 3x-6 or x+2
+    const parsed = parseLinearCore(s);
+    if (!parsed) return null;
+
+    return {
+      coeff: Math.pow(parsed.coeff, power),
+      monic: parsed.monic,
+      power
+    };
+  }
+
+  function normalizeSingleTerm(term) {
+    let sign = "";
+    let t = term.trim();
+
+    if (t.startsWith("+")) {
+      sign = "+";
+      t = t.slice(1).trim();
+    } else if (t.startsWith("-")) {
+      sign = "-";
+      t = t.slice(1).trim();
+    }
+
+    const slashIndex = findTopLevelSlash(t);
+    if (slashIndex === -1) return term;
+
+    const numerator = t.slice(0, slashIndex).trim();
+    const denominator = t.slice(slashIndex + 1).trim();
+
+    const parsedDen = parseDenominator(denominator);
+    if (!parsedDen) return term;
+
+    const { coeff, monic, power } = parsedDen;
+
+    let newCoeff;
+    try {
+      newCoeff = nerdamer(`simplify((${numerator})/(${coeff}))`).toString();
+    } catch {
+      newCoeff = `(${numerator})/(${coeff})`;
+    }
+
+    const monicFactor = power === 1 ? `(${monic})` : `((${monic})^${power})`;
+
+    let rebuilt;
+    if (newCoeff === "1") {
+      rebuilt = `1/${monicFactor}`;
+    } else if (newCoeff === "-1") {
+      rebuilt = `-1/${monicFactor}`;
+    } else {
+      rebuilt = `(${newCoeff})*(1/${monicFactor})`;
+    }
+
+    if (sign === "-") return `-(${rebuilt})`;
+    if (sign === "+") return `+(${rebuilt})`;
+    return rebuilt;
+  }
+
+  function normalizeDecomposition(expr) {
+    const terms = splitTopLevelTerms(expr);
+    const normalized = terms.map(normalizeSingleTerm).join("+");
+    return nerdamer(`expand(${normalized})`).toString() === nerdamer(`expand(${expr})`).toString()
+      ? normalized
+      : expr;
+  }
+
+  function decompose() {
+    const input = document.getElementById('expr').value.trim();
+    const resultBox = document.getElementById('result-math');
+
+    if (!input) {
+      resultBox.innerHTML = '<div class="error">Please enter an expression.</div>';
+      return;
+    }
+
+    try {
+      const rawDecomposition = nerdamer(`partfrac(${input}, x)`).toString();
+      const normalizedDecomposition = normalizeDecomposition(rawDecomposition);
+
+      const originalLatex = toLatexFromNerdamer(input);
+      const decomposedLatex = toLatexFromNerdamer(normalizedDecomposition);
+
+      resultBox.innerHTML = `
+        <div>
+          \\[
+            ${originalLatex}
+            =
+            ${decomposedLatex}
+          \\]
+        </div>
+      `;
+
+      renderMathInElementById('result-math');
+    } catch (err) {
+      resultBox.innerHTML = `
+        <div class="error">Could not compute the partial fraction decomposition.</div>
+        <div class="small">Please make sure the expression is a rational function in <code>x</code>.</div>
+      `;
+    }
+  }
+
+  document.getElementById('decomposeBtn').addEventListener('click', decompose);
+
+  document.getElementById('expr').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') decompose();
+  });
+
+  window.addEventListener('load', function() {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true }
+      ],
+      throwOnError: false
     });
-  </script>
+    decompose();
+  });
+</script>
 </body>
 </html>
