@@ -169,6 +169,10 @@
   </div>
 
  <script>
+  function toLatexFromNerdamer(expr) {
+    return nerdamer(expr).toTeX();
+  }
+
   function renderMathInElementById(id) {
     const el = document.getElementById(id);
     renderMathInElement(el, {
@@ -180,19 +184,15 @@
     });
   }
 
-  function toLatexFromNerdamer(expr) {
-    return nerdamer(expr).toTeX();
-  }
-
   function stripOuterParens(s) {
     s = s.trim();
-    while (s.startsWith("(") && s.endsWith(")") && hasMatchingOuterParens(s)) {
+    while (s.startsWith("(") && s.endsWith(")") && hasOuterParens(s)) {
       s = s.slice(1, -1).trim();
     }
     return s;
   }
 
-  function hasMatchingOuterParens(s) {
+  function hasOuterParens(s) {
     let depth = 0;
     for (let i = 0; i < s.length; i++) {
       if (s[i] === "(") depth++;
@@ -202,28 +202,9 @@
     return depth === 0;
   }
 
-  function splitTopLevel(expr, separators) {
-    const parts = [];
-    let depth = 0;
-    let start = 0;
-
-    for (let i = 0; i < expr.length; i++) {
-      const ch = expr[i];
-      if (ch === "(") depth++;
-      else if (ch === ")") depth--;
-      else if (depth === 0 && separators.includes(ch) && i > start) {
-        parts.push(expr.slice(start, i).trim());
-        parts.push(ch);
-        start = i + 1;
-      }
-    }
-    parts.push(expr.slice(start).trim());
-    return parts.filter(Boolean);
-  }
-
   function splitTopLevelTerms(expr) {
     expr = expr.replace(/\s+/g, "");
-    const terms = [];
+    const parts = [];
     let depth = 0;
     let start = 0;
 
@@ -232,12 +213,30 @@
       if (ch === "(") depth++;
       else if (ch === ")") depth--;
       else if ((ch === "+" || ch === "-") && depth === 0) {
-        terms.push(expr.slice(start, i));
+        parts.push(expr.slice(start, i));
         start = i;
       }
     }
-    terms.push(expr.slice(start));
-    return terms.filter(Boolean);
+    parts.push(expr.slice(start));
+    return parts.filter(Boolean);
+  }
+
+  function splitTopLevelProduct(expr) {
+    const parts = [];
+    let depth = 0;
+    let start = 0;
+
+    for (let i = 0; i < expr.length; i++) {
+      const ch = expr[i];
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if (ch === "*" && depth === 0) {
+        parts.push(expr.slice(start, i));
+        start = i + 1;
+      }
+    }
+    parts.push(expr.slice(start));
+    return parts.map(s => s.trim()).filter(Boolean);
   }
 
   function findTopLevelSlash(term) {
@@ -251,158 +250,168 @@
     return -1;
   }
 
-  function rationalString(expr) {
+  function simplifyStr(expr) {
     return nerdamer(`simplify(${expr})`).toString();
   }
 
-  function rationalLatex(expr) {
+  function tex(expr) {
     return nerdamer(`simplify(${expr})`).toTeX();
   }
 
-  function parseLinear(expr) {
-    expr = stripOuterParens(expr.replace(/\s+/g, ""));
+  function isIntegerLiteral(s) {
+    return /^-?\d+$/.test(s);
+  }
 
-    // Convert decimals to exact rationals first
-    expr = nerdamer(`simplify(${expr})`).toString();
+  function parseLinearFactor(factor) {
+    let s = stripOuterParens(factor.replace(/\s+/g, ""));
+    let power = 1;
 
-    // Try ax+b
-    let m = expr.match(/^([+\-]?(?:\d+\/\d+|\d+))\*x([+\-](?:\d+\/\d+|\d+))$/);
-    if (m) {
-      return { a: m[1], b: m[2] };
+    const powMatch = s.match(/^\((.*)\)\^(\d+)$/);
+    if (powMatch && hasOuterParens(`(${powMatch[1]})`)) {
+      s = powMatch[1];
+      power = parseInt(powMatch[2], 10);
+    } else {
+      const powMatch2 = s.match(/^(.*)\^(\d+)$/);
+      if (powMatch2) {
+        s = stripOuterParens(powMatch2[1]);
+        power = parseInt(powMatch2[2], 10);
+      }
     }
 
-    // Try x+b
-    m = expr.match(/^x([+\-](?:\d+\/\d+|\d+))$/);
-    if (m) {
-      return { a: "1", b: m[1] };
+    s = simplifyStr(s);
+
+    if (s === "x") {
+      return { scale: "1", inner: "x", power };
     }
 
-    // Try ax
-    m = expr.match(/^([+\-]?(?:\d+\/\d+|\d+))\*x$/);
+    // ax+b
+    let m = s.match(/^([+-]?\d+)\*x([+-]\d+)$/);
     if (m) {
-      return { a: m[1], b: "0" };
+      const a = m[1];
+      const b = m[2];
+      const c = simplifyStr(`(${b})/(${a})`);
+      return { scale: a, inner: `x+(${c})`, power };
     }
 
-    // Try x
-    if (expr === "x") {
-      return { a: "1", b: "0" };
+    // x+b
+    m = s.match(/^x([+-]\d+)$/);
+    if (m) {
+      return { scale: "1", inner: `x+(${m[1]})`, power };
+    }
+
+    // rational coefficient ax+b
+    m = s.match(/^([+-]?\d+\/\d+)\*x([+-]\d+\/\d+|[+-]\d+)$/);
+    if (m) {
+      const a = m[1];
+      const b = m[2];
+      const c = simplifyStr(`(${b})/(${a})`);
+      return { scale: a, inner: `x+(${c})`, power };
+    }
+
+    // x +/- rational
+    m = s.match(/^x([+-]\d+\/\d+)$/);
+    if (m) {
+      return { scale: "1", inner: `x+(${m[1]})`, power };
     }
 
     return null;
   }
 
-  function divideExpr(a, b) {
-    return nerdamer(`simplify((${a})/(${b}))`).toString();
-  }
+  function normalizeSingleTermToLatex(term) {
+    let sign = "";
+    let t = term.trim();
 
-  function multiplyExpr(a, b) {
-    return nerdamer(`simplify((${a})*(${b}))`).toString();
-  }
-
-  function isOne(expr) {
-    return nerdamer(`simplify(${expr})`).toString() === "1";
-  }
-
-  function isNegativeOne(expr) {
-    return nerdamer(`simplify(${expr})`).toString() === "-1";
-  }
-
-  function isZero(expr) {
-    return nerdamer(`simplify(${expr})`).toString() === "0";
-  }
-
-  function denominatorToMonicLatex(den) {
-    den = stripOuterParens(den);
-    const lin = parseLinear(den);
-    if (!lin) return null;
-
-    const a = lin.a;
-    const b = lin.b;
-    const c = divideExpr(b, a); // x + c
-
-    let factorLatex = "";
-    if (isZero(c)) {
-      factorLatex = "x";
-    } else {
-      const cLatex = rationalLatex(c.startsWith("-") ? c.slice(1) : c);
-      factorLatex = c.startsWith("-")
-        ? `x-${cLatex}`
-        : `x+${cLatex}`;
-    }
-
-    return {
-      scale: a,
-      factorLatex: factorLatex
-    };
-  }
-
-  function parseTerm(term) {
-    term = term.trim();
-
-    let sign = "+";
-    if (term.startsWith("-")) {
+    if (t.startsWith("+")) {
+      sign = "+";
+      t = t.slice(1);
+    } else if (t.startsWith("-")) {
       sign = "-";
-      term = term.slice(1);
-    } else if (term.startsWith("+")) {
-      term = term.slice(1);
+      t = t.slice(1);
     }
 
-    const slash = findTopLevelSlash(term);
-    if (slash === -1) return null;
+    const slash = findTopLevelSlash(t);
+    if (slash === -1) {
+      const plain = tex(t);
+      return { sign, body: plain };
+    }
 
-    let num = stripOuterParens(term.slice(0, slash));
-    let den = stripOuterParens(term.slice(slash + 1));
+    let numerator = stripOuterParens(t.slice(0, slash));
+    let denominator = stripOuterParens(t.slice(slash + 1));
 
-    // Break denominator into top-level multiplicative factors
-    const factors = splitTopLevel(den, ["*"]).filter(x => x !== "*");
+    const factors = splitTopLevelProduct(denominator);
 
-    let coeff = num;
-    const latexDenFactors = [];
+    let coeff = numerator;
+    const denLatexParts = [];
 
-    for (const f of factors) {
-      const normalized = denominatorToMonicLatex(f);
-      if (normalized) {
-        coeff = divideExpr(coeff, normalized.scale);
-        latexDenFactors.push(normalized.factorLatex);
+    for (const rawFactor of factors) {
+      const factor = stripOuterParens(rawFactor);
+
+      if (isIntegerLiteral(factor)) {
+        coeff = simplifyStr(`(${coeff})/(${factor})`);
+        continue;
+      }
+
+      const parsed = parseLinearFactor(factor);
+      if (parsed) {
+        const power = parsed.power;
+        const scalePow = simplifyStr(`(${parsed.scale})^${power}`);
+        coeff = simplifyStr(`(${coeff})/(${scalePow})`);
+
+        const innerLatex = tex(parsed.inner);
+        if (power === 1) {
+          denLatexParts.push(`\\left(${innerLatex}\\right)`);
+        } else {
+          denLatexParts.push(`\\left(${innerLatex}\\right)^{${power}}`);
+        }
+        continue;
+      }
+
+      denLatexParts.push(tex(factor));
+    }
+
+    let body = "";
+    if (denLatexParts.length === 0) {
+      body = tex(coeff);
+    } else {
+      const denLatex = denLatexParts.join("");
+      const coeffS = simplifyStr(coeff);
+
+      if (coeffS === "1") {
+        body = `\\frac{1}{${denLatex}}`;
+      } else if (coeffS === "-1") {
+        body = `-\\frac{1}{${denLatex}}`;
       } else {
-        latexDenFactors.push(nerdamer(f).toTeX());
+        body = `\\frac{${tex(coeffS)}}{${denLatex}}`;
       }
     }
 
-    return { sign, coeff, latexDenFactors };
+    return { sign, body };
   }
 
-  function termToLatex(termObj, isFirst) {
-    if (!termObj) return "";
+  function normalizedDecompositionLatex(rawExpr) {
+    const terms = splitTopLevelTerms(rawExpr);
+    const rendered = terms.map(normalizeSingleTermToLatex);
 
-    const coeff = rationalString(termObj.coeff);
-    const coeffLatex = rationalLatex(coeff);
+    return rendered.map((term, i) => {
+      let body = term.body;
 
-    let denLatex = termObj.latexDenFactors.join("");
-    if (!denLatex) denLatex = "1";
+      if (i === 0) {
+        if (term.sign === "-") {
+          if (body.startsWith("-")) return body;
+          return `- ${body}`;
+        }
+        return body;
+      }
 
-    let body = "";
-    if (denLatex === "1") {
-      body = coeffLatex;
-    } else if (isOne(coeff)) {
-      body = `\\frac{1}{${denLatex}}`;
-    } else if (isNegativeOne(coeff)) {
-      body = `\\frac{-1}{${denLatex}}`;
-    } else {
-      body = `\\frac{${coeffLatex}}{${denLatex}}`;
-    }
+      if (term.sign === "-") {
+        if (body.startsWith("-")) {
+          return `- ${body.slice(1).trim()}`;
+        }
+        return `- ${body}`;
+      }
 
-    if (isFirst) {
-      return termObj.sign === "-" ? `- ${body}` : body;
-    } else {
-      return termObj.sign === "-" ? `- ${body}` : `+ ${body}`;
-    }
-  }
-
-  function customPartialFractionLatex(expr) {
-    const terms = splitTopLevelTerms(expr);
-    const parsedTerms = terms.map(parseTerm).filter(Boolean);
-    return parsedTerms.map((t, i) => termToLatex(t, i === 0)).join(" ");
+      return `+ ${body}`;
+    }).join(" ");
   }
 
   function decompose() {
@@ -415,9 +424,9 @@
     }
 
     try {
-      const rawDecomposition = nerdamer(`partfrac(${input}, x)`).toString();
+      const raw = nerdamer(`partfrac(${input}, x)`).toString();
       const originalLatex = toLatexFromNerdamer(input);
-      const decomposedLatex = customPartialFractionLatex(rawDecomposition);
+      const decomposedLatex = normalizedDecompositionLatex(raw);
 
       resultBox.innerHTML = `
         <div>
@@ -431,6 +440,7 @@
 
       renderMathInElementById('result-math');
     } catch (err) {
+      console.error(err);
       resultBox.innerHTML = `
         <div class="error">Could not compute the partial fraction decomposition.</div>
         <div class="small">Please make sure the expression is a rational function in <code>x</code>.</div>
