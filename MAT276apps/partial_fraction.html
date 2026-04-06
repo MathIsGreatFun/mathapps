@@ -168,11 +168,7 @@
     </div>
   </div>
 
-  <script>
-  function toLatexFromNerdamer(expr) {
-    return nerdamer(expr).toTeX();
-  }
-
+ <script>
   function renderMathInElementById(id) {
     const el = document.getElementById(id);
     renderMathInElement(el, {
@@ -184,19 +180,19 @@
     });
   }
 
+  function toLatexFromNerdamer(expr) {
+    return nerdamer(expr).toTeX();
+  }
+
   function stripOuterParens(s) {
     s = s.trim();
-    while (
-      s.startsWith("(") &&
-      s.endsWith(")") &&
-      matchingOuterParens(s)
-    ) {
+    while (s.startsWith("(") && s.endsWith(")") && hasMatchingOuterParens(s)) {
       s = s.slice(1, -1).trim();
     }
     return s;
   }
 
-  function matchingOuterParens(s) {
+  function hasMatchingOuterParens(s) {
     let depth = 0;
     for (let i = 0; i < s.length; i++) {
       if (s[i] === "(") depth++;
@@ -206,8 +202,8 @@
     return depth === 0;
   }
 
-  function splitTopLevelTerms(expr) {
-    const terms = [];
+  function splitTopLevel(expr, separators) {
+    const parts = [];
     let depth = 0;
     let start = 0;
 
@@ -215,13 +211,33 @@
       const ch = expr[i];
       if (ch === "(") depth++;
       else if (ch === ")") depth--;
-      else if ((ch === "+" || ch === "-") && i > 0 && depth === 0) {
+      else if (depth === 0 && separators.includes(ch) && i > start) {
+        parts.push(expr.slice(start, i).trim());
+        parts.push(ch);
+        start = i + 1;
+      }
+    }
+    parts.push(expr.slice(start).trim());
+    return parts.filter(Boolean);
+  }
+
+  function splitTopLevelTerms(expr) {
+    expr = expr.replace(/\s+/g, "");
+    const terms = [];
+    let depth = 0;
+    let start = 0;
+
+    for (let i = 1; i < expr.length; i++) {
+      const ch = expr[i];
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if ((ch === "+" || ch === "-") && depth === 0) {
         terms.push(expr.slice(start, i));
         start = i;
       }
     }
     terms.push(expr.slice(start));
-    return terms.map(t => t.trim()).filter(Boolean);
+    return terms.filter(Boolean);
   }
 
   function findTopLevelSlash(term) {
@@ -235,142 +251,158 @@
     return -1;
   }
 
-  function parseLinearCore(core) {
-    // Normalize spaces and explicit multiplication
-    const s = core.replace(/\s+/g, "").replace(/\*/g, "");
-
-    // Match ax+b, ax-b, x+b, x-b, -x+b, etc.
-    const m = s.match(/^([+\-]?\d*)x([+\-]\d+)?$/);
-    if (!m) return null;
-
-    let aStr = m[1];
-    let bStr = m[2] || "0";
-
-    let a;
-    if (aStr === "" || aStr === "+") a = 1;
-    else if (aStr === "-") a = -1;
-    else a = parseInt(aStr, 10);
-
-    const b = parseInt(bStr, 10);
-
-    if (!Number.isFinite(a) || !Number.isFinite(b) || a === 0) return null;
-
-    // We only rewrite if factoring gives x +/- constant exactly
-    if (b % a !== 0) return null;
-
-    const c = b / a; // x + c
-    const coeff = a;
-
-    let monic;
-    if (c === 0) monic = "x";
-    else if (c > 0) monic = `x+${c}`;
-    else monic = `x${c}`; // already negative
-
-    return { coeff, monic };
+  function rationalString(expr) {
+    return nerdamer(`simplify(${expr})`).toString();
   }
 
-  function parseDenominator(den) {
-    let s = stripOuterParens(den);
+  function rationalLatex(expr) {
+    return nerdamer(`simplify(${expr})`).toTeX();
+  }
 
-    // Pull off exponent if present: (...)^n
-    let power = 1;
-    const powMatch = s.match(/^\((.*)\)\^(\d+)$/);
-    if (powMatch && matchingOuterParens(`(${powMatch[1]})`)) {
-      s = powMatch[1].trim();
-      power = parseInt(powMatch[2], 10);
-    }
+  function parseLinear(expr) {
+    expr = stripOuterParens(expr.replace(/\s+/g, ""));
 
-    s = stripOuterParens(s);
+    // Convert decimals to exact rationals first
+    expr = nerdamer(`simplify(${expr})`).toString();
 
-    // Case 1: c*(linear)
-    let m = s.match(/^([+\-]?\d+)\*\((.+)\)$/);
+    // Try ax+b
+    let m = expr.match(/^([+\-]?(?:\d+\/\d+|\d+))\*x([+\-](?:\d+\/\d+|\d+))$/);
     if (m) {
-      const outerCoeff = parseInt(m[1], 10);
-      const parsed = parseLinearCore(m[2]);
-      if (!parsed) return null;
-      return {
-        coeff: outerCoeff * Math.pow(parsed.coeff, power),
-        monic: parsed.monic,
-        power
-      };
+      return { a: m[1], b: m[2] };
     }
 
-    // Case 2: (linear)*c
-    m = s.match(/^\((.+)\)\*([+\-]?\d+)$/);
+    // Try x+b
+    m = expr.match(/^x([+\-](?:\d+\/\d+|\d+))$/);
     if (m) {
-      const outerCoeff = parseInt(m[2], 10);
-      const parsed = parseLinearCore(m[1]);
-      if (!parsed) return null;
-      return {
-        coeff: outerCoeff * Math.pow(parsed.coeff, power),
-        monic: parsed.monic,
-        power
-      };
+      return { a: "1", b: m[1] };
     }
 
-    // Case 3: plain linear, like 3x-6 or x+2
-    const parsed = parseLinearCore(s);
-    if (!parsed) return null;
+    // Try ax
+    m = expr.match(/^([+\-]?(?:\d+\/\d+|\d+))\*x$/);
+    if (m) {
+      return { a: m[1], b: "0" };
+    }
+
+    // Try x
+    if (expr === "x") {
+      return { a: "1", b: "0" };
+    }
+
+    return null;
+  }
+
+  function divideExpr(a, b) {
+    return nerdamer(`simplify((${a})/(${b}))`).toString();
+  }
+
+  function multiplyExpr(a, b) {
+    return nerdamer(`simplify((${a})*(${b}))`).toString();
+  }
+
+  function isOne(expr) {
+    return nerdamer(`simplify(${expr})`).toString() === "1";
+  }
+
+  function isNegativeOne(expr) {
+    return nerdamer(`simplify(${expr})`).toString() === "-1";
+  }
+
+  function isZero(expr) {
+    return nerdamer(`simplify(${expr})`).toString() === "0";
+  }
+
+  function denominatorToMonicLatex(den) {
+    den = stripOuterParens(den);
+    const lin = parseLinear(den);
+    if (!lin) return null;
+
+    const a = lin.a;
+    const b = lin.b;
+    const c = divideExpr(b, a); // x + c
+
+    let factorLatex = "";
+    if (isZero(c)) {
+      factorLatex = "x";
+    } else {
+      const cLatex = rationalLatex(c.startsWith("-") ? c.slice(1) : c);
+      factorLatex = c.startsWith("-")
+        ? `x-${cLatex}`
+        : `x+${cLatex}`;
+    }
 
     return {
-      coeff: Math.pow(parsed.coeff, power),
-      monic: parsed.monic,
-      power
+      scale: a,
+      factorLatex: factorLatex
     };
   }
 
-  function normalizeSingleTerm(term) {
-    let sign = "";
-    let t = term.trim();
+  function parseTerm(term) {
+    term = term.trim();
 
-    if (t.startsWith("+")) {
-      sign = "+";
-      t = t.slice(1).trim();
-    } else if (t.startsWith("-")) {
+    let sign = "+";
+    if (term.startsWith("-")) {
       sign = "-";
-      t = t.slice(1).trim();
+      term = term.slice(1);
+    } else if (term.startsWith("+")) {
+      term = term.slice(1);
     }
 
-    const slashIndex = findTopLevelSlash(t);
-    if (slashIndex === -1) return term;
+    const slash = findTopLevelSlash(term);
+    if (slash === -1) return null;
 
-    const numerator = t.slice(0, slashIndex).trim();
-    const denominator = t.slice(slashIndex + 1).trim();
+    let num = stripOuterParens(term.slice(0, slash));
+    let den = stripOuterParens(term.slice(slash + 1));
 
-    const parsedDen = parseDenominator(denominator);
-    if (!parsedDen) return term;
+    // Break denominator into top-level multiplicative factors
+    const factors = splitTopLevel(den, ["*"]).filter(x => x !== "*");
 
-    const { coeff, monic, power } = parsedDen;
+    let coeff = num;
+    const latexDenFactors = [];
 
-    let newCoeff;
-    try {
-      newCoeff = nerdamer(`simplify((${numerator})/(${coeff}))`).toString();
-    } catch {
-      newCoeff = `(${numerator})/(${coeff})`;
+    for (const f of factors) {
+      const normalized = denominatorToMonicLatex(f);
+      if (normalized) {
+        coeff = divideExpr(coeff, normalized.scale);
+        latexDenFactors.push(normalized.factorLatex);
+      } else {
+        latexDenFactors.push(nerdamer(f).toTeX());
+      }
     }
 
-    const monicFactor = power === 1 ? `(${monic})` : `((${monic})^${power})`;
-
-    let rebuilt;
-    if (newCoeff === "1") {
-      rebuilt = `1/${monicFactor}`;
-    } else if (newCoeff === "-1") {
-      rebuilt = `-1/${monicFactor}`;
-    } else {
-      rebuilt = `(${newCoeff})*(1/${monicFactor})`;
-    }
-
-    if (sign === "-") return `-(${rebuilt})`;
-    if (sign === "+") return `+(${rebuilt})`;
-    return rebuilt;
+    return { sign, coeff, latexDenFactors };
   }
 
-  function normalizeDecomposition(expr) {
+  function termToLatex(termObj, isFirst) {
+    if (!termObj) return "";
+
+    const coeff = rationalString(termObj.coeff);
+    const coeffLatex = rationalLatex(coeff);
+
+    let denLatex = termObj.latexDenFactors.join("");
+    if (!denLatex) denLatex = "1";
+
+    let body = "";
+    if (denLatex === "1") {
+      body = coeffLatex;
+    } else if (isOne(coeff)) {
+      body = `\\frac{1}{${denLatex}}`;
+    } else if (isNegativeOne(coeff)) {
+      body = `\\frac{-1}{${denLatex}}`;
+    } else {
+      body = `\\frac{${coeffLatex}}{${denLatex}}`;
+    }
+
+    if (isFirst) {
+      return termObj.sign === "-" ? `- ${body}` : body;
+    } else {
+      return termObj.sign === "-" ? `- ${body}` : `+ ${body}`;
+    }
+  }
+
+  function customPartialFractionLatex(expr) {
     const terms = splitTopLevelTerms(expr);
-    const normalized = terms.map(normalizeSingleTerm).join("+");
-    return nerdamer(`expand(${normalized})`).toString() === nerdamer(`expand(${expr})`).toString()
-      ? normalized
-      : expr;
+    const parsedTerms = terms.map(parseTerm).filter(Boolean);
+    return parsedTerms.map((t, i) => termToLatex(t, i === 0)).join(" ");
   }
 
   function decompose() {
@@ -384,10 +416,8 @@
 
     try {
       const rawDecomposition = nerdamer(`partfrac(${input}, x)`).toString();
-      const normalizedDecomposition = normalizeDecomposition(rawDecomposition);
-
       const originalLatex = toLatexFromNerdamer(input);
-      const decomposedLatex = toLatexFromNerdamer(normalizedDecomposition);
+      const decomposedLatex = customPartialFractionLatex(rawDecomposition);
 
       resultBox.innerHTML = `
         <div>
