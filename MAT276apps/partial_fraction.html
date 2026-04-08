@@ -268,12 +268,12 @@
         return { scale: 1, shift: 0, power };
       }
 
-      let m = s.match(/^x([+-]\d+(?:\.\d+)?)$/);
+      let m = s.match(/^x([+-](?:\d+(?:\.\d+)?|\.\d+))$/);
       if (m) {
         return { scale: 1, shift: parseFloat(m[1]), power };
       }
 
-      m = s.match(/^([+-]?\d+(?:\.\d+)?)\*x([+-]\d+(?:\.\d+)?)$/);
+      m = s.match(/^([+-]?(?:\d+(?:\.\d+)?|\.\d+))\*x([+-](?:\d+(?:\.\d+)?|\.\d+))$/);
       if (m) {
         const a = parseFloat(m[1]);
         const b = parseFloat(m[2]);
