@@ -302,7 +302,7 @@ async function integrate(){
   const code = `
 import sympy as sp
 var = sp.Symbol('${v}')
-expr = sp.sympify(r'''${exprSafe}''')
+expr = sp.sympify(r'''${exprSafe}''', locals={'e': sp.E})
 F = sp.integrate(expr, var)
 F = sp.simplify(F)
 expr_tex = sp.latex(expr)
