@@ -442,13 +442,14 @@
         const roots = n === 2 ? quadraticRoots(coeffs) : durandKerner(coeffs);
 
         let html = `<h2>Results</h2>`;
-        html += `<div class="math-box">\[A=${matrixLatex(A)}\]</div>`;
-        html += `<div class="math-box">\[p(\lambda)=\det(A-\lambda I)=${polyLatex(coeffs)}\]</div>`;
 
         html += `<div class="split">`;
         roots.forEach((lam, idx) => {
           const v = eigenvectorNumeric(A, lam);
-          html += `<div class="math-box">\[\lambda_${idx+1}\approx ${approxComplexLatex(lam)}\]\[\vec v_${idx+1}\approx ${vectorLatexApprox(v)}\]</div>`;
+          html += `<div class="math-box">
+            \\[\\lambda_{${idx+1}} \\approx ${approxComplexLatex(lam)}\\]
+            \\[\\vec{v}_{${idx+1}} \\approx ${vectorLatexApprox(v)}\\]
+          </div>`;
         });
         html += `</div>`;
 
