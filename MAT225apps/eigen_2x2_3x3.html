@@ -442,25 +442,13 @@
         const roots = n === 2 ? quadraticRoots(coeffs) : durandKerner(coeffs);
 
         let html = `<h2>Results</h2>`;
-        html += `<div class="math-box">\\[A=${matrixLatex(A)}\\]</div>`;
-        html += `<div class="math-box">\\[p(\\lambda)=\\det(A-\\lambda I)=${polyLatex(coeffs)}\\]</div>`;
+        html += `<div class="math-box">\[A=${matrixLatex(A)}\]</div>`;
+        html += `<div class="math-box">\[p(\lambda)=\det(A-\lambda I)=${polyLatex(coeffs)}\]</div>`;
 
-        if (n === 2) {
-          const [a,b,c] = coeffs;
-          html += `<h3>Exact Form</h3>`;
-          html += `<div class="math-box">\\[\\lambda=\\frac{${fracLatex(-b)}\\pm\\sqrt{${fracLatex(b*b - 4*a*c)}}}{2}\\]</div>`;
-          html += `<div class="math-box">For each eigenvalue \\(\\lambda\\), one exact eigenvector may be chosen from a nonzero row of \\(A-\\lambda I\\). For example, when nonzero, \\[\\vec v = ${vectorLatexSymbolic2(A)}.\\]</div>`;
-        } else {
-          html += `<h3>Exact Form</h3>`;
-          html += `<div class="math-box">\\[\\lambda_1,\\lambda_2,\\lambda_3 \text{ are the roots of } ${polyLatex(coeffs)}=0.\\]</div>`;
-          html += `<div class="math-box">For each eigenvalue \\(\\lambda\\), an exact eigenvector may be found from \\(A-\\lambda I\\). One symbolic choice is the cross product of the first two rows of \\(A-\\lambda I\\): \\[\\vec v = ${vectorLatexSymbolic3(A)}.\\] If this gives the zero vector for a repeated or special eigenvalue, use the cross product of a different pair of rows.</div>`;
-        }
-
-        html += `<h3>Approximate Form</h3>`;
         html += `<div class="split">`;
         roots.forEach((lam, idx) => {
           const v = eigenvectorNumeric(A, lam);
-          html += `<div class="math-box">\\[\\lambda_${idx+1}\\approx ${approxComplexLatex(lam)}\\]\\[\\vec v_${idx+1}\\approx ${vectorLatexApprox(v)}\\]</div>`;
+          html += `<div class="math-box">\[\lambda_${idx+1}\approx ${approxComplexLatex(lam)}\]\[\vec v_${idx+1}\approx ${vectorLatexApprox(v)}\]</div>`;
         });
         html += `</div>`;
 
