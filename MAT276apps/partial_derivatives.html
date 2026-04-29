@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Partial Derivative Calculator</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Calculus.min.js"></script>
+</head>
+
+<body>
+  <h2>Partial Derivative Calculator</h2>
+
+  <label>Enter \( f(x,y) \):</label><br>
+  <input id="functionInput" type="text" style="width: 300px;" placeholder="Example: x^2*y + sin(x*y)">
+  <button onclick="computePartials()">Compute</button>
+
+  <div id="output" style="margin-top: 20px;"></div>
+
+  <script>
+    function computePartials() {
+      const input = document.getElementById("functionInput").value;
+      const output = document.getElementById("output");
+
+      try {
+        const fx = nerdamer.diff(input, "x").toString();
+        const fy = nerdamer.diff(input, "y").toString();
+
+        output.innerHTML = `
+          <p>∂f/∂x = ${fx}</p>
+          <p>∂f/∂y = ${fy}</p>
+        `;
+      } catch (error) {
+        output.innerHTML = "<p>Invalid function.</p>";
+      }
+    }
+  </script>
+</body>
+</html>
