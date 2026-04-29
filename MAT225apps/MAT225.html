@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2x2 and 3x3 Eigenvalue/Eigenvector Calculator</title>
+
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)'], ['$', '$']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-dark: #1d4ed8;
+      --border: #d1d5db;
+      --soft: #eef2ff;
+      --danger: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 1050px;
+      margin: 0 auto;
+      padding: 28px 16px 60px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+      color: white;
+      padding: 26px;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.18);
+      margin-bottom: 22px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 1.9rem;
+    }
+
+    header p {
+      margin: 0;
+      opacity: 0.94;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 6px 18px rgba(31, 41, 55, 0.06);
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    label {
+      font-weight: 700;
+    }
+
+    select, input {
+      font-size: 1rem;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+    }
+
+    input {
+      width: 82px;
+      text-align: center;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      border-radius: 12px;
+      padding: 11px 18px;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    button:hover { background: var(--accent-dark); }
+
+    .matrix-entry {
+      display: inline-grid;
+      gap: 8px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fafafa;
+      margin-top: 14px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, 82px); }
+    .grid-3 { grid-template-columns: repeat(3, 82px); }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    .error {
+      color: var(--danger);
+      font-weight: 700;
+      margin-top: 12px;
+    }
+
+    .result-section h2, .result-section h3 {
+      margin-top: 0;
+    }
+
+    .math-box {
+      overflow-x: auto;
+      background: var(--soft);
+      border: 1px solid #c7d2fe;
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 800px) {
+      .split { grid-template-columns: 1fr; }
+      input { width: 72px; }
+      .grid-2 { grid-template-columns: repeat(2, 72px); }
+      .grid-3 { grid-template-columns: repeat(3, 72px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Eigenvalue and Eigenvector Calculator</h1>
+      <p>Choose a \(2\times2\) or \(3\times3\) matrix, enter numerical values, and calculate exact-style and approximate eigenvalue/eigenvector results.</p>
+    </header>
+
+    <section class="card">
+      <div class="row">
+        <label for="sizeSelect">Matrix size:</label>
+        <select id="sizeSelect">
+          <option value="2">2 x 2</option>
+          <option value="3">3 x 3</option>
+        </select>
+        <button id="calculateBtn">Calculate</button>
+        <button id="clearBtn" type="button">Clear</button>
+      </div>
+
+      <div id="matrixInputs" class="matrix-entry grid-2"></div>
+      <p class="note">Entries may be integers, decimals, or fractions such as <code>3/4</code>. Complex numbers are supported in the output where they occur.</p>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section id="results" class="card result-section" style="display:none;"></section>
+  </div>
+
+  <script>
+    const EPS = 1e-10;
+
+    class Complex {
+      constructor(re, im = 0) {
+        this.re = Math.abs(re) < EPS ? 0 : re;
+        this.im = Math.abs(im) < EPS ? 0 : im;
+      }
+      add(z) { z = C(z); return new Complex(this.re + z.re, this.im + z.im); }
+      sub(z) { z = C(z); return new Complex(this.re - z.re, this.im - z.im); }
+      mul(z) { z = C(z); return new Complex(this.re*z.re - this.im*z.im, this.re*z.im + this.im*z.re); }
+      div(z) {
+        z = C(z);
+        const d = z.re*z.re + z.im*z.im;
+        return new Complex((this.re*z.re + this.im*z.im)/d, (this.im*z.re - this.re*z.im)/d);
+      }
+      neg() { return new Complex(-this.re, -this.im); }
+      abs() { return Math.hypot(this.re, this.im); }
+      sqrt() {
+        const r = this.abs();
+        const a = Math.sqrt((r + this.re)/2);
+        const b = Math.sign(this.im || 1) * Math.sqrt(Math.max(0, (r - this.re)/2));
+        return new Complex(a, b);
+      }
+      powInt(n) {
+        let out = new Complex(1,0);
+        for (let i = 0; i < n; i++) out = out.mul(this);
+        return out;
+      }
+    }
+
+    function C(x) { return x instanceof Complex ? x : new Complex(x, 0); }
+
+    function parseNumber(s) {
+      s = String(s).trim();
+      if (s === '') throw new Error('Every matrix entry must be filled in.');
+      if (/^[+-]?\d+(\.\d+)?\s*\/\s*[+-]?\d+(\.\d+)?$/.test(s)) {
+        const parts = s.split('/').map(t => Number(t.trim()));
+        if (Math.abs(parts[1]) < EPS) throw new Error('Division by zero is not allowed in a matrix entry.');
+        return parts[0] / parts[1];
+      }
+      const n = Number(s);
+      if (!Number.isFinite(n)) throw new Error('Use only numerical entries, decimals, or fractions such as 3/4.');
+      return n;
+    }
+
+    function gcd(a,b) { a = Math.abs(a); b = Math.abs(b); while (b) [a,b] = [b, a%b]; return a || 1; }
+
+    function fracLatex(x) {
+      if (Math.abs(x) < EPS) return '0';
+      const sign = x < 0 ? '-' : '';
+      x = Math.abs(x);
+      const maxDen = 10000;
+      let h1=1, h0=0, k1=0, k0=1, b=x;
+      do {
+        const a = Math.floor(b);
+        [h1,h0] = [a*h1+h0,h1];
+        [k1,k0] = [a*k1+k0,k1];
+        b = 1/(b-a);
+      } while (Math.abs(x - h1/k1) > 1e-9 && k1 < maxDen);
+      if (k1 === 1) return sign + h1;
+      return sign + `\\frac{${h1}}{${k1}}`;
+    }
+
+    function approxComplexLatex(z, digits=6) {
+      z = C(z);
+      const re = Math.abs(z.re) < 5e-12 ? 0 : z.re;
+      const im = Math.abs(z.im) < 5e-12 ? 0 : z.im;
+      const f = n => Number(n.toFixed(digits)).toString();
+      if (im === 0) return f(re);
+      if (re === 0) return `${f(im)}i`;
+      return `${f(re)} ${im >= 0 ? '+' : '-'} ${f(Math.abs(im))}i`;
+    }
+
+    function exactNumberLatex(x) { return fracLatex(x); }
+
+    function matrixLatex(A) {
+      return `\\begin{bmatrix}${A.map(row => row.map(exactNumberLatex).join(' & ')).join('\\\\')}\\end{bmatrix}`;
+    }
+
+    function det2(M) { return M[0][0]*M[1][1] - M[0][1]*M[1][0]; }
+
+    function charPoly2(A) {
+      const tr = A[0][0] + A[1][1];
+      const det = det2(A);
+      return [1, -tr, det];
+    }
+
+    function det3(A) {
+      return A[0][0]*(A[1][1]*A[2][2]-A[1][2]*A[2][1])
+           - A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])
+           + A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);
+    }
+
+    function trace(A) { return A.reduce((s,row,i) => s + row[i], 0); }
+
+    function multiply3(A,B) {
+      const out = Array.from({length:3}, () => Array(3).fill(0));
+      for (let i=0;i<3;i++) for (let j=0;j<3;j++) for (let k=0;k<3;k++) out[i][j] += A[i][k]*B[k][j];
+      return out;
+    }
+
+    function charPoly3(A) {
+      const t1 = trace(A);
+      const A2 = multiply3(A,A);
+      const t2 = trace(A2);
+      const c2 = -t1;
+      const c1 = 0.5*(t1*t1 - t2);
+      const c0 = -det3(A);
+      return [1, c2, c1, c0];
+    }
+
+    function polyLatex(coeffs) {
+      const degree = coeffs.length - 1;
+      let terms = [];
+      coeffs.forEach((coef, idx) => {
+        if (Math.abs(coef) < EPS) return;
+        const power = degree - idx;
+        const abs = Math.abs(coef);
+        let piece = '';
+        if (power === 0) piece = fracLatex(abs);
+        else {
+          const c = Math.abs(abs - 1) < EPS ? '' : fracLatex(abs);
+          piece = c + '\\lambda' + (power > 1 ? `^{${power}}` : '');
+        }
+        if (terms.length === 0) terms.push((coef < 0 ? '-' : '') + piece);
+        else terms.push((coef < 0 ? ' - ' : ' + ') + piece);
+      });
+      return terms.join('') || '0';
+    }
+
+    function evalPoly(coeffs, z) {
+      let out = new Complex(coeffs[0],0);
+      for (let i=1;i<coeffs.length;i++) out = out.mul(z).add(coeffs[i]);
+      return out;
+    }
+
+    function quadraticRoots(coeffs) {
+      const [a,b,c] = coeffs;
+      const disc = new Complex(b*b - 4*a*c, 0).sqrt();
+      return [new Complex(-b,0).add(disc).div(2*a), new Complex(-b,0).sub(disc).div(2*a)];
+    }
+
+    function durandKerner(coeffs) {
+      const n = coeffs.length - 1;
+      let roots = [new Complex(1,0), new Complex(-0.4,0.9), new Complex(-0.6,-0.8)].slice(0,n);
+      for (let iter=0; iter<200; iter++) {
+        let maxChange = 0;
+        const next = roots.map((r,i) => {
+          let denom = new Complex(1,0);
+          for (let j=0;j<n;j++) if (j !== i) denom = denom.mul(r.sub(roots[j]));
+          const change = evalPoly(coeffs, r).div(denom);
+          maxChange = Math.max(maxChange, change.abs());
+          return r.sub(change);
+        });
+        roots = next;
+        if (maxChange < 1e-12) break;
+      }
+      return roots;
+    }
+
+    function complexSubReal(a, z) { return new Complex(a,0).sub(z); }
+
+    function cross(u,v) {
+      return [
+        u[1].mul(v[2]).sub(u[2].mul(v[1])),
+        u[2].mul(v[0]).sub(u[0].mul(v[2])),
+        u[0].mul(v[1]).sub(u[1].mul(v[0]))
+      ];
+    }
+
+    function eigenvectorNumeric(A, lambda) {
+      const n = A.length;
+      if (n === 2) {
+        const a = complexSubReal(A[0][0], lambda), b = new Complex(A[0][1],0);
+        const c = new Complex(A[1][0],0), d = complexSubReal(A[1][1], lambda);
+        let v;
+        if (a.abs() + b.abs() > c.abs() + d.abs()) v = [b.neg(), a];
+        else v = [d.neg(), c];
+        if (v[0].abs() < EPS && v[1].abs() < EPS) v = [new Complex(1,0), new Complex(0,0)];
+        return normalizeVector(v);
+      }
+
+      const M = A.map((row,i) => row.map((val,j) => i===j ? complexSubReal(val, lambda) : new Complex(val,0)));
+      const pairs = [[0,1],[0,2],[1,2]];
+      let best = [new Complex(0,0), new Complex(0,0), new Complex(0,0)];
+      let bestNorm = 0;
+      for (const [i,j] of pairs) {
+        const v = cross(M[i], M[j]);
+        const norm = Math.sqrt(v.reduce((s,z) => s + z.abs()*z.abs(), 0));
+        if (norm > bestNorm) { best = v; bestNorm = norm; }
+      }
+      if (bestNorm < EPS) best = [new Complex(1,0), new Complex(0,0), new Complex(0,0)];
+      return normalizeVector(best);
+    }
+
+    function normalizeVector(v) {
+      const pivot = v.find(z => z.abs() > EPS) || new Complex(1,0);
+      return v.map(z => z.div(pivot));
+    }
+
+    function vectorLatexApprox(v) {
+      return `\\begin{bmatrix}${v.map(z => approxComplexLatex(z)).join('\\\\')}\\end{bmatrix}`;
+    }
+
+    function vectorLatexSymbolic2(A) {
+      return `\\begin{bmatrix}-${exactNumberLatex(A[0][1])}\\\\${exactNumberLatex(A[0][0])}-\\lambda\\end{bmatrix}`;
+    }
+
+    function vectorLatexSymbolic3(A) {
+      const r1 = [`${exactNumberLatex(A[0][0])}-\\lambda`, `${exactNumberLatex(A[0][1])}`, `${exactNumberLatex(A[0][2])}`];
+      const r2 = [`${exactNumberLatex(A[1][0])}`, `${exactNumberLatex(A[1][1])}-\\lambda`, `${exactNumberLatex(A[1][2])}`];
+      const comp1 = `(${r1[1]})(${r2[2]})-(${r1[2]})(${r2[1]})`;
+      const comp2 = `(${r1[2]})(${r2[0]})-(${r1[0]})(${r2[2]})`;
+      const comp3 = `(${r1[0]})(${r2[1]})-(${r1[1]})(${r2[0]})`;
+      return `\\begin{bmatrix}${comp1}\\\\${comp2}\\\\${comp3}\\end{bmatrix}`;
+    }
+
+    function buildInputs(n) {
+      const box = document.getElementById('matrixInputs');
+      box.className = `matrix-entry grid-${n}`;
+      box.innerHTML = '';
+      for (let i=0;i<n;i++) {
+        for (let j=0;j<n;j++) {
+          const input = document.createElement('input');
+          input.id = `a${i}${j}`;
+          input.placeholder = `a${i+1}${j+1}`;
+          input.value = i === j ? '1' : '0';
+          box.appendChild(input);
+        }
+      }
+    }
+
+    function readMatrix(n) {
+      const A = [];
+      for (let i=0;i<n;i++) {
+        const row = [];
+        for (let j=0;j<n;j++) row.push(parseNumber(document.getElementById(`a${i}${j}`).value));
+        A.push(row);
+      }
+      return A;
+    }
+
+    function calculate() {
+      const error = document.getElementById('error');
+      const results = document.getElementById('results');
+      error.textContent = '';
+      results.style.display = 'none';
+      results.innerHTML = '';
+
+      try {
+        const n = Number(document.getElementById('sizeSelect').value);
+        const A = readMatrix(n);
+        const coeffs = n === 2 ? charPoly2(A) : charPoly3(A);
+        const roots = n === 2 ? quadraticRoots(coeffs) : durandKerner(coeffs);
+
+        let html = `<h2>Results</h2>`;
+        html += `<div class="math-box">\\[A=${matrixLatex(A)}\\]</div>`;
+        html += `<div class="math-box">\\[p(\\lambda)=\\det(A-\\lambda I)=${polyLatex(coeffs)}\\]</div>`;
+
+        if (n === 2) {
+          const [a,b,c] = coeffs;
+          html += `<h3>Exact Form</h3>`;
+          html += `<div class="math-box">\\[\\lambda=\\frac{${fracLatex(-b)}\\pm\\sqrt{${fracLatex(b*b - 4*a*c)}}}{2}\\]</div>`;
+          html += `<div class="math-box">For each eigenvalue \\(\\lambda\\), one exact eigenvector may be chosen from a nonzero row of \\(A-\\lambda I\\). For example, when nonzero, \\[\\vec v = ${vectorLatexSymbolic2(A)}.\\]</div>`;
+        } else {
+          html += `<h3>Exact Form</h3>`;
+          html += `<div class="math-box">\\[\\lambda_1,\\lambda_2,\\lambda_3 \text{ are the roots of } ${polyLatex(coeffs)}=0.\\]</div>`;
+          html += `<div class="math-box">For each eigenvalue \\(\\lambda\\), an exact eigenvector may be found from \\(A-\\lambda I\\). One symbolic choice is the cross product of the first two rows of \\(A-\\lambda I\\): \\[\\vec v = ${vectorLatexSymbolic3(A)}.\\] If this gives the zero vector for a repeated or special eigenvalue, use the cross product of a different pair of rows.</div>`;
+        }
+
+        html += `<h3>Approximate Form</h3>`;
+        html += `<div class="split">`;
+        roots.forEach((lam, idx) => {
+          const v = eigenvectorNumeric(A, lam);
+          html += `<div class="math-box">\\[\\lambda_${idx+1}\\approx ${approxComplexLatex(lam)}\\]\\[\\vec v_${idx+1}\\approx ${vectorLatexApprox(v)}\\]</div>`;
+        });
+        html += `</div>`;
+
+        results.innerHTML = html;
+        results.style.display = 'block';
+        if (window.MathJax) MathJax.typesetPromise();
+      } catch (e) {
+        error.textContent = e.message;
+      }
+    }
+
+    document.getElementById('sizeSelect').addEventListener('change', e => buildInputs(Number(e.target.value)));
+    document.getElementById('calculateBtn').addEventListener('click', calculate);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.querySelectorAll('#matrixInputs input').forEach(input => input.value = '');
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('error').textContent = '';
+    });
+
+    buildInputs(2);
+  </script>
+</body>
+</html>
