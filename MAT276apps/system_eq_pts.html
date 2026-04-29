@@ -3,36 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>System Solver for Two Multivariable Functions</title>
-
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+  <title>System Solver</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
 
   <style>
-    :root {
-      --bg: #f4f7fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --border: #d1d5db;
-      --accent: #2563eb;
-      --accent-dark: #1d4ed8;
-      --soft: #eef2ff;
-      --danger: #b91c1c;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+      background: #f4f7fb;
+      color: #111827;
     }
 
     .page {
@@ -42,186 +23,122 @@
     }
 
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: white;
+      border: 1px solid #d1d5db;
       border-radius: 16px;
       box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
       padding: 28px;
     }
 
     h1 {
-      margin: 0 0 10px;
       text-align: center;
+      margin: 0 0 10px;
       font-size: 2rem;
-      color: #111827;
     }
 
     .subtitle {
       text-align: center;
-      color: var(--muted);
-      margin: 0 auto 26px;
+      color: #4b5563;
+      margin: 0 auto 28px;
       max-width: 700px;
-      font-size: 1rem;
+      font-size: 1.05rem;
+      line-height: 1.5;
     }
 
     .input-grid {
       display: grid;
-      grid-template-columns: 1fr;
       gap: 18px;
-      margin-bottom: 18px;
+      margin-bottom: 24px;
     }
 
     .function-row {
       display: grid;
-      grid-template-columns: auto 1fr;
+      grid-template-columns: 110px 1fr;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
     }
 
     .math-label {
-      min-width: 92px;
-      font-size: 1.05rem;
       text-align: right;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.45rem;
     }
 
-    input[type="text"], input[type="number"] {
+    input[type="text"] {
       width: 100%;
-      border: 1px solid var(--border);
+      border: 1px solid #d1d5db;
       border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 1rem;
-      background: #ffffff;
-      color: var(--text);
+      padding: 13px 16px;
+      font-size: 1.05rem;
       outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
-    input[type="text"]:focus, input[type="number"]:focus {
-      border-color: var(--accent);
+    input[type="text"]:focus {
+      border-color: #2563eb;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-
-    .options {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin: 20px 0 22px;
-      padding: 16px;
-      background: #f9fafb;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-    }
-
-    .option label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-bottom: 5px;
     }
 
     .buttons {
       display: flex;
       justify-content: center;
       gap: 12px;
-      margin: 12px 0 26px;
-      flex-wrap: wrap;
+      margin: 12px 0 28px;
     }
 
     button {
       border: none;
       border-radius: 10px;
-      padding: 11px 20px;
+      padding: 11px 22px;
       font-size: 1rem;
       cursor: pointer;
-      transition: transform 0.08s ease, background 0.15s ease;
     }
 
-    button:active {
-      transform: translateY(1px);
-    }
-
-    .primary {
-      background: var(--accent);
-      color: #ffffff;
-    }
-
-    .primary:hover {
-      background: var(--accent-dark);
-    }
-
-    .secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    .secondary:hover {
-      background: #d1d5db;
-    }
+    .primary { background: #2563eb; color: white; }
+    .primary:hover { background: #1d4ed8; }
+    .secondary { background: #e5e7eb; color: #111827; }
+    .secondary:hover { background: #d1d5db; }
 
     .results-wrap {
-      margin-top: 8px;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid #d1d5db;
       padding-top: 24px;
     }
 
     h2 {
-      margin: 0 0 14px;
       text-align: center;
+      margin: 0 0 16px;
       font-size: 1.35rem;
-      color: #111827;
     }
 
     #results {
-      background: var(--soft);
+      background: #eef2ff;
       border: 1px solid #c7d2fe;
       border-radius: 14px;
-      padding: 18px;
+      padding: 20px;
       min-height: 72px;
-      font-size: 1.05rem;
+      text-align: center;
       overflow-x: auto;
     }
 
     .solution-line {
-      margin: 10px 0;
-      text-align: center;
-    }
-
-    .solution-line .katex-display {
-      margin: 0.35em 0;
+      margin: 12px 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 1.25rem;
     }
 
     .error {
-      color: var(--danger);
+      color: #b91c1c;
       font-weight: 600;
       text-align: center;
     }
 
-    @media (max-width: 720px) {
-      .card {
-        padding: 20px;
-      }
-
-      h1 {
-        font-size: 1.55rem;
-      }
-
+    @media (max-width: 650px) {
       .function-row {
         grid-template-columns: 1fr;
-        gap: 7px;
+        gap: 8px;
       }
 
       .math-label {
         text-align: left;
-      }
-
-      .options {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 430px) {
-      .options {
-        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -230,32 +147,19 @@
   <main class="page">
     <section class="card">
       <h1>System Solver</h1>
-      <p class="subtitle">Enter two functions of \(x\) and \(y\). The app finds approximate points where both functions are equal to \(0\).</p>
+      <p class="subtitle">
+        Enter two functions of <i>x</i> and <i>y</i>. The app finds approximate points where both functions are equal to 0.
+      </p>
 
       <div class="input-grid">
         <div class="function-row">
-          <div class="math-label">\(0=\)</div>
+          <div class="math-label">0 =</div>
           <input id="fInput" type="text" value="x^2 + y^2 - 1" autocomplete="off" />
         </div>
 
         <div class="function-row">
-          <div class="math-label">\(0=\)</div>
+          <div class="math-label">0 =</div>
           <input id="gInput" type="text" value="x - y" autocomplete="off" />
-        </div>
-      </div>
-
-      
-        <div class="option">
-          <label for="xMax">x-max</label>
-          <input id="xMax" type="number" value="10" step="1" />
-        </div>
-        <div class="option">
-          <label for="yMin">y-min</label>
-          <input id="yMin" type="number" value="-10" step="1" />
-        </div>
-        <div class="option">
-          <label for="yMax">y-max</label>
-          <input id="yMax" type="number" value="10" step="1" />
         </div>
       </div>
 
@@ -266,87 +170,62 @@
 
       <div class="results-wrap">
         <h2>Results</h2>
-        <div id="results" style="text-align:center;"></div>
+        <div id="results"></div>
       </div>
     </section>
   </main>
 
   <script>
-    function renderMath() {
-      if (window.renderMathInElement) {
-        renderMathInElement(document.body, {
-          delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "\\(", right: "\\)", display: false },
-            { left: "\\[", right: "\\]", display: true }
-          ],
-          throwOnError: false
-        });
-      }
-    }
-
-    window.addEventListener("load", renderMath);
-
     function normalizeInput(expression) {
-      return expression
-        .replace(/\bln\s*\(/g, "log(")
-        .replace(/π/g, "pi");
+      return expression.replaceAll("ln(", "log(").replaceAll("π", "pi");
     }
 
     function formatNumber(value) {
-      if (Math.abs(value) < 5e-11) value = 0;
+      if (Math.abs(value) < 0.00000000005) value = 0;
       return Number(value).toFixed(6).replace(/\.?0+$/, "");
     }
 
     function safeEvaluate(compiled, x, y) {
-      const value = compiled.evaluate({ x, y });
-      if (typeof value !== "number" || !Number.isFinite(value)) return NaN;
-      return value;
+      const value = compiled.evaluate({ x: x, y: y });
+      return typeof value === "number" && Number.isFinite(value) ? value : NaN;
     }
 
     function newtonSolve(fCompiled, gCompiled, startX, startY) {
       let x = startX;
       let y = startY;
-      const tolerance = 1e-10;
+      const tolerance = 0.0000000001;
       const maxIterations = 60;
 
       for (let k = 0; k < maxIterations; k++) {
         const fVal = safeEvaluate(fCompiled, x, y);
         const gVal = safeEvaluate(gCompiled, x, y);
-
         if (!Number.isFinite(fVal) || !Number.isFinite(gVal)) return null;
-        if (Math.hypot(fVal, gVal) < tolerance) return { x, y };
+        if (Math.hypot(fVal, gVal) < tolerance) return { x: x, y: y };
 
-        const h = 1e-5 * Math.max(1, Math.abs(x), Math.abs(y));
-
+        const h = 0.00001 * Math.max(1, Math.abs(x), Math.abs(y));
         const fx = (safeEvaluate(fCompiled, x + h, y) - safeEvaluate(fCompiled, x - h, y)) / (2 * h);
         const fy = (safeEvaluate(fCompiled, x, y + h) - safeEvaluate(fCompiled, x, y - h)) / (2 * h);
         const gx = (safeEvaluate(gCompiled, x + h, y) - safeEvaluate(gCompiled, x - h, y)) / (2 * h);
         const gy = (safeEvaluate(gCompiled, x, y + h) - safeEvaluate(gCompiled, x, y - h)) / (2 * h);
 
         const determinant = fx * gy - fy * gx;
-        if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-12) return null;
+        if (!Number.isFinite(determinant) || Math.abs(determinant) < 0.000000000001) return null;
 
         const dx = (-fVal * gy + fy * gVal) / determinant;
         const dy = (-fx * gVal + fVal * gx) / determinant;
-
         if (!Number.isFinite(dx) || !Number.isFinite(dy)) return null;
 
         x += dx;
         y += dy;
-
-        if (Math.hypot(dx, dy) < tolerance) {
-          const finalF = safeEvaluate(fCompiled, x, y);
-          const finalG = safeEvaluate(gCompiled, x, y);
-          if (Math.hypot(finalF, finalG) < 1e-7) return { x, y };
-        }
       }
 
-      return null;
+      const finalF = safeEvaluate(fCompiled, x, y);
+      const finalG = safeEvaluate(gCompiled, x, y);
+      return Math.hypot(finalF, finalG) < 0.0000001 ? { x: x, y: y } : null;
     }
 
     function isDuplicate(solution, solutions) {
-      return solutions.some(existing => Math.hypot(existing.x - solution.x, existing.y - solution.y) < 1e-5);
+      return solutions.some(existing => Math.hypot(existing.x - solution.x, existing.y - solution.y) < 0.00001);
     }
 
     function solveSystem() {
@@ -360,7 +239,7 @@
         fCompiled = math.compile(normalizeInput(document.getElementById("fInput").value.trim()));
         gCompiled = math.compile(normalizeInput(document.getElementById("gInput").value.trim()));
       } catch (error) {
-        results.innerHTML = `<div class="error">Unable to parse one or both functions.</div>`;
+        results.innerHTML = '<div class="error">Unable to parse one or both functions.</div>';
         return;
       }
 
@@ -368,48 +247,34 @@
       const xMax = 50;
       const yMin = -50;
       const yMax = 50;
-
-      if (![xMin, xMax, yMin, yMax].every(Number.isFinite) || xMin >= xMax || yMin >= yMax) {
-        results.innerHTML = `<div class="error">Invalid search window.</div>`;
-        return;
-      }
-
+      const gridSize = 40;
       const solutions = [];
-      const gridSize = 35;
 
       for (let i = 0; i <= gridSize; i++) {
         const startX = xMin + (xMax - xMin) * i / gridSize;
         for (let j = 0; j <= gridSize; j++) {
           const startY = yMin + (yMax - yMin) * j / gridSize;
           const solution = newtonSolve(fCompiled, gCompiled, startX, startY);
-
           if (!solution) continue;
-          if (solution.x < xMin - 1e-6 || solution.x > xMax + 1e-6) continue;
-          if (solution.y < yMin - 1e-6 || solution.y > yMax + 1e-6) continue;
 
           const fCheck = safeEvaluate(fCompiled, solution.x, solution.y);
           const gCheck = safeEvaluate(gCompiled, solution.x, solution.y);
-          if (Math.hypot(fCheck, gCheck) > 1e-6) continue;
-
-          if (!isDuplicate(solution, solutions)) {
-            solutions.push(solution);
-          }
+          if (Math.hypot(fCheck, gCheck) > 0.000001) continue;
+          if (!isDuplicate(solution, solutions)) solutions.push(solution);
         }
       }
 
       solutions.sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
 
       if (solutions.length === 0) {
-        results.innerHTML = `<div class="solution-line">\(\text{No solutions found.}\)</div>`;
-        renderMath();
+        results.innerHTML = '<div class="solution-line">No solutions found.</div>';
         return;
       }
 
       results.innerHTML = solutions.map((sol, index) => {
-        return `<div class="solution-line">\[(x_${index + 1},\;y_${index + 1}) pprox (${formatNumber(sol.x)},\;${formatNumber(sol.y)})\]</div>`;
-      }).join("");
-
-      renderMath();
+        const n = index + 1;
+        return '<div class="solution-line">(x<sub>' + n + '</sub>, y<sub>' + n + '</sub>) ≈ (' + formatNumber(sol.x) + ', ' + formatNumber(sol.y) + ')</div>';
+      }).join('');
     }
 
     function clearAll() {
