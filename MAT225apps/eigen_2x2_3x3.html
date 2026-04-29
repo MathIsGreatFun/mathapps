@@ -310,9 +310,12 @@
 
     function rootsForMatrix(A) {
       const n = A.length;
-      if (isDiagonalMatrix(A)) return uniqueRoots(A.map((row,i) => new Complex(row[i], 0)));
-      if (n === 2) return uniqueRoots(quadraticRoots(charPoly2(A)));
-      return uniqueRoots(durandKerner(charPoly3(A)));
+      if (isDiagonalMatrix(A)) {
+        // return ALL diagonal entries (including repeats)
+        return A.map((row,i) => new Complex(row[i], 0));
+      }
+      if (n === 2) return quadraticRoots(charPoly2(A));
+      return durandKerner(charPoly3(A));
     }
 
     function complexSubReal(a, z) { return new Complex(a,0).sub(z); }
@@ -397,7 +400,7 @@
         roots.forEach((lam, idx) => {
           const basis = eigenspaceBasis(A, lam);
           const basisLatex = basis.length
-            ? basis.map((v, j) => bs + 'vec{v}_{' + (idx+1) + ',' + (j+1) + '} ' + bs + 'approx ' + vectorLatexApprox(v)).join(bs + 'qquad ')
+            ? basis.map((v, j) => bs + 'vec{v}_{' + (idx+1 + j) + '} ' + bs + 'approx ' + vectorLatexApprox(v)).join(bs + 'qquad ')
             : bs + 'text{No eigenvector found numerically.}';
 
           html += '<div class="math-box">'
