@@ -182,7 +182,12 @@
     }
 
     .solution-line {
-      margin: 8px 0;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .solution-line .katex-display {
+      margin: 0.35em 0;
     }
 
     .error {
@@ -225,16 +230,16 @@
   <main class="page">
     <section class="card">
       <h1>System Solver</h1>
-      <p class="subtitle">Enter two functions of \(x\) and \(y\). The app approximates all solutions in the selected search window.</p>
+      <p class="subtitle">Enter two functions of \(x\) and \(y\). The app finds approximate points where both functions are equal to \(0\).</p>
 
       <div class="input-grid">
         <div class="function-row">
-          <div class="math-label">\(f(x,y)=\)</div>
+          <div class="math-label">\(0=\)</div>
           <input id="fInput" type="text" value="x^2 + y^2 - 1" autocomplete="off" />
         </div>
 
         <div class="function-row">
-          <div class="math-label">\(g(x,y)=\)</div>
+          <div class="math-label">\(0=\)</div>
           <input id="gInput" type="text" value="x - y" autocomplete="off" />
         </div>
       </div>
@@ -405,7 +410,7 @@
       }
 
       results.innerHTML = solutions.map((sol, index) => {
-        return `<div class="solution-line">\((x_${index + 1},y_${index + 1}) \approx (${formatNumber(sol.x)}, ${formatNumber(sol.y)})\)</div>`;
+        return `<div class="solution-line">\[(x_{${index + 1}}, y_{${index + 1}}) \approx (${formatNumber(sol.x)}, ${formatNumber(sol.y)})\]</div>`;
       }).join("");
 
       renderMath();
