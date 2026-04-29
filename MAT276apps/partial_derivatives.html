@@ -6,6 +6,7 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/nerdamer.core.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.min.js"></script>
@@ -181,7 +182,7 @@ function computePartials() {
     renderMath(line2, "\\frac{\\partial f}{\\partial y} = " + fyLatex);
 
   } catch (error) {
-    results.innerHTML = "<p>Invalid function. Try something like <code>x^2*y + sin(x*y)</code>.</p>";
+    results.innerHTML = "<p>Invalid function.</p>";
   }
 }
 
@@ -189,6 +190,16 @@ function clearApp() {
   document.getElementById("functionInput").value = "";
   document.getElementById("results").innerHTML = "";
 }
+
+// THIS FIXES YOUR \(f(x,y)\) ISSUE
+document.addEventListener("DOMContentLoaded", function() {
+  renderMathInElement(document.body, {
+    delimiters: [
+      {left: "\\(", right: "\\)", display: false},
+      {left: "\\[", right: "\\]", display: true}
+    ]
+  });
+});
 </script>
 </body>
 </html>
