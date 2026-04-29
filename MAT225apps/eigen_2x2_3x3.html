@@ -447,8 +447,8 @@
         roots.forEach((lam, idx) => {
           const v = eigenvectorNumeric(A, lam);
           html += `<div class="math-box">
-            \\[\\lambda_{${idx+1}} \\approx ${approxComplexLatex(lam)}\\]
-            \\[\\vec{v}_{${idx+1}} \\approx ${vectorLatexApprox(v)}\\]
+            \[\lambda_{${idx+1}} \approx ${approxComplexLatex(lam)}\]
+            \[\vec{v}_{${idx+1}} \approx ${vectorLatexApprox(v)}\]
           </div>`;
         });
         html += `</div>`;
