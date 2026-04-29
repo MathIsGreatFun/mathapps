@@ -399,13 +399,15 @@
         let html = '<h2>Results</h2><div class="split">';
         roots.forEach((lam, idx) => {
           const basis = eigenspaceBasis(A, lam);
-          const basisLatex = basis.length
-            ? basis.map((v, j) => bs + 'vec{v}_{' + (idx+1 + j) + '} ' + bs + 'approx ' + vectorLatexApprox(v)).join(bs + 'qquad ')
+          const repeatIndex = roots.slice(0, idx).filter(prev => prev.sub(lam).abs() < 1e-7).length;
+          const v = basis.length ? basis[repeatIndex % basis.length] : null;
+          const vectorLatex = v
+            ? bs + 'vec{v}_{' + (idx+1) + '} ' + bs + 'approx ' + vectorLatexApprox(v)
             : bs + 'text{No eigenvector found numerically.}';
 
           html += '<div class="math-box">'
                + displayMath(bs + 'lambda_{' + (idx+1) + '} ' + bs + 'approx ' + approxComplexLatex(lam))
-               + displayMath(basisLatex)
+               + displayMath(vectorLatex)
                + '</div>';
         });
         html += '</div>';
