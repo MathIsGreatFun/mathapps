@@ -244,11 +244,7 @@
         </div>
       </div>
 
-      <div class="options">
-        <div class="option">
-          <label for="xMin">x-min</label>
-          <input id="xMin" type="number" value="-10" step="1" />
-        </div>
+      
         <div class="option">
           <label for="xMax">x-max</label>
           <input id="xMax" type="number" value="10" step="1" />
@@ -270,7 +266,7 @@
 
       <div class="results-wrap">
         <h2>Results</h2>
-        <div id="results"></div>
+        <div id="results" style="text-align:center;"></div>
       </div>
     </section>
   </main>
@@ -368,10 +364,10 @@
         return;
       }
 
-      const xMin = Number(document.getElementById("xMin").value);
-      const xMax = Number(document.getElementById("xMax").value);
-      const yMin = Number(document.getElementById("yMin").value);
-      const yMax = Number(document.getElementById("yMax").value);
+      const xMin = -50;
+      const xMax = 50;
+      const yMin = -50;
+      const yMax = 50;
 
       if (![xMin, xMax, yMin, yMax].every(Number.isFinite) || xMin >= xMax || yMin >= yMax) {
         results.innerHTML = `<div class="error">Invalid search window.</div>`;
@@ -410,7 +406,7 @@
       }
 
       results.innerHTML = solutions.map((sol, index) => {
-        return `<div class="solution-line">\[(x_{${index + 1}}, y_{${index + 1}}) \approx (${formatNumber(sol.x)}, ${formatNumber(sol.y)})\]</div>`;
+        return `<div class="solution-line">\[(x_${index + 1},\;y_${index + 1}) pprox (${formatNumber(sol.x)},\;${formatNumber(sol.y)})\]</div>`;
       }).join("");
 
       renderMath();
