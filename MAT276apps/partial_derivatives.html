@@ -1,39 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Partial Derivative Calculator</title>
+<meta charset="UTF-8">
+<title>Partial Derivative Calculator</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Calculus.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Calculus.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Algebra.min.js"></script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 30px;
+    color: #222;
+  }
+
+  .container {
+    max-width: 850px;
+    margin: auto;
+    background: white;
+    padding: 28px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+  }
+
+  h1 {
+    text-align: center;
+    margin-top: 0;
+    color: #1f3a5f;
+  }
+
+  .subtitle {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #555;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  input {
+    width: 430px;
+    max-width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+  }
+
+  button {
+    padding: 12px 18px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background: #1f5f99;
+    color: white;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #16466f;
+  }
+
+  .clear-btn {
+    background: #777;
+  }
+
+  .clear-btn:hover {
+    background: #555;
+  }
+
+  .results {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8fafc;
+    border-left: 5px solid #1f5f99;
+    border-radius: 8px;
+    min-height: 80px;
+  }
+
+  .math-line {
+    font-size: 20px;
+    margin: 18px 0;
+    overflow-x: auto;
+  }
+
+  .note {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    margin-top: 20px;
+  }
+</style>
 </head>
 
 <body>
-  <h2>Partial Derivative Calculator</h2>
+<div class="container">
+  <h1>Partial Derivative Calculator</h1>
 
-  <label>Enter \( f(x,y) \):</label><br>
-  <input id="functionInput" type="text" style="width: 300px;" placeholder="Example: x^2*y + sin(x*y)">
-  <button onclick="computePartials()">Compute</button>
+  <p class="subtitle">
+    Enter a function \(f(x,y)\), then calculate both partial derivatives.
+  </p>
 
-  <div id="output" style="margin-top: 20px;"></div>
+  <div class="input-row">
+    <input id="functionInput" type="text" placeholder="Example: x^2*y + sin(x*y)">
+    <button onclick="computePartials()">Calculate</button>
+    <button class="clear-btn" onclick="clearApp()">Clear</button>
+  </div>
 
-  <script>
-    function computePartials() {
-      const input = document.getElementById("functionInput").value;
-      const output = document.getElementById("output");
+  <div id="results" class="results"></div>
 
-      try {
-        const fx = nerdamer.diff(input, "x").toString();
-        const fy = nerdamer.diff(input, "y").toString();
+  <p class="note">
+    Use syntax like <code>x^2*y</code>, <code>sin(x*y)</code>, <code>e^x</code>, or <code>sqrt(x+y)</code>.
+  </p>
+</div>
 
-        output.innerHTML = `
-          <p>∂f/∂x = ${fx}</p>
-          <p>∂f/∂y = ${fy}</p>
-        `;
-      } catch (error) {
-        output.innerHTML = "<p>Invalid function.</p>";
-      }
-    }
-  </script>
+<script>
+function renderMath(element, latex) {
+  katex.render(latex, element, {
+    throwOnError: false,
+    displayMode: true
+  });
+}
+
+function cleanExpression(expr) {
+  return expr
+    .replace(/\*/g, "")
+    .replace(/sqrt/g, "\\sqrt")
+    .replace(/pi/g, "\\pi");
+}
+
+function computePartials() {
+  const input = document.getElementById("functionInput").value.trim();
+  const results = document.getElementById("results");
+
+  results.innerHTML = "";
+
+  if (!input) return;
+
+  try {
+    const fx = nerdamer.diff(input, "x").toString();
+    const fy = nerdamer.diff(input, "y").toString();
+
+    const line1 = document.createElement("div");
+    line1.className = "math-line";
+
+    const line2 = document.createElement("div");
+    line2.className = "math-line";
+
+    results.appendChild(line1);
+    results.appendChild(line2);
+
+    renderMath(line1, "\\frac{\\partial f}{\\partial x} = " + cleanExpression(fx));
+    renderMath(line2, "\\frac{\\partial f}{\\partial y} = " + cleanExpression(fy));
+
+  } catch (err) {
+    results.innerHTML = "<p>Invalid function.</p>";
+  }
+}
+
+function clearApp() {
+  document.getElementById("functionInput").value = "";
+  document.getElementById("results").innerHTML = "";
+}
+</script>
 </body>
 </html>
