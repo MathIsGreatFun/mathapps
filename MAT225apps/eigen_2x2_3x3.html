@@ -163,7 +163,7 @@
   <div class="wrap">
     <header>
       <h1>Eigenvalue and Eigenvector Calculator</h1>
-      <p>Choose a \(2\times2\) or \(3\times3\) matrix, enter numerical values, and calculate exact-style and approximate eigenvalue/eigenvector results.</p>
+      <p>Choose a \(2\times2\) or \(3\times3\) matrix, enter numerical values, and calculate approximate eigenvalue/eigenvector results.</p>
     </header>
 
     <section class="card">
@@ -212,162 +212,264 @@
       }
     }
 
-    function C(x) { return x instanceof Complex ? x : new Complex(x, 0); }
+    function C(x) {
+      return x instanceof Complex ? x : new Complex(x, 0);
+    }
 
     function parseNumber(s) {
       s = String(s).trim();
       if (s === '') throw new Error('Every matrix entry must be filled in.');
+
       if (s.includes('/')) {
         const p = s.split('/');
         if (p.length !== 2) throw new Error('Use fractions like 3/4.');
-        const a = Number(p[0].trim()), b = Number(p[1].trim());
-        if (!Number.isFinite(a) || !Number.isFinite(b) || Math.abs(b) < EPS) throw new Error('Invalid fraction.');
+        const a = Number(p[0].trim());
+        const b = Number(p[1].trim());
+        if (!Number.isFinite(a) || !Number.isFinite(b) || Math.abs(b) < EPS) {
+          throw new Error('Invalid fraction.');
+        }
         return a / b;
       }
+
       const n = Number(s);
-      if (!Number.isFinite(n)) throw new Error('Use only numerical entries, decimals, or fractions such as 3/4.');
+      if (!Number.isFinite(n)) {
+        throw new Error('Use only numerical entries, decimals, or fractions such as 3/4.');
+      }
       return n;
     }
 
-    function approxComplexLatex(z, digits=6) {
+    function approxComplexLatex(z, digits = 6) {
       z = C(z);
       const re = Math.abs(z.re) < 5e-10 ? 0 : z.re;
       const im = Math.abs(z.im) < 5e-10 ? 0 : z.im;
       const f = n => Number(n.toFixed(digits)).toString();
+
       if (im === 0) return f(re);
       if (re === 0) return f(im) + 'i';
       return f(re) + (im >= 0 ? ' + ' : ' - ') + f(Math.abs(im)) + 'i';
     }
 
-    function det2(M) { return M[0][0]*M[1][1] - M[0][1]*M[1][0]; }
-    function charPoly2(A) { return [1, -(A[0][0] + A[1][1]), det2(A)]; }
-
-    function det3(A) {
-      return A[0][0]*(A[1][1]*A[2][2]-A[1][2]*A[2][1])
-           - A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])
-           + A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);
+    function det2(M) {
+      return M[0][0] * M[1][1] - M[0][1] * M[1][0];
     }
 
-    function trace(A) { return A.reduce((s,row,i) => s + row[i], 0); }
+    function charPoly2(A) {
+      return [1, -(A[0][0] + A[1][1]), det2(A)];
+    }
 
-    function multiply3(A,B) {
-      const out = Array.from({length:3}, () => Array(3).fill(0));
-      for (let i=0;i<3;i++) for (let j=0;j<3;j++) for (let k=0;k<3;k++) out[i][j] += A[i][k]*B[k][j];
+    function det3(A) {
+      return A[0][0] * (A[1][1] * A[2][2] - A[1][2] * A[2][1])
+           - A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0])
+           + A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
+    }
+
+    function trace(A) {
+      return A.reduce((s, row, i) => s + row[i], 0);
+    }
+
+    function multiply3(A, B) {
+      const out = Array.from({ length: 3 }, () => Array(3).fill(0));
+
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          for (let k = 0; k < 3; k++) {
+            out[i][j] += A[i][k] * B[k][j];
+          }
+        }
+      }
+
       return out;
     }
 
     function charPoly3(A) {
       const t1 = trace(A);
-      const A2 = multiply3(A,A);
+      const A2 = multiply3(A, A);
       const t2 = trace(A2);
-      return [1, -t1, 0.5*(t1*t1 - t2), -det3(A)];
+
+      return [
+        1,
+        -t1,
+        0.5 * (t1 * t1 - t2),
+        -det3(A)
+      ];
     }
 
     function quadraticRoots(coeffs) {
-      const [a,b,c] = coeffs;
-      const disc = new Complex(b*b - 4*a*c, 0).sqrt();
-      return [new Complex(-b,0).add(disc).div(2*a), new Complex(-b,0).sub(disc).div(2*a)];
+      const [a, b, c] = coeffs;
+      const disc = new Complex(b * b - 4 * a * c, 0).sqrt();
+
+      return [
+        new Complex(-b, 0).add(disc).div(2 * a),
+        new Complex(-b, 0).sub(disc).div(2 * a)
+      ];
     }
 
-    function evalPoly(coeffs, z) {
-      let out = new Complex(coeffs[0],0);
-      for (let i=1;i<coeffs.length;i++) out = out.mul(z).add(coeffs[i]);
-      return out;
-    }
+    function cubicRoots(coeffs) {
+      let [a, b, c, d] = coeffs;
 
-    function durandKerner(coeffs) {
-      const n = coeffs.length - 1;
-      let roots = [new Complex(1,0), new Complex(-0.5,0.8660254038), new Complex(-0.5,-0.8660254038)].slice(0,n);
-      for (let iter=0; iter<300; iter++) {
-        let maxChange = 0;
-        const next = roots.map((r,i) => {
-          let denom = new Complex(1,0);
-          for (let j=0;j<n;j++) if (j !== i) denom = denom.mul(r.sub(roots[j]));
-          if (denom.abs() < EPS) denom = new Complex(EPS, EPS);
-          const change = evalPoly(coeffs, r).div(denom);
-          maxChange = Math.max(maxChange, change.abs());
-          return r.sub(change);
-        });
-        roots = next;
-        if (maxChange < 1e-12) break;
+      b /= a;
+      c /= a;
+      d /= a;
+
+      const p = c - b * b / 3;
+      const q = (2 * b * b * b) / 27 - (b * c) / 3 + d;
+      const discriminant = (q * q) / 4 + (p * p * p) / 27;
+      const shift = -b / 3;
+
+      if (discriminant > EPS) {
+        const sqrtD = Math.sqrt(discriminant);
+        const u = Math.cbrt(-q / 2 + sqrtD);
+        const v = Math.cbrt(-q / 2 - sqrtD);
+
+        const realRoot = u + v + shift;
+        const realPart = -(u + v) / 2 + shift;
+        const imagPart = (Math.sqrt(3) / 2) * (u - v);
+
+        return [
+          new Complex(realRoot, 0),
+          new Complex(realPart, imagPart),
+          new Complex(realPart, -imagPart)
+        ];
       }
-      return roots;
+
+      if (Math.abs(discriminant) <= EPS) {
+        const u = Math.cbrt(-q / 2);
+
+        return [
+          new Complex(2 * u + shift, 0),
+          new Complex(-u + shift, 0),
+          new Complex(-u + shift, 0)
+        ];
+      }
+
+      const r = 2 * Math.sqrt(-p / 3);
+      let angleInput = (3 * q / (2 * p)) * Math.sqrt(-3 / p);
+
+      if (angleInput > 1) angleInput = 1;
+      if (angleInput < -1) angleInput = -1;
+
+      const theta = Math.acos(angleInput);
+
+      return [
+        new Complex(r * Math.cos(theta / 3) + shift, 0),
+        new Complex(r * Math.cos((theta + 2 * Math.PI) / 3) + shift, 0),
+        new Complex(r * Math.cos((theta + 4 * Math.PI) / 3) + shift, 0)
+      ];
     }
 
     function isDiagonalMatrix(A) {
       const n = A.length;
-      for (let i=0;i<n;i++) for (let j=0;j<n;j++) {
-        if (i !== j && Math.abs(A[i][j]) > EPS) return false;
-      }
-      return true;
-    }
 
-    function uniqueRoots(roots) {
-      const out = [];
-      for (const r of roots) if (!out.some(s => r.sub(s).abs() < 1e-7)) out.push(r);
-      return out;
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+          if (i !== j && Math.abs(A[i][j]) > EPS) return false;
+        }
+      }
+
+      return true;
     }
 
     function rootsForMatrix(A) {
       const n = A.length;
+
       if (isDiagonalMatrix(A)) {
-        // return ALL diagonal entries (including repeats)
-        return A.map((row,i) => new Complex(row[i], 0));
+        return A.map((row, i) => new Complex(row[i], 0));
       }
-      if (n === 2) return quadraticRoots(charPoly2(A));
-      return durandKerner(charPoly3(A));
+
+      if (n === 2) {
+        return quadraticRoots(charPoly2(A));
+      }
+
+      return cubicRoots(charPoly3(A));
     }
 
-    function complexSubReal(a, z) { return new Complex(a,0).sub(z); }
+    function complexSubReal(a, z) {
+      return new Complex(a, 0).sub(z);
+    }
 
     function eigenspaceBasis(A, lambda) {
       const n = A.length;
-      const R = A.map((row,i) => row.map((val,j) => i === j ? complexSubReal(val, lambda) : new Complex(val,0)));
+
+      const R = A.map((row, i) =>
+        row.map((val, j) =>
+          i === j ? complexSubReal(val, lambda) : new Complex(val, 0)
+        )
+      );
+
       const pivots = [];
       let r = 0;
 
       for (let c = 0; c < n && r < n; c++) {
         let pivot = r;
-        for (let i = r + 1; i < n; i++) if (R[i][c].abs() > R[pivot][c].abs()) pivot = i;
+
+        for (let i = r + 1; i < n; i++) {
+          if (R[i][c].abs() > R[pivot][c].abs()) pivot = i;
+        }
+
         if (R[pivot][c].abs() < 1e-8) continue;
+
         [R[r], R[pivot]] = [R[pivot], R[r]];
+
         const pv = R[r][c];
-        for (let j = 0; j < n; j++) R[r][j] = R[r][j].div(pv);
+
+        for (let j = 0; j < n; j++) {
+          R[r][j] = R[r][j].div(pv);
+        }
+
         for (let i = 0; i < n; i++) {
           if (i === r) continue;
+
           const factor = R[i][c];
-          if (factor.abs() > 1e-8) for (let j = 0; j < n; j++) R[i][j] = R[i][j].sub(factor.mul(R[r][j]));
+
+          if (factor.abs() > 1e-8) {
+            for (let j = 0; j < n; j++) {
+              R[i][j] = R[i][j].sub(factor.mul(R[r][j]));
+            }
+          }
         }
+
         pivots.push(c);
         r++;
       }
 
       const freeCols = [];
-      for (let c = 0; c < n; c++) if (!pivots.includes(c)) freeCols.push(c);
+
+      for (let c = 0; c < n; c++) {
+        if (!pivots.includes(c)) freeCols.push(c);
+      }
 
       return freeCols.map(fc => {
-        const v = Array.from({length:n}, () => new Complex(0,0));
-        v[fc] = new Complex(1,0);
-        pivots.forEach((pc, row) => v[pc] = R[row][fc].neg());
+        const v = Array.from({ length: n }, () => new Complex(0, 0));
+        v[fc] = new Complex(1, 0);
+
+        pivots.forEach((pc, row) => {
+          v[pc] = R[row][fc].neg();
+        });
+
         return v;
       });
     }
 
-    function displayMath(s) { return bs + '[' + s + bs + ']'; }
+    function displayMath(s) {
+      return bs + '[' + s + bs + ']';
+    }
 
     function vectorLatexApprox(v) {
-      return bs + 'begin{bmatrix}' + v.map(z => approxComplexLatex(z)).join(bs + bs) + bs + 'end{bmatrix}';
+      return bs + 'begin{bmatrix}' +
+        v.map(z => approxComplexLatex(z)).join(bs + bs) +
+        bs + 'end{bmatrix}';
     }
 
     function buildInputs(n) {
       const box = document.getElementById('matrixInputs');
       box.className = 'matrix-entry grid-' + n;
       box.innerHTML = '';
-      for (let i=0;i<n;i++) {
-        for (let j=0;j<n;j++) {
+
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
           const input = document.createElement('input');
           input.id = 'a' + i + j;
-          input.placeholder = 'a' + (i+1) + (j+1);
+          input.placeholder = 'a' + (i + 1) + (j + 1);
           input.value = i === j ? '1' : '0';
           box.appendChild(input);
         }
@@ -376,17 +478,24 @@
 
     function readMatrix(n) {
       const A = [];
-      for (let i=0;i<n;i++) {
+
+      for (let i = 0; i < n; i++) {
         const row = [];
-        for (let j=0;j<n;j++) row.push(parseNumber(document.getElementById('a' + i + j).value));
+
+        for (let j = 0; j < n; j++) {
+          row.push(parseNumber(document.getElementById('a' + i + j).value));
+        }
+
         A.push(row);
       }
+
       return A;
     }
 
     function calculate() {
       const error = document.getElementById('error');
       const results = document.getElementById('results');
+
       error.textContent = '';
       results.style.display = 'none';
       results.innerHTML = '';
@@ -397,31 +506,39 @@
         const roots = rootsForMatrix(A);
 
         let html = '<h2>Results</h2><div class="split">';
+
         roots.forEach((lam, idx) => {
           const basis = eigenspaceBasis(A, lam);
           const repeatIndex = roots.slice(0, idx).filter(prev => prev.sub(lam).abs() < 1e-7).length;
           const v = basis.length ? basis[repeatIndex % basis.length] : null;
+
           const vectorLatex = v
-            ? bs + 'vec{v}_{' + (idx+1) + '} ' + bs + 'approx ' + vectorLatexApprox(v)
+            ? bs + 'vec{v}_{' + (idx + 1) + '} ' + bs + 'approx ' + vectorLatexApprox(v)
             : bs + 'text{No eigenvector found numerically.}';
 
           html += '<div class="math-box">'
-               + displayMath(bs + 'lambda_{' + (idx+1) + '} ' + bs + 'approx ' + approxComplexLatex(lam))
+               + displayMath(bs + 'lambda_{' + (idx + 1) + '} ' + bs + 'approx ' + approxComplexLatex(lam))
                + displayMath(vectorLatex)
                + '</div>';
         });
+
         html += '</div>';
 
         results.innerHTML = html;
         results.style.display = 'block';
+
         if (window.MathJax) MathJax.typesetPromise();
       } catch (e) {
         error.textContent = e.message;
       }
     }
 
-    document.getElementById('sizeSelect').addEventListener('change', e => buildInputs(Number(e.target.value)));
+    document.getElementById('sizeSelect').addEventListener('change', e => {
+      buildInputs(Number(e.target.value));
+    });
+
     document.getElementById('calculateBtn').addEventListener('click', calculate);
+
     document.getElementById('clearBtn').addEventListener('click', () => {
       document.querySelectorAll('#matrixInputs input').forEach(input => input.value = '');
       document.getElementById('results').style.display = 'none';
