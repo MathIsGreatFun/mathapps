@@ -5,13 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Single Equation Solution Form Finder</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Algebra.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Calculus.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Solve.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"></script>
 
   <style>
     body {
@@ -104,6 +98,7 @@
       padding: 12px;
       margin: 8px 0;
       overflow-x: auto;
+      font-size: 18px;
     }
 
     .small {
@@ -144,25 +139,6 @@
   </div>
 
   <script>
-    function renderMath(element, latex) {
-      try {
-        katex.render(latex, element, {
-          throwOnError: false,
-          displayMode: true
-        });
-      } catch (e) {
-        element.textContent = latex;
-      }
-    }
-
-    function toLatex(expr) {
-      try {
-        return nerdamer(expr).toTeX();
-      } catch (e) {
-        return String(expr);
-      }
-    }
-
     function normalizeInput(s) {
       s = s.trim();
 
@@ -177,33 +153,116 @@
       return s;
     }
 
-    function getSolutions(expr, variable) {
-      try {
-        const sol = nerdamer.solve(expr, variable);
-
-        let arr = [];
-
-        if (Array.isArray(sol)) {
-          arr = sol;
-        } else if (sol && typeof sol.each === "function") {
-          sol.each(function(value) {
-            arr.push(value);
-          });
-        } else if (sol && sol.symbol) {
-          arr = [sol];
-        }
-
-        return arr.map(v => String(v)).filter(v => v !== "");
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function addMathRow(parent, latex) {
+    function addTextRow(parent, text) {
       const row = document.createElement("div");
       row.className = "math-row";
+      row.textContent = text;
       parent.appendChild(row);
-      renderMath(row, latex);
+    }
+
+    function cleanExpression(s) {
+      return String(s)
+        .replace(/\*/g, "")
+        .replace(/\+\-/g, "-")
+        .replace(/\-\-/g, "+");
+    }
+
+    function isQuadraticInY(expr) {
+      const node = math.parse(expr);
+      const simplified = math.simplify(node).toString();
+
+      const samples = [
+        {x: -3, y: 0},
+        {x: -1, y: 0},
+        {x: 2, y: 0}
+      ];
+
+      for (const scope of samples) {
+        const a = coefficientY2(simplified, scope.x);
+        const b = coefficientY(simplified, scope.x);
+        const c = constantTermY(simplified, scope.x);
+        const rebuilt = a*scope.y*scope.y + b*scope.y + c;
+        const actual = math.evaluate(simplified, scope);
+        if (!Number.isFinite(actual) || Math.abs(rebuilt - actual) > 1e-7) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function coefficientY2(expr, xValue) {
+      const f0 = math.evaluate(expr, {x: xValue, y: 0});
+      const f1 = math.evaluate(expr, {x: xValue, y: 1});
+      const f2 = math.evaluate(expr, {x: xValue, y: 2});
+      return (f2 - 2*f1 + f0) / 2;
+    }
+
+    function coefficientY(expr, xValue) {
+      const f0 = math.evaluate(expr, {x: xValue, y: 0});
+      const f1 = math.evaluate(expr, {x: xValue, y: 1});
+      const f2 = math.evaluate(expr, {x: xValue, y: 2});
+      return (-f2 + 4*f1 - 3*f0) / 2;
+    }
+
+    function constantTermY(expr, xValue) {
+      return math.evaluate(expr, {x: xValue, y: 0});
+    }
+
+    function solveSimpleForY(expr) {
+      const s = math.simplify(expr).toString();
+
+      // Common pattern: y - something
+      try {
+        const test = math.simplify("(" + s + ") - y").toString();
+        if (!test.includes("y")) {
+          return [cleanExpression("-(" + test + ")")];
+        }
+      } catch (e) {}
+
+      // Common pattern: y + something
+      try {
+        const test = math.simplify("(" + s + ") + y").toString();
+        if (!test.includes("y")) {
+          return [cleanExpression("(" + test + ")")];
+        }
+      } catch (e) {}
+
+      // Basic circle/ellipse-style pattern:
+      // If expression has y^2 but no y term, solve y = ±sqrt(-constant part / coefficient of y^2).
+      try {
+        const withoutY2 = math.simplify(s.replace(/y\s*\^\s*2/g, "0")).toString();
+        const coeffTest = math.simplify("(" + s + ") - (" + withoutY2 + ")").toString();
+
+        if (!withoutY2.includes("y") && coeffTest.includes("y ^ 2") && !coeffTest.replace(/y\s\^\s2/g, "").includes("y")) {
+          let coeff = coeffTest.replace(/\*?\s*y\s\^\s2/g, "").trim();
+          if (coeff === "") coeff = "1";
+          if (coeff === "-") coeff = "-1";
+
+          const inside = math.simplify("-(" + withoutY2 + ")/(" + coeff + ")").toString();
+          return [
+            cleanExpression("sqrt(" + inside + ")"),
+            cleanExpression("-sqrt(" + inside + ")")
+          ];
+        }
+      } catch (e) {}
+
+      return [];
+    }
+
+    function solveSimpleForX(expr) {
+      const swapped = expr
+        .replaceAll("x", "__TEMP__")
+        .replaceAll("y", "x")
+        .replaceAll("__TEMP__", "y");
+
+      const yForms = solveSimpleForY(swapped);
+
+      return yForms.map(s =>
+        s.replaceAll("x", "__TEMP__")
+         .replaceAll("y", "x")
+         .replaceAll("__TEMP__", "y")
+      );
     }
 
     function solveEquation() {
@@ -211,20 +270,24 @@
       results.innerHTML = "";
 
       try {
+        if (typeof math === "undefined") {
+          throw new Error("Math.js did not load. Check your internet connection or CDN access.");
+        }
+
         const expr = normalizeInput(document.getElementById("expr").value);
 
         // Validate expression.
-        nerdamer(expr);
+        math.parse(expr);
 
         const inputTitle = document.createElement("div");
         inputTitle.className = "section-title";
         inputTitle.textContent = "Equation entered:";
         results.appendChild(inputTitle);
 
-        addMathRow(results, toLatex(expr) + " = 0");
+        addTextRow(results, cleanExpression(expr) + " = 0");
 
-        const ySolutions = getSolutions(expr, "y");
-        const xSolutions = getSolutions(expr, "x");
+        const ySolutions = solveSimpleForY(expr);
+        const xSolutions = solveSimpleForX(expr);
 
         const yTitle = document.createElement("div");
         yTitle.className = "section-title";
@@ -232,14 +295,9 @@
         results.appendChild(yTitle);
 
         if (ySolutions.length === 0) {
-          const msg = document.createElement("div");
-          msg.className = "small";
-          msg.textContent = "No explicit y-form solution was found.";
-          results.appendChild(msg);
+          addTextRow(results, "No explicit y-form solution was found.");
         } else {
-          ySolutions.forEach(sol => {
-            addMathRow(results, "y = " + toLatex(sol));
-          });
+          ySolutions.forEach(sol => addTextRow(results, "y = " + cleanExpression(sol)));
         }
 
         const xTitle = document.createElement("div");
@@ -248,21 +306,24 @@
         results.appendChild(xTitle);
 
         if (xSolutions.length === 0) {
-          const msg = document.createElement("div");
-          msg.className = "small";
-          msg.textContent = "No explicit x-form solution was found.";
-          results.appendChild(msg);
+          addTextRow(results, "No explicit x-form solution was found.");
         } else {
-          xSolutions.forEach(sol => {
-            addMathRow(results, "x = " + toLatex(sol));
-          });
+          xSolutions.forEach(sol => addTextRow(results, "x = " + cleanExpression(sol)));
         }
+
+        const implicitTitle = document.createElement("div");
+        implicitTitle.className = "section-title";
+        implicitTitle.textContent = "Implicit solution form:";
+        results.appendChild(implicitTitle);
+
+        addTextRow(results, cleanExpression(expr) + " = 0");
 
         const note = document.createElement("div");
         note.className = "small";
         note.innerHTML = `
-          Note: Some equations cannot be solved cleanly into explicit formulas by this app.
-          In that case, the original equation is still shown as the implicit solution form.
+          This version avoids the broken Nerdamer dependency. It handles many common classroom forms,
+          especially equations that can be solved directly for one variable or circle-style equations.
+          Very complicated nonlinear equations may remain in implicit form.
         `;
         results.appendChild(note);
 
