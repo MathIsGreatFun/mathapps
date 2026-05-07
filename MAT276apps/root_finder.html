@@ -132,12 +132,12 @@
 
     <div class="note">
       Enter the expression from one side of an equation that is equal to <code>0</code>.
-      For example, to solve <code>x^2 + y^2 - 25 = 0</code>, enter only
-      <code>x^2 + y^2 - 25</code>. Use explicit multiplication, such as <code>2*x</code>, not <code>2x</code>.
+      For example, to solve <code>3*x*(1 - x/3) - x*y = 0</code>, enter only
+      <code>3*x*(1 - x/3) - x*y</code>. Use explicit multiplication, such as <code>2*x</code>, not <code>2x</code>.
     </div>
 
     <label for="expr">Expression equal to 0:</label>
-    <input id="expr" value="x^2 + y^2 - 25" />
+    <input id="expr" value="3*x*(1 - x/3) - x*y" />
 
     <button onclick="solveEquation()">Solve Equation</button>
 
@@ -215,24 +215,101 @@
       return arr.map(v => String(v)).filter(v => v !== "");
     }
 
-    function solveForVariable(expr, variable) {
-      try {
-        const sol = nerdamer.solve(expr, variable);
-        return nerdamerArrayToStrings(sol);
-      } catch (e) {
-        return [];
+    function splitTopLevelFactors(factoredExpr) {
+      let s = String(factoredExpr).trim();
+
+      // Remove unnecessary outer parentheses around the entire expression.
+      while (s.startsWith("(") && s.endsWith(")") && matchingOuterParens(s)) {
+        s = s.slice(1, -1).trim();
       }
+
+      const factors = [];
+      let current = "";
+      let depth = 0;
+
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+
+        if (ch === "(") depth++;
+        if (ch === ")") depth--;
+
+        if (ch === "*" && depth === 0) {
+          if (current.trim()) factors.push(current.trim());
+          current = "";
+        } else {
+          current += ch;
+        }
+      }
+
+      if (current.trim()) factors.push(current.trim());
+
+      return factors.length ? factors : [s];
     }
 
-    function chooseSolutionVariable(expr) {
-      const variables = getVariables(expr);
+    function matchingOuterParens(s) {
+      let depth = 0;
 
-      if (variables.length === 0) return null;
+      for (let i = 0; i < s.length; i++) {
+        if (s[i] === "(") depth++;
+        if (s[i] === ")") depth--;
 
-      if (variables.includes("y")) return "y";
-      if (variables.includes("x")) return "x";
+        if (depth === 0 && i < s.length - 1) {
+          return false;
+        }
+      }
 
-      return variables[0];
+      return depth === 0;
+    }
+
+    function stripNumericFactor(factor) {
+      const f = factor.trim();
+
+      if (/^-?\d+(\.\d+)?$/.test(f)) return null;
+      if (/^-?\d+\/\d+$/.test(f)) return null;
+
+      return f;
+    }
+
+    function solveFactor(factor) {
+      const variables = getVariables(factor);
+      const answers = [];
+
+      if (variables.length === 0) return answers;
+
+      // Prefer simple constant branches like x = 0.
+      for (const v of variables) {
+        try {
+          const sol = nerdamer.solve(factor, v);
+          const sols = nerdamerArrayToStrings(sol);
+
+          sols.forEach(s => {
+            if (s !== "" && s !== "[]" && s !== "undefined") {
+              answers.push({
+                variable: v,
+                expression: s
+              });
+            }
+          });
+        } catch (e) {}
+      }
+
+      return answers;
+    }
+
+    function uniqueSolutions(solutions) {
+      const seen = new Set();
+      const output = [];
+
+      solutions.forEach(sol => {
+        const key = sol.variable + "=" + sol.expression;
+
+        if (!seen.has(key)) {
+          seen.add(key);
+          output.push(sol);
+        }
+      });
+
+      return output;
     }
 
     function solveEquation() {
@@ -245,39 +322,32 @@
         }
 
         const expr = normalizeInput(document.getElementById("expr").value);
-
         nerdamer(expr);
-
-        const variable = chooseSolutionVariable(expr);
 
         const title = document.createElement("div");
         title.className = "section-title";
         title.textContent = "Solutions:";
         results.appendChild(title);
 
-        if (variable === null) {
-          const value = Number(nerdamer(expr).evaluate().text());
-          if (Math.abs(value) < 1e-12) {
-            addMathRow(results, "\\text{All real ordered pairs }(x,y)\\text{ satisfy the equation.}");
-          } else {
-            addMathRow(results, "\\varnothing");
-          }
-          return;
-        }
+        const factored = String(nerdamer.factor(expr));
+        const rawFactors = splitTopLevelFactors(factored);
+        const factors = rawFactors.map(stripNumericFactor).filter(Boolean);
 
-        const solutions = solveForVariable(expr, variable);
+        let allSolutions = [];
 
-        if (solutions.length === 0) {
+        factors.forEach(factor => {
+          allSolutions = allSolutions.concat(solveFactor(factor));
+        });
+
+        allSolutions = uniqueSolutions(allSolutions);
+
+        if (allSolutions.length === 0) {
           addMathRow(results, "\\text{No explicit solution found by this app.}");
-          const note = document.createElement("div");
-          note.className = "small";
-          note.textContent = "The app does not display implicit solutions, since the original equation already gives that form.";
-          results.appendChild(note);
           return;
         }
 
-        solutions.forEach(sol => {
-          addMathRow(results, variable + " = " + toLatex(sol));
+        allSolutions.forEach(sol => {
+          addMathRow(results, sol.variable + " = " + toLatex(sol.expression));
         });
 
       } catch (err) {
