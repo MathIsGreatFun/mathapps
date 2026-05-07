@@ -87,6 +87,13 @@
       border-radius: 8px;
     }
 
+    .section-title {
+      font-weight: bold;
+      color: #1f3b57;
+      font-size: 19px;
+      margin-bottom: 10px;
+    }
+
     .math-row {
       background: white;
       border: 1px solid #ddd;
@@ -96,9 +103,21 @@
       overflow-x: auto;
     }
 
+    .small {
+      font-size: 14px;
+      color: #555;
+      margin-top: 10px;
+    }
+
     .error {
       color: #a00000;
       font-weight: bold;
+    }
+
+    code {
+      background: #eee;
+      padding: 2px 5px;
+      border-radius: 4px;
     }
   </style>
 </head>
@@ -108,12 +127,12 @@
     <h1>Equation Solution Finder</h1>
 
     <div class="note">
-      Enter only the expression equal to <code>0</code>. Use explicit multiplication such as
+      Enter only the expression equal to <code>0</code>. Use explicit multiplication, such as
       <code>2*x</code>, not <code>2x</code>.
     </div>
 
     <label for="expr">Expression equal to 0:</label>
-    <input id="expr" value="3*x*(1 - x/3) - x*y" />
+    <input id="expr" value="2*(1-x/2)-x*y" />
 
     <button onclick="solveEquation()">Solve Equation</button>
 
@@ -121,29 +140,11 @@
   </div>
 
   <script>
-    function renderMath(element, latex) {
-      katex.render(latex, element, {
-        throwOnError: false,
-        displayMode: true
-      });
-    }
-
-    function addMathRow(parent, latex) {
-      const row = document.createElement("div");
-      row.className = "math-row";
-      renderMath(row, latex);
-      parent.appendChild(row);
-    }
-
-    function toLatex(expr) {
-      return nerdamer(expr).toTeX();
-    }
-
     function normalizeInput(s) {
       s = s.trim();
 
       if (s.includes("=")) {
-        throw new Error("Do not include the equals sign.");
+        throw new Error("Enter only the expression on one side. Do not include = 0.");
       }
 
       if (s.length === 0) {
@@ -153,11 +154,31 @@
       return s;
     }
 
-    function getVariables(expr) {
-      const matches = expr.match(/[a-zA-Z]+/g) || [];
-      const bad = ["sqrt","sin","cos","tan","log","ln","exp","pi","e"];
+    function renderMath(element, latex) {
+      if (typeof katex === "undefined") {
+        element.textContent = latex;
+        return;
+      }
 
-      return [...new Set(matches.filter(v => !bad.includes(v)))];
+      katex.render(latex, element, {
+        throwOnError: false,
+        displayMode: true
+      });
+    }
+
+    function addMathRow(parent, latex) {
+      const row = document.createElement("div");
+      row.className = "math-row";
+      parent.appendChild(row);
+      renderMath(row, latex);
+    }
+
+    function toLatex(expr) {
+      try {
+        return nerdamer(expr).toTeX();
+      } catch (e) {
+        return String(expr);
+      }
     }
 
     function nerdamerArrayToStrings(sol) {
@@ -176,89 +197,62 @@
       return arr.map(v => String(v)).filter(v => v !== "");
     }
 
-    function matchingOuterParens(s) {
-      let depth = 0;
-
-      for (let i = 0; i < s.length; i++) {
-        if (s[i] === "(") depth++;
-        if (s[i] === ")") depth--;
-
-        if (depth === 0 && i < s.length - 1) {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    function splitTopLevelFactors(expr) {
-      let s = expr.trim();
-
-      while (s.startsWith("(") && s.endsWith(")") && matchingOuterParens(s)) {
-        s = s.slice(1, -1).trim();
-      }
-
-      let depth = 0;
-      let current = "";
-      const factors = [];
-
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-
-        if (ch === "(") depth++;
-        if (ch === ")") depth--;
-
-        if (ch === "*" && depth === 0) {
-          if (current.trim()) factors.push(current.trim());
-          current = "";
-        }
-        else {
-          current += ch;
-        }
-      }
-
-      if (current.trim()) factors.push(current.trim());
-
-      return factors;
-    }
-
-    function stripNumericFactor(factor) {
-      if (/^-?\d+(\.\d+)?$/.test(factor)) return null;
-      return factor;
-    }
-
-    function complexity(expr) {
-      return expr.length;
-    }
-
-    function solveFactor(factor) {
-      const vars = getVariables(factor);
-
-      if (vars.length === 0) return [];
-
-      const preferred = vars.includes("y") ? "y" : vars[0];
-
+    function simplifyText(expr) {
       try {
-        const sols = nerdamerArrayToStrings(
-          nerdamer.solve(factor, preferred)
-        );
-
-        return sols.map(s => ({
-          variable: preferred,
-          expression: s
-        }));
+        return String(nerdamer(expr).expand().simplify());
+      } catch (e) {
+        return String(expr);
       }
-      catch (e) {
+    }
+
+    function isZeroExpression(expr) {
+      try {
+        const s = String(nerdamer(expr).expand().simplify());
+        return s === "0";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function solveFor(expr, variable) {
+      try {
+        return nerdamerArrayToStrings(nerdamer.solve(expr, variable));
+      } catch (e) {
         return [];
       }
     }
 
-    function uniqueSolutions(solutions) {
+    function getCandidateConstantBranches(expr, variable) {
+      const candidates = solveFor(expr, variable);
+      const output = [];
+
+      candidates.forEach(c => {
+        if (c.includes("x") || c.includes("y")) return;
+
+        const substituted = expr.replaceAll(variable, "(" + c + ")");
+
+        if (isZeroExpression(substituted)) {
+          output.push({
+            variable: variable,
+            expression: c
+          });
+        }
+      });
+
+      return output;
+    }
+
+    function hasVariable(expr, variable) {
+      const regex = new RegExp("(^|[^a-zA-Z])" + variable + "([^a-zA-Z]|$)");
+      return regex.test(expr);
+    }
+
+    function uniqueByLatex(solutions) {
       const seen = new Set();
       const output = [];
 
       solutions.forEach(sol => {
-        const key = sol.variable + "=" + sol.expression;
+        const key = sol.variable + "=" + simplifyText(sol.expression);
 
         if (!seen.has(key)) {
           seen.add(key);
@@ -274,25 +268,47 @@
       results.innerHTML = "";
 
       try {
-        const expr = normalizeInput(
-          document.getElementById("expr").value
-        );
+        if (typeof nerdamer === "undefined") {
+          throw new Error("The algebra engine did not load. Check whether CDN scripts are blocked.");
+        }
 
+        const expr = normalizeInput(document.getElementById("expr").value);
         nerdamer(expr);
 
-        const factored = String(nerdamer.factor(expr));
-
-        const factors = splitTopLevelFactors(factored)
-          .map(stripNumericFactor)
-          .filter(Boolean);
+        const title = document.createElement("div");
+        title.className = "section-title";
+        title.textContent = "Solutions:";
+        results.appendChild(title);
 
         let solutions = [];
 
-        factors.forEach(f => {
-          solutions = solutions.concat(solveFactor(f));
-        });
+        // Verified special branches only.
+        solutions = solutions.concat(getCandidateConstantBranches(expr, "x"));
+        solutions = solutions.concat(getCandidateConstantBranches(expr, "y"));
 
-        solutions = uniqueSolutions(solutions);
+        // Main explicit solution form.
+        if (hasVariable(expr, "y")) {
+          const ySolutions = solveFor(expr, "y");
+
+          ySolutions.forEach(s => {
+            solutions.push({
+              variable: "y",
+              expression: s
+            });
+          });
+        }
+        else if (hasVariable(expr, "x")) {
+          const xSolutions = solveFor(expr, "x");
+
+          xSolutions.forEach(s => {
+            solutions.push({
+              variable: "x",
+              expression: s
+            });
+          });
+        }
+
+        solutions = uniqueByLatex(solutions);
 
         if (solutions.length === 0) {
           addMathRow(results, "\\text{No explicit solution found.}");
@@ -300,16 +316,16 @@
         }
 
         solutions.forEach(sol => {
-          addMathRow(
-            results,
-            sol.variable + "=" + toLatex(sol.expression)
-          );
+          addMathRow(results, sol.variable + "=" + toLatex(sol.expression));
         });
 
-      }
-      catch (err) {
-        results.innerHTML =
-          '<div class="error">Error: ' + err.message + '</div>';
+        const note = document.createElement("div");
+        note.className = "small";
+        note.textContent = "Special branches are only displayed after substitution verifies that they satisfy the original equation.";
+        results.appendChild(note);
+
+      } catch (err) {
+        results.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
       }
     }
   </script>
