@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Single Equation Solution Form Finder</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/nerdamer.core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Algebra.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Calculus.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/nerdamer/1.1.13/Solve.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 30px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 28px;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      color: #1f3b57;
+    }
+
+    .note {
+      background: #eef5ff;
+      border-left: 5px solid #2f70b7;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      line-height: 1.45;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      font-size: 16px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+    }
+
+    button {
+      margin-top: 22px;
+      width: 100%;
+      padding: 13px;
+      font-size: 17px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      background: #1f5f9f;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #184b7d;
+    }
+
+    #results {
+      margin-top: 24px;
+      padding: 18px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      min-height: 80px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      color: #1f3b57;
+      font-size: 18px;
+    }
+
+    .math-row {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+
+    .small {
+      font-size: 14px;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .error {
+      color: #a00000;
+      font-weight: bold;
+    }
+
+    code {
+      background: #eee;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Solution Form Finder for One Equation</h1>
+
+    <div class="note">
+      Enter the expression from one side of an equation that is equal to <code>0</code>.
+      For example, to solve <code>x^2 + y^2 - 25 = 0</code>, enter only
+      <code>x^2 + y^2 - 25</code>. Use explicit multiplication, such as <code>2*x</code>, not <code>2x</code>.
+    </div>
+
+    <label for="expr">Expression equal to 0:</label>
+    <input id="expr" value="x^2 + y^2 - 25" />
+
+    <button onclick="solveEquation()">Find Solution Equations</button>
+
+    <div id="results">Results will appear here.</div>
+  </div>
+
+  <script>
+    function renderMath(element, latex) {
+      try {
+        katex.render(latex, element, {
+          throwOnError: false,
+          displayMode: true
+        });
+      } catch (e) {
+        element.textContent = latex;
+      }
+    }
+
+    function toLatex(expr) {
+      try {
+        return nerdamer(expr).toTeX();
+      } catch (e) {
+        return String(expr);
+      }
+    }
+
+    function normalizeInput(s) {
+      s = s.trim();
+
+      if (s.includes("=")) {
+        throw new Error("Please enter only the expression on one side of the equation, not the equals sign.");
+      }
+
+      if (s.length === 0) {
+        throw new Error("Please enter an expression.");
+      }
+
+      return s;
+    }
+
+    function getSolutions(expr, variable) {
+      try {
+        const sol = nerdamer.solve(expr, variable);
+
+        let arr = [];
+
+        if (Array.isArray(sol)) {
+          arr = sol;
+        } else if (sol && typeof sol.each === "function") {
+          sol.each(function(value) {
+            arr.push(value);
+          });
+        } else if (sol && sol.symbol) {
+          arr = [sol];
+        }
+
+        return arr.map(v => String(v)).filter(v => v !== "");
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function addMathRow(parent, latex) {
+      const row = document.createElement("div");
+      row.className = "math-row";
+      parent.appendChild(row);
+      renderMath(row, latex);
+    }
+
+    function solveEquation() {
+      const results = document.getElementById("results");
+      results.innerHTML = "";
+
+      try {
+        const expr = normalizeInput(document.getElementById("expr").value);
+
+        // Validate expression.
+        nerdamer(expr);
+
+        const inputTitle = document.createElement("div");
+        inputTitle.className = "section-title";
+        inputTitle.textContent = "Equation entered:";
+        results.appendChild(inputTitle);
+
+        addMathRow(results, toLatex(expr) + " = 0");
+
+        const ySolutions = getSolutions(expr, "y");
+        const xSolutions = getSolutions(expr, "x");
+
+        const yTitle = document.createElement("div");
+        yTitle.className = "section-title";
+        yTitle.textContent = "Solved for y:";
+        results.appendChild(yTitle);
+
+        if (ySolutions.length === 0) {
+          const msg = document.createElement("div");
+          msg.className = "small";
+          msg.textContent = "No explicit y-form solution was found.";
+          results.appendChild(msg);
+        } else {
+          ySolutions.forEach(sol => {
+            addMathRow(results, "y = " + toLatex(sol));
+          });
+        }
+
+        const xTitle = document.createElement("div");
+        xTitle.className = "section-title";
+        xTitle.textContent = "Solved for x:";
+        results.appendChild(xTitle);
+
+        if (xSolutions.length === 0) {
+          const msg = document.createElement("div");
+          msg.className = "small";
+          msg.textContent = "No explicit x-form solution was found.";
+          results.appendChild(msg);
+        } else {
+          xSolutions.forEach(sol => {
+            addMathRow(results, "x = " + toLatex(sol));
+          });
+        }
+
+        const note = document.createElement("div");
+        note.className = "small";
+        note.innerHTML = `
+          Note: Some equations cannot be solved cleanly into explicit formulas by this app.
+          In that case, the original equation is still shown as the implicit solution form.
+        `;
+        results.appendChild(note);
+
+      } catch (err) {
+        results.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
