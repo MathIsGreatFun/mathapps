@@ -85,16 +85,6 @@
       background: #fafafa;
       border: 1px solid #ddd;
       border-radius: 8px;
-      min-height: 80px;
-      line-height: 1.5;
-    }
-
-    .section-title {
-      font-weight: bold;
-      margin-top: 6px;
-      margin-bottom: 10px;
-      color: #1f3b57;
-      font-size: 19px;
     }
 
     .math-row {
@@ -102,26 +92,13 @@
       border: 1px solid #ddd;
       border-radius: 6px;
       padding: 14px;
-      margin: 9px 0;
+      margin: 10px 0;
       overflow-x: auto;
-      font-size: 18px;
-    }
-
-    .small {
-      font-size: 14px;
-      color: #555;
-      margin-top: 10px;
     }
 
     .error {
       color: #a00000;
       font-weight: bold;
-    }
-
-    code {
-      background: #eee;
-      padding: 2px 5px;
-      border-radius: 4px;
     }
   </style>
 </head>
@@ -131,9 +108,8 @@
     <h1>Equation Solution Finder</h1>
 
     <div class="note">
-      Enter the expression from one side of an equation that is equal to <code>0</code>.
-      For example, to solve <code>3*x*(1 - x/3) - x*y = 0</code>, enter only
-      <code>3*x*(1 - x/3) - x*y</code>. Use explicit multiplication, such as <code>2*x</code>, not <code>2x</code>.
+      Enter only the expression equal to <code>0</code>. Use explicit multiplication such as
+      <code>2*x</code>, not <code>2x</code>.
     </div>
 
     <label for="expr">Expression equal to 0:</label>
@@ -145,26 +121,7 @@
   </div>
 
   <script>
-    function normalizeInput(s) {
-      s = s.trim();
-
-      if (s.includes("=")) {
-        throw new Error("Enter only the expression on one side of the equation. Do not include = 0.");
-      }
-
-      if (s.length === 0) {
-        throw new Error("Please enter an expression.");
-      }
-
-      return s;
-    }
-
     function renderMath(element, latex) {
-      if (typeof katex === "undefined") {
-        element.textContent = latex;
-        return;
-      }
-
       katex.render(latex, element, {
         throwOnError: false,
         displayMode: true
@@ -174,29 +131,33 @@
     function addMathRow(parent, latex) {
       const row = document.createElement("div");
       row.className = "math-row";
-      parent.appendChild(row);
       renderMath(row, latex);
+      parent.appendChild(row);
     }
 
     function toLatex(expr) {
-      try {
-        return nerdamer(expr).toTeX();
-      } catch (e) {
-        return String(expr);
+      return nerdamer(expr).toTeX();
+    }
+
+    function normalizeInput(s) {
+      s = s.trim();
+
+      if (s.includes("=")) {
+        throw new Error("Do not include the equals sign.");
       }
+
+      if (s.length === 0) {
+        throw new Error("Please enter an expression.");
+      }
+
+      return s;
     }
 
     function getVariables(expr) {
-      const found = new Set();
       const matches = expr.match(/[a-zA-Z]+/g) || [];
+      const bad = ["sqrt","sin","cos","tan","log","ln","exp","pi","e"];
 
-      matches.forEach(v => {
-        if (!["sqrt", "sin", "cos", "tan", "sec", "csc", "cot", "log", "ln", "exp", "pi", "e"].includes(v)) {
-          found.add(v);
-        }
-      });
-
-      return Array.from(found);
+      return [...new Set(matches.filter(v => !bad.includes(v)))];
     }
 
     function nerdamerArrayToStrings(sol) {
@@ -204,46 +165,15 @@
 
       if (Array.isArray(sol)) {
         arr = sol;
-      } else if (sol && typeof sol.each === "function") {
-        sol.each(function(value) {
-          arr.push(value);
-        });
-      } else if (sol) {
+      }
+      else if (sol && typeof sol.each === "function") {
+        sol.each(v => arr.push(v));
+      }
+      else if (sol) {
         arr = [sol];
       }
 
       return arr.map(v => String(v)).filter(v => v !== "");
-    }
-
-    function splitTopLevelFactors(factoredExpr) {
-      let s = String(factoredExpr).trim();
-
-      // Remove unnecessary outer parentheses around the entire expression.
-      while (s.startsWith("(") && s.endsWith(")") && matchingOuterParens(s)) {
-        s = s.slice(1, -1).trim();
-      }
-
-      const factors = [];
-      let current = "";
-      let depth = 0;
-
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-
-        if (ch === "(") depth++;
-        if (ch === ")") depth--;
-
-        if (ch === "*" && depth === 0) {
-          if (current.trim()) factors.push(current.trim());
-          current = "";
-        } else {
-          current += ch;
-        }
-      }
-
-      if (current.trim()) factors.push(current.trim());
-
-      return factors.length ? factors : [s];
     }
 
     function matchingOuterParens(s) {
@@ -258,42 +188,69 @@
         }
       }
 
-      return depth === 0;
+      return true;
+    }
+
+    function splitTopLevelFactors(expr) {
+      let s = expr.trim();
+
+      while (s.startsWith("(") && s.endsWith(")") && matchingOuterParens(s)) {
+        s = s.slice(1, -1).trim();
+      }
+
+      let depth = 0;
+      let current = "";
+      const factors = [];
+
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+
+        if (ch === "(") depth++;
+        if (ch === ")") depth--;
+
+        if (ch === "*" && depth === 0) {
+          if (current.trim()) factors.push(current.trim());
+          current = "";
+        }
+        else {
+          current += ch;
+        }
+      }
+
+      if (current.trim()) factors.push(current.trim());
+
+      return factors;
     }
 
     function stripNumericFactor(factor) {
-      const f = factor.trim();
+      if (/^-?\d+(\.\d+)?$/.test(factor)) return null;
+      return factor;
+    }
 
-      if (/^-?\d+(\.\d+)?$/.test(f)) return null;
-      if (/^-?\d+\/\d+$/.test(f)) return null;
-
-      return f;
+    function complexity(expr) {
+      return expr.length;
     }
 
     function solveFactor(factor) {
-      const variables = getVariables(factor);
-      const answers = [];
+      const vars = getVariables(factor);
 
-      if (variables.length === 0) return answers;
+      if (vars.length === 0) return [];
 
-      // Prefer simple constant branches like x = 0.
-      for (const v of variables) {
-        try {
-          const sol = nerdamer.solve(factor, v);
-          const sols = nerdamerArrayToStrings(sol);
+      const preferred = vars.includes("y") ? "y" : vars[0];
 
-          sols.forEach(s => {
-            if (s !== "" && s !== "[]" && s !== "undefined") {
-              answers.push({
-                variable: v,
-                expression: s
-              });
-            }
-          });
-        } catch (e) {}
+      try {
+        const sols = nerdamerArrayToStrings(
+          nerdamer.solve(factor, preferred)
+        );
+
+        return sols.map(s => ({
+          variable: preferred,
+          expression: s
+        }));
       }
-
-      return answers;
+      catch (e) {
+        return [];
+      }
     }
 
     function uniqueSolutions(solutions) {
@@ -317,41 +274,42 @@
       results.innerHTML = "";
 
       try {
-        if (typeof nerdamer === "undefined") {
-          throw new Error("The algebra engine did not load. Check that the CDN scripts are not being blocked.");
-        }
+        const expr = normalizeInput(
+          document.getElementById("expr").value
+        );
 
-        const expr = normalizeInput(document.getElementById("expr").value);
         nerdamer(expr);
 
-        const title = document.createElement("div");
-        title.className = "section-title";
-        title.textContent = "Solutions:";
-        results.appendChild(title);
-
         const factored = String(nerdamer.factor(expr));
-        const rawFactors = splitTopLevelFactors(factored);
-        const factors = rawFactors.map(stripNumericFactor).filter(Boolean);
 
-        let allSolutions = [];
+        const factors = splitTopLevelFactors(factored)
+          .map(stripNumericFactor)
+          .filter(Boolean);
 
-        factors.forEach(factor => {
-          allSolutions = allSolutions.concat(solveFactor(factor));
+        let solutions = [];
+
+        factors.forEach(f => {
+          solutions = solutions.concat(solveFactor(f));
         });
 
-        allSolutions = uniqueSolutions(allSolutions);
+        solutions = uniqueSolutions(solutions);
 
-        if (allSolutions.length === 0) {
-          addMathRow(results, "\\text{No explicit solution found by this app.}");
+        if (solutions.length === 0) {
+          addMathRow(results, "\\text{No explicit solution found.}");
           return;
         }
 
-        allSolutions.forEach(sol => {
-          addMathRow(results, sol.variable + " = " + toLatex(sol.expression));
+        solutions.forEach(sol => {
+          addMathRow(
+            results,
+            sol.variable + "=" + toLatex(sol.expression)
+          );
         });
 
-      } catch (err) {
-        results.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+      }
+      catch (err) {
+        results.innerHTML =
+          '<div class="error">Error: ' + err.message + '</div>';
       }
     }
   </script>
