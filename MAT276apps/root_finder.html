@@ -5,9 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Root Finder</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <!-- KaTeX -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+  >
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js">
+  </script>
 
+  <!-- Nerdamer -->
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/nerdamer.core.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Algebra.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/nerdamer@1.1.13/Calculus.min.js"></script>
@@ -28,7 +36,7 @@
       background: white;
       padding: 28px;
       border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
 
     h1 {
@@ -79,6 +87,11 @@
       background: #184b7d;
     }
 
+    button:disabled {
+      background: #8aa5bf;
+      cursor: default;
+    }
+
     #results {
       margin-top: 24px;
       padding: 18px;
@@ -112,6 +125,7 @@
     .error {
       color: #a00000;
       font-weight: bold;
+      line-height: 1.5;
     }
 
     code {
@@ -123,225 +137,643 @@
 </head>
 
 <body>
+
   <div class="container">
+
     <h1>Root Finder</h1>
 
     <div class="note">
-      Enter only the expression equal to <code>0</code>. Use explicit multiplication, such as
-      <code>2*x</code>, not <code>2x</code>.
+      Enter only the expression equal to <code>0</code>.
+      Use explicit multiplication, such as
+      <code>2*x</code>, <code>x*y</code>, or
+      <code>x*(y+1)</code>.
     </div>
 
-    <div style="display:flex; align-items:center; gap:10px; margin-top:16px;">
-  <label for="expr" style="margin:0; font-size:28px; font-weight:bold;">
-    0 =
-  </label>
+    <div
+      style="
+        display:flex;
+        align-items:center;
+        gap:10px;
+        margin-top:16px;
+      "
+    >
 
-  <input
-    id="expr"
-    maxlength="30"
-    style="
-      width: 320px;
-      font-size: 18px;
-      padding: 10px;
-    "
-    value="2*(1-x/2)-x*y"
-  />
-</div>
+      <label
+        for="expr"
+        style="
+          margin:0;
+          font-size:28px;
+          font-weight:bold;
+        "
+      >
+        0 =
+      </label>
 
-    <button onclick="solveEquation()">Solve Equation</button>
+      <input
+        id="expr"
+        maxlength="30"
+        style="
+          width:320px;
+          font-size:18px;
+          padding:10px;
+        "
+        value="2*x*(1-x/2)-x*y"
+      />
 
-    <div id="results">Solutions will appear here.</div>
+    </div>
+
+    <button id="solveButton" onclick="solveEquation()">
+      Solve Equation
+    </button>
+
+    <div id="results">
+      Solutions will appear here.
+    </div>
+
   </div>
 
-  <script>
-    function normalizeInput(s) {
-      s = s.trim();
 
-      if (s.includes("=")) {
-        throw new Error("Enter only the expression on one side. Do not include = 0.");
-      }
+  <script>
+
+    /* ---------------------------------------------------------
+       INPUT VALIDATION
+       --------------------------------------------------------- */
+
+    function normalizeInput(s) {
+
+      s = s.trim();
 
       if (s.length === 0) {
         throw new Error("Please enter an expression.");
       }
 
+      if (s.includes("=")) {
+        throw new Error(
+          "Enter only the expression on one side. Do not include = 0."
+        );
+      }
+
+      /*
+        Detect missing multiplication signs before Nerdamer
+        receives the expression.
+
+        Examples caught:
+
+        2x
+        3y
+        xy
+        yx
+        x(y+1)
+        2(x+1)
+        (x+1)y
+        (x+1)(y-1)
+      */
+
+      const implicitMultiplicationPatterns = [
+
+        // Number followed by x, y, or (
+        /\d\s*[xy(]/i,
+
+        // x or y followed by x or y
+        /[xy]\s*[xy]/i,
+
+        // x or y followed by (
+        /[xy]\s*\(/i,
+
+        // ) followed by x or y
+        /\)\s*[xy]/i,
+
+        // ) followed by (
+        /\)\s*\(/,
+
+        // ) followed by number
+        /\)\s*\d/
+
+      ];
+
+      for (const pattern of implicitMultiplicationPatterns) {
+
+        if (pattern.test(s)) {
+
+          throw new Error(
+            "Multiplication must be written explicitly using *. " +
+            "For example, enter 2*x instead of 2x, " +
+            "x*y instead of xy, and x*(y+1) instead of x(y+1)."
+          );
+
+        }
+
+      }
+
       return s;
     }
 
+
+    /* ---------------------------------------------------------
+       DISPLAY FUNCTIONS
+       --------------------------------------------------------- */
+
     function renderMath(element, latex) {
+
       if (typeof katex === "undefined") {
         element.textContent = latex;
         return;
       }
 
-      katex.render(latex, element, {
-        throwOnError: false,
-        displayMode: true
-      });
+      katex.render(
+        latex,
+        element,
+        {
+          throwOnError: false,
+          displayMode: true
+        }
+      );
     }
 
+
     function addMathRow(parent, latex) {
+
       const row = document.createElement("div");
+
       row.className = "math-row";
+
       parent.appendChild(row);
+
       renderMath(row, latex);
     }
 
+
     function toLatex(expr) {
+
       try {
         return nerdamer(expr).toTeX();
-      } catch (e) {
+      }
+      catch (e) {
         return String(expr);
       }
+
     }
 
+
+    /* ---------------------------------------------------------
+       NERDAMER HELPERS
+       --------------------------------------------------------- */
+
     function nerdamerArrayToStrings(sol) {
+
       let arr = [];
 
       if (Array.isArray(sol)) {
+
         arr = sol;
+
       }
       else if (sol && typeof sol.each === "function") {
+
         sol.each(v => arr.push(v));
+
       }
       else if (sol) {
+
         arr = [sol];
+
       }
 
-      return arr.map(v => String(v)).filter(v => v !== "");
+      return arr
+        .map(v => String(v))
+        .filter(v => v !== "");
     }
+
 
     function simplifyText(expr) {
+
       try {
-        return String(nerdamer(expr).expand().simplify());
-      } catch (e) {
-        return String(expr);
+
+        return String(
+          nerdamer(expr)
+            .expand()
+            .simplify()
+        );
+
       }
+      catch (e) {
+
+        return String(expr);
+
+      }
+
     }
 
-    function isZeroExpression(expr) {
-      try {
-        const s = String(nerdamer(expr).expand().simplify());
-        return s === "0";
-      } catch (e) {
-        return false;
-      }
-    }
 
     function solveFor(expr, variable) {
+
       try {
-        return nerdamerArrayToStrings(nerdamer.solve(expr, variable));
-      } catch (e) {
-        return [];
+
+        return nerdamerArrayToStrings(
+          nerdamer.solve(expr, variable)
+        );
+
       }
+      catch (e) {
+
+        return [];
+
+      }
+
     }
 
-    function getCandidateConstantBranches(expr, variable) {
-      const candidates = solveFor(expr, variable);
-      const output = [];
-
-      candidates.forEach(c => {
-        if (c.includes("x") || c.includes("y")) return;
-
-        const substituted = expr.replaceAll(variable, "(" + c + ")");
-
-        if (isZeroExpression(substituted)) {
-          output.push({
-            variable: variable,
-            expression: c
-          });
-        }
-      });
-
-      return output;
-    }
 
     function hasVariable(expr, variable) {
-      const regex = new RegExp("(^|[^a-zA-Z])" + variable + "([^a-zA-Z]|$)");
-      return regex.test(expr);
+
+      try {
+
+        const vars = nerdamer(expr).variables();
+
+        return vars.includes(variable);
+
+      }
+      catch (e) {
+
+        return false;
+
+      }
+
     }
 
-    function uniqueByLatex(solutions) {
+
+    /*
+      Determine whether a solution expression contains
+      either x or y.
+
+      Example:
+
+          x = 0
+
+      is a constant branch.
+
+      But
+
+          x = 2-y
+
+      is not a constant branch.
+    */
+
+    function containsXY(expr) {
+
+      try {
+
+        const vars = nerdamer(expr).variables();
+
+        return (
+          vars.includes("x") ||
+          vars.includes("y")
+        );
+
+      }
+      catch (e) {
+
+        return true;
+
+      }
+
+    }
+
+
+    /* ---------------------------------------------------------
+       REMOVE DUPLICATES
+       --------------------------------------------------------- */
+
+    function uniqueSolutions(solutions) {
+
       const seen = new Set();
+
       const output = [];
 
       solutions.forEach(sol => {
-        const key = sol.variable + "=" + simplifyText(sol.expression);
+
+        const simplified =
+          simplifyText(sol.expression);
+
+        const key =
+          sol.variable + "=" + simplified;
 
         if (!seen.has(key)) {
+
           seen.add(key);
-          output.push(sol);
+
+          output.push({
+            variable: sol.variable,
+            expression: simplified
+          });
+
         }
+
       });
 
       return output;
     }
 
-    function solveEquation() {
-      const results = document.getElementById("results");
-      results.innerHTML = "";
+
+    /* ---------------------------------------------------------
+       SOLVER
+       --------------------------------------------------------- */
+
+    function performSolve() {
+
+      const results =
+        document.getElementById("results");
+
+      const button =
+        document.getElementById("solveButton");
 
       try {
+
         if (typeof nerdamer === "undefined") {
-          throw new Error("The algebra engine did not load. Check whether CDN scripts are blocked.");
+
+          throw new Error(
+            "The algebra engine did not load. " +
+            "Check whether CDN scripts are blocked."
+          );
+
         }
 
-        const expr = normalizeInput(document.getElementById("expr").value);
+
+        const expr =
+          normalizeInput(
+            document.getElementById("expr").value
+          );
+
+
+        /*
+          Ask Nerdamer to parse the expression now,
+          after our own validation has finished.
+        */
+
         nerdamer(expr);
 
-        const title = document.createElement("div");
+
+        results.innerHTML = "";
+
+
+        const title =
+          document.createElement("div");
+
         title.className = "section-title";
+
         title.textContent = "Solutions:";
+
         results.appendChild(title);
+
 
         let solutions = [];
 
-        // Verified special branches only.
-        solutions = solutions.concat(getCandidateConstantBranches(expr, "x"));
-        solutions = solutions.concat(getCandidateConstantBranches(expr, "y"));
 
-        // Main explicit solution form.
-        if (hasVariable(expr, "y")) {
-          const ySolutions = solveFor(expr, "y");
+        const hasX = hasVariable(expr, "x");
+        const hasY = hasVariable(expr, "y");
+
+
+        /*
+          If both x and y occur, we use y as the main
+          dependent variable.
+
+          Example:
+
+              x(2-x-y) = 0
+
+          Solving for y gives:
+
+              y = 2-x
+
+          However, solving for y requires division by x,
+          which loses the special branch x = 0.
+
+          Therefore we ALSO solve for x and retain only
+          x-solutions that are constants.
+
+          This recovers x = 0 without incorrectly adding
+          things such as y = 0.
+        */
+
+        if (hasX && hasY) {
+
+          /* ----- Special constant x branches ----- */
+
+          const xSolutions =
+            solveFor(expr, "x");
+
+          xSolutions.forEach(s => {
+
+            if (!containsXY(s)) {
+
+              solutions.push({
+                variable: "x",
+                expression: s
+              });
+
+            }
+
+          });
+
+
+          /* ----- Main y solution(s) ----- */
+
+          const ySolutions =
+            solveFor(expr, "y");
 
           ySolutions.forEach(s => {
+
             solutions.push({
               variable: "y",
               expression: s
             });
+
           });
+
         }
-        else if (hasVariable(expr, "x")) {
-          const xSolutions = solveFor(expr, "x");
+
+
+        /*
+          Equation contains only x.
+        */
+
+        else if (hasX) {
+
+          const xSolutions =
+            solveFor(expr, "x");
 
           xSolutions.forEach(s => {
+
             solutions.push({
               variable: "x",
               expression: s
             });
+
           });
+
         }
 
-        solutions = uniqueByLatex(solutions);
+
+        /*
+          Equation contains only y.
+        */
+
+        else if (hasY) {
+
+          const ySolutions =
+            solveFor(expr, "y");
+
+          ySolutions.forEach(s => {
+
+            solutions.push({
+              variable: "y",
+              expression: s
+            });
+
+          });
+
+        }
+
+
+        else {
+
+          throw new Error(
+            "The expression must contain x or y."
+          );
+
+        }
+
+
+        solutions =
+          uniqueSolutions(solutions);
+
 
         if (solutions.length === 0) {
-          addMathRow(results, "\\text{No explicit solution found.}");
+
+          addMathRow(
+            results,
+            "\\text{No explicit solution found.}"
+          );
+
           return;
         }
 
+
         solutions.forEach(sol => {
-          addMathRow(results, sol.variable + "=" + toLatex(sol.expression));
+
+          addMathRow(
+            results,
+            sol.variable +
+            "=" +
+            toLatex(sol.expression)
+          );
+
         });
 
-        const note = document.createElement("div");
-        note.className = "small";
-        note.textContent = "";
-        results.appendChild(note);
-
-      } catch (err) {
-        results.innerHTML = '<div class="error">Error: ' + err.message + '</div>';
       }
+      catch (err) {
+
+        results.innerHTML =
+          '<div class="error">Error: ' +
+          err.message +
+          '</div>';
+
+      }
+      finally {
+
+        button.disabled = false;
+
+        button.textContent =
+          "Solve Equation";
+
+      }
+
     }
+
+
+    /* ---------------------------------------------------------
+       BUTTON HANDLER
+       --------------------------------------------------------- */
+
+    function solveEquation() {
+
+      const results =
+        document.getElementById("results");
+
+      const button =
+        document.getElementById("solveButton");
+
+
+      /*
+        Validate BEFORE handing anything to Nerdamer.
+
+        This is important because malformed expressions
+        involving implicit multiplication can make the
+        algebra engine appear to hang.
+      */
+
+      try {
+
+        normalizeInput(
+          document.getElementById("expr").value
+        );
+
+      }
+      catch (err) {
+
+        results.innerHTML =
+          '<div class="error">Error: ' +
+          err.message +
+          '</div>';
+
+        return;
+
+      }
+
+
+      button.disabled = true;
+
+      button.textContent =
+        "Solving...";
+
+      results.innerHTML =
+        '<div class="small">Solving equation...</div>';
+
+
+      /*
+        The short delay lets the browser update the
+        "Solving..." message before Nerdamer starts.
+      */
+
+      setTimeout(
+        performSolve,
+        25
+      );
+
+    }
+
+
+    /* ---------------------------------------------------------
+       ALLOW ENTER KEY
+       --------------------------------------------------------- */
+
+    document
+      .getElementById("expr")
+      .addEventListener(
+        "keydown",
+        function(event) {
+
+          if (event.key === "Enter") {
+
+            event.preventDefault();
+
+            solveEquation();
+
+          }
+
+        }
+      );
+
   </script>
+
 </body>
 </html>
