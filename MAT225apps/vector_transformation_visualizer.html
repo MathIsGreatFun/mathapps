@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2D Linear Transformation Visualizer</title>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --panel: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --grid: #e5e7eb;
+    --axis: #4b5563;
+    --xvec: #2563eb;
+    --axvec: #dc2626;
+    --button: #111827;
+    --buttonText: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .wrap {
+    max-width: 1050px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 1.9rem;
+  }
+
+  .subtitle {
+    margin: 0 0 22px;
+    color: var(--muted);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 330px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .section-title {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .vector-inputs,
+  .matrix {
+    display: grid;
+    gap: 10px;
+  }
+
+  .vector-inputs {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .matrix {
+    grid-template-columns: 1fr 1fr;
+    width: 190px;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+
+  input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 10px;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: #fff;
+  }
+
+  input:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #60a5fa;
+  }
+
+  .spacer { height: 18px; }
+
+  button {
+    width: 100%;
+    margin-top: 18px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--button);
+    color: var(--buttonText);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button:hover { opacity: .92; }
+
+  .results {
+    margin-top: 18px;
+    line-height: 1.7;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .column-vector {
+    display: inline-grid;
+    grid-template-columns: auto;
+    position: relative;
+    padding: 2px 10px;
+    line-height: 1.2;
+    text-align: center;
+    min-width: 48px;
+  }
+
+  .column-vector::before,
+  .column-vector::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 7px;
+  }
+
+  .column-vector::before,
+  .column-vector::after {
+    top: -2px;
+    bottom: -2px;
+    width: 10px;
+    border: 2px solid currentColor;
+  }
+
+  .column-vector::before {
+    left: 0;
+    border-right: 0;
+    border-radius: 50% 0 0 50%;
+  }
+
+  .column-vector::after {
+    right: 0;
+    border-left: 0;
+    border-radius: 0 50% 50% 0;
+  }
+
+  .column-vector span {
+    display: block;
+    padding: 1px 4px;
+  }
+
+  .blue { color: var(--xvec); font-weight: 700; }
+  .red { color: var(--axvec); font-weight: 700; }
+
+  .plot-card {
+    padding: 14px;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border-radius: 10px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 12px;
+    font-size: .95rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .swatch {
+    width: 18px;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .note {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: .88rem;
+  }
+
+  .error {
+    min-height: 22px;
+    margin-top: 10px;
+    color: #b91c1c;
+    font-size: .9rem;
+  }
+
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>2D Linear Transformation Visualizer</h1>
+  <p class="subtitle">Enter a vector <strong>x</strong> and a 2×2 matrix <strong>A</strong>. The graph displays both <strong>x</strong> and its transformation <strong>Ax</strong>.</p>
+
+  <div class="layout">
+    <section class="card">
+      <h2 class="section-title">Vector x</h2>
+      <div class="vector-inputs">
+        <label>
+          x₁
+          <input id="x1" type="number" step="any" value="2">
+        </label>
+        <label>
+          x₂
+          <input id="x2" type="number" step="any" value="1">
+        </label>
+      </div>
+
+      <div class="spacer"></div>
+
+      <h2 class="section-title">Matrix A</h2>
+      <div class="matrix">
+        <label>
+          a₁₁
+          <input id="a11" type="number" step="any" value="1">
+        </label>
+        <label>
+          a₁₂
+          <input id="a12" type="number" step="any" value="1">
+        </label>
+        <label>
+          a₂₁
+          <input id="a21" type="number" step="any" value="0">
+        </label>
+        <label>
+          a₂₂
+          <input id="a22" type="number" step="any" value="2">
+        </label>
+      </div>
+
+      <button id="plotBtn" type="button">Plot Transformation</button>
+      <div id="error" class="error" aria-live="polite"></div>
+
+      <div class="results">
+        <div class="result-row">
+          <span class="blue">x</span>
+          <span id="xDisplay" class="column-vector"><span>2</span><span>1</span></span>
+        </div>
+        <div class="result-row">
+          <span class="red">Ax</span>
+          <span id="axDisplay" class="column-vector"><span>3</span><span>2</span></span>
+        </div>
+      </div>
+
+      <p class="note">Tip: You can also press Enter after changing any input.</p>
+    </section>
+
+    <section class="card plot-card">
+      <svg id="plot" viewBox="0 0 700 700" role="img" aria-label="Coordinate plane showing x and Ax">
+        <defs>
+          <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#2563eb"></path>
+          </marker>
+          <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#dc2626"></path>
+          </marker>
+        </defs>
+        <g id="gridLayer"></g>
+        <g id="axisLayer"></g>
+        <g id="vectorLayer"></g>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="swatch" style="background:#2563eb"></span>
+          <span><strong>x</strong></span>
+        </div>
+        <div class="legend-item">
+          <span class="swatch" style="background:#dc2626"></span>
+          <span><strong>Ax</strong></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const ids = ["x1","x2","a11","a12","a21","a22"];
+  const inputs = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+  const plotBtn = document.getElementById("plotBtn");
+  const error = document.getElementById("error");
+  const xDisplay = document.getElementById("xDisplay");
+  const axDisplay = document.getElementById("axDisplay");
+  const gridLayer = document.getElementById("gridLayer");
+  const axisLayer = document.getElementById("axisLayer");
+  const vectorLayer = document.getElementById("vectorLayer");
+
+  const W = 700;
+  const H = 700;
+  const cx = W / 2;
+  const cy = H / 2;
+
+  function svgEl(tag, attrs = {}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  function fmt(n) {
+    const rounded = Math.abs(n) < 1e-10 ? 0 : n;
+    return Number.isInteger(rounded) ? String(rounded) : String(Number(rounded.toFixed(3)));
+  }
+
+  function readValues() {
+    const vals = {};
+    for (const id of ids) {
+      const v = Number(inputs[id].value);
+      if (!Number.isFinite(v)) throw new Error("Please enter a valid number in every box.");
+      vals[id] = v;
+    }
+    return vals;
+  }
+
+  function chooseScale(x, y) {
+    const maxAbs = Math.max(1, Math.abs(x[0]), Math.abs(x[1]), Math.abs(y[0]), Math.abs(y[1]));
+    const targetHalfUnits = maxAbs * 1.25;
+    const rawStep = targetHalfUnits / 5;
+
+    const power = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const normalized = rawStep / power;
+    let nice;
+    if (normalized <= 1) nice = 1;
+    else if (normalized <= 2) nice = 2;
+    else if (normalized <= 5) nice = 5;
+    else nice = 10;
+
+    const gridStep = nice * power;
+    const halfRange = gridStep * 5;
+    const pxPerUnit = (W * 0.42) / halfRange;
+
+    return { gridStep, halfRange, pxPerUnit };
+  }
+
+  function draw(x, y) {
+    gridLayer.replaceChildren();
+    axisLayer.replaceChildren();
+    vectorLayer.replaceChildren();
+
+    const { gridStep, halfRange, pxPerUnit } = chooseScale(x, y);
+
+    const toX = v => cx + v * pxPerUnit;
+    const toY = v => cy - v * pxPerUnit;
+
+    // Grid
+    for (let k = -5; k <= 5; k++) {
+      const val = k * gridStep;
+      const px = toX(val);
+      const py = toY(val);
+
+      if (k !== 0) {
+        gridLayer.appendChild(svgEl("line", {
+          x1: px, y1: 25, x2: px, y2: H - 25,
+          stroke: "#e5e7eb", "stroke-width": 1
+        }));
+        gridLayer.appendChild(svgEl("line", {
+          x1: 25, y1: py, x2: W - 25, y2: py,
+          stroke: "#e5e7eb", "stroke-width": 1
+        }));
+
+        const tx = svgEl("text", {
+          x: px, y: cy + 22,
+          "text-anchor": "middle",
+          "font-size": 14,
+          fill: "#6b7280"
+        });
+        tx.textContent = fmt(val);
+        gridLayer.appendChild(tx);
+
+        const ty = svgEl("text", {
+          x: cx + 8, y: py + 5,
+          "font-size": 14,
+          fill: "#6b7280"
+        });
+        ty.textContent = fmt(val);
+        gridLayer.appendChild(ty);
+      }
+    }
+
+    // Axes
+    axisLayer.appendChild(svgEl("line", {
+      x1: 25, y1: cy, x2: W - 25, y2: cy,
+      stroke: "#4b5563", "stroke-width": 2
+    }));
+    axisLayer.appendChild(svgEl("line", {
+      x1: cx, y1: H - 25, x2: cx, y2: 25,
+      stroke: "#4b5563", "stroke-width": 2
+    }));
+
+    // x-axis arrowheads
+    axisLayer.appendChild(svgEl("path", {
+      d: `M ${W-25} ${cy} l -10 -5 l 0 10 z`,
+      fill: "#4b5563"
+    }));
+    axisLayer.appendChild(svgEl("path", {
+      d: `M ${cx} 25 l -5 10 l 10 0 z`,
+      fill: "#4b5563"
+    }));
+
+    const xAxisLabel = svgEl("text", {
+      x: W - 40, y: cy - 12, "font-size": 16, fill: "#374151"
+    });
+    xAxisLabel.textContent = "x₁";
+    axisLayer.appendChild(xAxisLabel);
+
+    const yAxisLabel = svgEl("text", {
+      x: cx + 12, y: 42, "font-size": 16, fill: "#374151"
+    });
+    yAxisLabel.textContent = "x₂";
+    axisLayer.appendChild(yAxisLabel);
+
+    function addVector(vec, color, marker, label, labelDx, labelDy) {
+      const ex = toX(vec[0]);
+      const ey = toY(vec[1]);
+
+      vectorLayer.appendChild(svgEl("line", {
+        x1: cx, y1: cy, x2: ex, y2: ey,
+        stroke: color,
+        "stroke-width": 5,
+        "stroke-linecap": "round",
+        "marker-end": `url(#${marker})`
+      }));
+
+      vectorLayer.appendChild(svgEl("circle", {
+        cx: ex, cy: ey, r: 5.5, fill: color
+      }));
+
+      const text = svgEl("text", {
+        x: ex + labelDx,
+        y: ey + labelDy,
+        "font-size": 18,
+        "font-weight": 700,
+        fill: color
+      });
+      text.textContent = `${label} = ⟨${fmt(vec[0])}, ${fmt(vec[1])}⟩`;
+      vectorLayer.appendChild(text);
+    }
+
+    addVector(x, "#2563eb", "arrowBlue", "x", 12, -12);
+    addVector(y, "#dc2626", "arrowRed", "Ax", 12, 24);
+  }
+
+  function update() {
+    try {
+      const v = readValues();
+      error.textContent = "";
+
+      const x = [v.x1, v.x2];
+      const y = [
+        v.a11 * v.x1 + v.a12 * v.x2,
+        v.a21 * v.x1 + v.a22 * v.x2
+      ];
+
+      xDisplay.replaceChildren(
+        Object.assign(document.createElement("span"), { textContent: fmt(x[0]) }),
+        Object.assign(document.createElement("span"), { textContent: fmt(x[1]) })
+      );
+      axDisplay.replaceChildren(
+        Object.assign(document.createElement("span"), { textContent: fmt(y[0]) }),
+        Object.assign(document.createElement("span"), { textContent: fmt(y[1]) })
+      );
+
+      draw(x, y);
+    } catch (err) {
+      error.textContent = err.message;
+    }
+  }
+
+  plotBtn.addEventListener("click", update);
+
+  for (const input of Object.values(inputs)) {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") update();
+    });
+    input.addEventListener("input", update);
+  }
+
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>House Linear Transformation Visualizer</title>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --panel: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --grid: #e5e7eb;
+    --axis: #4b5563;
+    --original: #2563eb;
+    --transformed: #dc2626;
+    --button: #111827;
+    --buttonText: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 1.9rem;
+  }
+
+  .subtitle {
+    margin: 0 0 22px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .section-title {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 200px;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+
+  input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 10px;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: #fff;
+  }
+
+  input:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #60a5fa;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 18px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--button);
+    color: var(--buttonText);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  button:hover { opacity: .92; }
+
+  .preset-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .preset-row button {
+    margin: 0;
+    background: #eef2f7;
+    color: #111827;
+    border: 1px solid var(--border);
+    font-size: .9rem;
+  }
+
+  .house-points {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: .9rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .house-points strong {
+    color: var(--text);
+  }
+
+  .plot-card {
+    padding: 14px;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border-radius: 10px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 12px;
+    font-size: .95rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .swatch {
+    width: 18px;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  .error {
+    min-height: 22px;
+    margin-top: 10px;
+    color: #b91c1c;
+    font-size: .9rem;
+  }
+
+  .note {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: .88rem;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>House Linear Transformation Visualizer</h1>
+  <p class="subtitle">
+    Enter a 2×2 matrix <strong>A</strong>. The matrix is applied to every point of the house,
+    so the entire figure is transformed at once.
+  </p>
+
+  <div class="layout">
+    <section class="card">
+      <h2 class="section-title">Transformation Matrix A</h2>
+
+      <div class="matrix">
+        <label>
+          a₁₁
+          <input id="a11" type="number" step="any" value="1">
+        </label>
+        <label>
+          a₁₂
+          <input id="a12" type="number" step="any" value="0">
+        </label>
+        <label>
+          a₂₁
+          <input id="a21" type="number" step="any" value="0">
+        </label>
+        <label>
+          a₂₂
+          <input id="a22" type="number" step="any" value="1">
+        </label>
+      </div>
+
+      <button id="plotBtn" type="button">Apply Transformation</button>
+
+      <div class="preset-row">
+        <button type="button" data-matrix="1,0,0,1">Identity</button>
+        <button type="button" data-matrix="2,0,0,1">Horizontal Stretch</button>
+        <button type="button" data-matrix="1,1,0,1">Shear</button>
+        <button type="button" data-matrix="0,-1,1,0">Rotate 90°</button>
+      </div>
+
+      <div id="error" class="error" aria-live="polite"></div>
+
+      <div class="house-points">
+        <strong>House points:</strong><br>
+        P₁ = (-2, -2)<br>
+        P₂ = (2, -2)<br>
+        P₃ = (2, 2)<br>
+        P₄ = (-2, 2)<br>
+        P₅ = (0, 4) &nbsp; roof apex
+      </div>
+
+      <p class="note">
+        The square is formed by P₁–P₄, and the roof is formed by connecting P₄ → P₅ → P₃.
+      </p>
+    </section>
+
+    <section class="card plot-card">
+      <svg id="plot" viewBox="0 0 760 700" role="img" aria-label="Coordinate plane showing the original and transformed house">
+        <g id="gridLayer"></g>
+        <g id="axisLayer"></g>
+        <g id="houseLayer"></g>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="swatch" style="background:#2563eb"></span>
+          <span><strong>Original house</strong></span>
+        </div>
+        <div class="legend-item">
+          <span class="swatch" style="background:#dc2626"></span>
+          <span><strong>Transformed house</strong></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const inputs = {
+    a11: document.getElementById("a11"),
+    a12: document.getElementById("a12"),
+    a21: document.getElementById("a21"),
+    a22: document.getElementById("a22")
+  };
+
+  const plotBtn = document.getElementById("plotBtn");
+  const error = document.getElementById("error");
+  const gridLayer = document.getElementById("gridLayer");
+  const axisLayer = document.getElementById("axisLayer");
+  const houseLayer = document.getElementById("houseLayer");
+  const presetButtons = [...document.querySelectorAll("[data-matrix]")];
+
+  const W = 760;
+  const H = 700;
+  const cx = W / 2;
+  const cy = H / 2;
+
+  const originalPoints = [
+    [-2, -2], // P1
+    [ 2, -2], // P2
+    [ 2,  2], // P3
+    [-2,  2], // P4
+    [ 0,  4]  // P5 apex
+  ];
+
+  // Edges: square + roof
+  const edges = [
+    [0,1],
+    [1,2],
+    [2,3],
+    [3,0],
+    [3,4],
+    [4,2]
+  ];
+
+  function svgEl(tag, attrs = {}) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  function fmt(n) {
+    const rounded = Math.abs(n) < 1e-10 ? 0 : n;
+    return Number.isInteger(rounded) ? String(rounded) : String(Number(rounded.toFixed(3)));
+  }
+
+  function readMatrix() {
+    const vals = {};
+    for (const [id, input] of Object.entries(inputs)) {
+      const v = Number(input.value);
+      if (!Number.isFinite(v)) throw new Error("Please enter a valid number in every matrix box.");
+      vals[id] = v;
+    }
+    return [
+      [vals.a11, vals.a12],
+      [vals.a21, vals.a22]
+    ];
+  }
+
+  function transformPoint(A, p) {
+    return [
+      A[0][0] * p[0] + A[0][1] * p[1],
+      A[1][0] * p[0] + A[1][1] * p[1]
+    ];
+  }
+
+  function chooseScale(pointSets) {
+    let maxAbs = 1;
+    for (const set of pointSets) {
+      for (const p of set) {
+        maxAbs = Math.max(maxAbs, Math.abs(p[0]), Math.abs(p[1]));
+      }
+    }
+
+    const targetHalfUnits = maxAbs * 1.2;
+    const rawStep = targetHalfUnits / 5;
+
+    const power = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const normalized = rawStep / power;
+
+    let nice;
+    if (normalized <= 1) nice = 1;
+    else if (normalized <= 2) nice = 2;
+    else if (normalized <= 5) nice = 5;
+    else nice = 10;
+
+    const gridStep = nice * power;
+    const halfRange = gridStep * 5;
+    const pxPerUnit = Math.min(W, H) * 0.42 / halfRange;
+
+    return { gridStep, pxPerUnit };
+  }
+
+  function drawAxes(gridStep, pxPerUnit) {
+    gridLayer.replaceChildren();
+    axisLayer.replaceChildren();
+
+    const toX = x => cx + x * pxPerUnit;
+    const toY = y => cy - y * pxPerUnit;
+
+    for (let k = -5; k <= 5; k++) {
+      const val = k * gridStep;
+      const px = toX(val);
+      const py = toY(val);
+
+      if (k !== 0) {
+        gridLayer.appendChild(svgEl("line", {
+          x1: px, y1: 25, x2: px, y2: H - 25,
+          stroke: "#e5e7eb", "stroke-width": 1
+        }));
+
+        gridLayer.appendChild(svgEl("line", {
+          x1: 25, y1: py, x2: W - 25, y2: py,
+          stroke: "#e5e7eb", "stroke-width": 1
+        }));
+
+        const tx = svgEl("text", {
+          x: px, y: cy + 22,
+          "text-anchor": "middle",
+          "font-size": 14,
+          fill: "#6b7280"
+        });
+        tx.textContent = fmt(val);
+        gridLayer.appendChild(tx);
+
+        const ty = svgEl("text", {
+          x: cx + 8, y: py + 5,
+          "font-size": 14,
+          fill: "#6b7280"
+        });
+        ty.textContent = fmt(val);
+        gridLayer.appendChild(ty);
+      }
+    }
+
+    axisLayer.appendChild(svgEl("line", {
+      x1: 25, y1: cy, x2: W - 25, y2: cy,
+      stroke: "#4b5563", "stroke-width": 2
+    }));
+
+    axisLayer.appendChild(svgEl("line", {
+      x1: cx, y1: H - 25, x2: cx, y2: 25,
+      stroke: "#4b5563", "stroke-width": 2
+    }));
+
+    axisLayer.appendChild(svgEl("path", {
+      d: `M ${W-25} ${cy} l -10 -5 l 0 10 z`,
+      fill: "#4b5563"
+    }));
+
+    axisLayer.appendChild(svgEl("path", {
+      d: `M ${cx} 25 l -5 10 l 10 0 z`,
+      fill: "#4b5563"
+    }));
+
+    const xLabel = svgEl("text", {
+      x: W - 42, y: cy - 12, "font-size": 16, fill: "#374151"
+    });
+    xLabel.textContent = "x₁";
+    axisLayer.appendChild(xLabel);
+
+    const yLabel = svgEl("text", {
+      x: cx + 12, y: 42, "font-size": 16, fill: "#374151"
+    });
+    yLabel.textContent = "x₂";
+    axisLayer.appendChild(yLabel);
+  }
+
+  function drawHouse(points, color, pxPerUnit, opacity, labelPrefix) {
+    const toX = x => cx + x * pxPerUnit;
+    const toY = y => cy - y * pxPerUnit;
+
+    // Lines first
+    for (const [i, j] of edges) {
+      houseLayer.appendChild(svgEl("line", {
+        x1: toX(points[i][0]),
+        y1: toY(points[i][1]),
+        x2: toX(points[j][0]),
+        y2: toY(points[j][1]),
+        stroke: color,
+        "stroke-width": 4,
+        "stroke-linecap": "round",
+        opacity
+      }));
+    }
+
+    // Points and labels
+    points.forEach((p, index) => {
+      const px = toX(p[0]);
+      const py = toY(p[1]);
+
+      houseLayer.appendChild(svgEl("circle", {
+        cx: px,
+        cy: py,
+        r: 5,
+        fill: color,
+        opacity
+      }));
+
+      const label = svgEl("text", {
+        x: px + 8,
+        y: py - 8,
+        "font-size": 13,
+        "font-weight": 700,
+        fill: color,
+        opacity
+      });
+
+      label.textContent = `${labelPrefix}${index + 1}`;
+      houseLayer.appendChild(label);
+    });
+  }
+
+  function update() {
+    try {
+      const A = readMatrix();
+      error.textContent = "";
+
+      const transformed = originalPoints.map(p => transformPoint(A, p));
+      const { gridStep, pxPerUnit } = chooseScale([originalPoints, transformed]);
+
+      drawAxes(gridStep, pxPerUnit);
+      houseLayer.replaceChildren();
+
+      drawHouse(originalPoints, "#2563eb", pxPerUnit, 0.72, "P");
+      drawHouse(transformed, "#dc2626", pxPerUnit, 0.95, "AP");
+    } catch (err) {
+      error.textContent = err.message;
+    }
+  }
+
+  plotBtn.addEventListener("click", update);
+
+  for (const input of Object.values(inputs)) {
+    input.addEventListener("input", update);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") update();
+    });
+  }
+
+  for (const button of presetButtons) {
+    button.addEventListener("click", () => {
+      const [a11,a12,a21,a22] = button.dataset.matrix.split(",");
+      inputs.a11.value = a11;
+      inputs.a12.value = a12;
+      inputs.a21.value = a21;
+      inputs.a22.value = a22;
+      update();
+    });
+  }
+
+  update();
+})();
+</script>
+</body>
+</html>

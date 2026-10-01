@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R3 House Linear Transformation Visualizer</title>
+<style>
+:root{
+  --bg:#f6f7fb;--panel:#fff;--text:#1f2937;--muted:#6b7280;--border:#d1d5db;
+  --axis:#4b5563;--grid:#eceff3;--original:#2563eb;--transformed:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:1180px;margin:0 auto;padding:24px}
+h1{margin:0 0 8px;font-size:1.9rem}
+.subtitle{margin:0 0 22px;color:var(--muted);line-height:1.45}
+.layout{display:grid;grid-template-columns:350px 1fr;gap:20px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+.section-title{margin:0 0 12px;font-size:1.05rem;font-weight:700}
+.matrix{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+label{display:flex;flex-direction:column;gap:5px;font-size:.88rem;color:var(--muted)}
+input{width:100%;min-height:42px;padding:8px 10px;font-size:1rem;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}
+input:focus{outline:2px solid #93c5fd;border-color:#60a5fa}
+button{width:100%;margin-top:18px;min-height:44px;border:0;border-radius:9px;background:#111827;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+button:hover{opacity:.92}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.presets button{margin:0;background:#eef2f7;color:#111827;border:1px solid var(--border);font-size:.88rem}
+.info{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:.88rem;line-height:1.45;color:var(--muted)}
+.info strong{color:var(--text)}
+.note{margin-top:12px;color:var(--muted);font-size:.88rem;line-height:1.4}
+.error{min-height:22px;margin-top:10px;color:#b91c1c;font-size:.9rem}
+.plot-card{padding:14px}
+svg{width:100%;height:auto;display:block;background:#fff;border-radius:10px;cursor:grab;touch-action:none;user-select:none}
+svg.dragging{cursor:grabbing}
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:12px;font-size:.95rem}
+.legend-item{display:flex;align-items:center;gap:7px}
+.swatch{width:18px;height:4px;border-radius:2px}
+@media(max-width:840px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>3D House Linear Transformation Visualizer</h1>
+  <p class="subtitle">Enter a 3×3 matrix <strong>A</strong>. The same matrix is applied to every vertex of the house in ℝ³.</p>
+
+  <div class="layout">
+    <section class="card">
+      <h2 class="section-title">Transformation Matrix A</h2>
+      <div class="matrix">
+        <label>a₁₁<input id="a11" type="number" step="any" value="1"></label>
+        <label>a₁₂<input id="a12" type="number" step="any" value="0"></label>
+        <label>a₁₃<input id="a13" type="number" step="any" value="0"></label>
+
+        <label>a₂₁<input id="a21" type="number" step="any" value="0"></label>
+        <label>a₂₂<input id="a22" type="number" step="any" value="1"></label>
+        <label>a₂₃<input id="a23" type="number" step="any" value="0"></label>
+
+        <label>a₃₁<input id="a31" type="number" step="any" value="0"></label>
+        <label>a₃₂<input id="a32" type="number" step="any" value="0"></label>
+        <label>a₃₃<input id="a33" type="number" step="any" value="1"></label>
+      </div>
+
+      <button id="applyBtn" type="button">Apply Transformation</button>
+
+      <div class="presets">
+        <button type="button" data-m="1,0,0,0,1,0,0,0,1">Identity</button>
+        <button type="button" data-m="2,0,0,0,1,0,0,0,1">Stretch x₁</button>
+        <button type="button" data-m="1,0.7,0,0,1,0,0,0,1">Shear</button>
+        <button type="button" data-m="0,-1,0,1,0,0,0,0,1">Rotate in x₁x₂</button>
+      </div>
+
+      <div id="error" class="error" aria-live="polite"></div>
+
+      <div class="info">
+        <strong>House construction:</strong><br>
+        8 vertices form the rectangular walls.<br>
+        2 more vertices form the roof ridge.<br>
+        All 10 vertices are transformed by the same matrix.
+      </div>
+
+      <p class="note">Click and drag the graph to rotate the 3D view.</p>
+    </section>
+
+    <section class="card plot-card">
+      <svg id="plot" viewBox="0 0 780 720" role="img" aria-label="Rotatable 3D graph showing original and transformed houses">
+        <g id="gridLayer"></g>
+        <g id="axisLayer"></g>
+        <g id="houseLayer"></g>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch" style="background:#2563eb"></span><strong>Original house</strong></div>
+        <div class="legend-item"><span class="swatch" style="background:#dc2626"></span><strong>Transformed house</strong></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const ids=["a11","a12","a13","a21","a22","a23","a31","a32","a33"];
+  const inputs=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)]));
+  const applyBtn=document.getElementById("applyBtn");
+  const plot=document.getElementById("plot");
+  const error=document.getElementById("error");
+  const gridLayer=document.getElementById("gridLayer");
+  const axisLayer=document.getElementById("axisLayer");
+  const houseLayer=document.getElementById("houseLayer");
+  const presetButtons=[...document.querySelectorAll("[data-m]")];
+
+  const W=780,H=720,cx=W/2,cy=H/2+30;
+
+  const originalPoints=[
+    [-2,-2,-2],[2,-2,-2],[2,2,-2],[-2,2,-2],
+    [-2,-2,1],[2,-2,1],[2,2,1],[-2,2,1],
+    [0,-2,3],[0,2,3]
+  ];
+
+  const edges=[
+    [0,1],[1,2],[2,3],[3,0],
+    [0,4],[1,5],[2,6],[3,7],
+    [4,5],[5,6],[6,7],[7,4],
+    [4,8],[5,8],[7,9],[6,9],[8,9]
+  ];
+
+  let yaw=-0.72,pitch=0.55;
+  let transformed=originalPoints.map(p=>[...p]);
+  let gridStep=1,scale=48;
+
+  function svgEl(tag,attrs={}){
+    const el=document.createElementNS("http://www.w3.org/2000/svg",tag);
+    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+    return el;
+  }
+
+  function readMatrix(){
+    const v={};
+    for(const id of ids){
+      const n=Number(inputs[id].value);
+      if(!Number.isFinite(n)) throw new Error("Please enter a valid number in every matrix box.");
+      v[id]=n;
+    }
+    return [
+      [v.a11,v.a12,v.a13],
+      [v.a21,v.a22,v.a23],
+      [v.a31,v.a32,v.a33]
+    ];
+  }
+
+  function transformPoint(A,p){
+    return [
+      A[0][0]*p[0]+A[0][1]*p[1]+A[0][2]*p[2],
+      A[1][0]*p[0]+A[1][1]*p[1]+A[1][2]*p[2],
+      A[2][0]*p[0]+A[2][1]*p[1]+A[2][2]*p[2]
+    ];
+  }
+
+  function chooseScale(sets){
+    let m=1;
+    for(const set of sets) for(const p of set) for(const c of p) m=Math.max(m,Math.abs(c));
+    const target=m*1.35, raw=target/4;
+    const power=Math.pow(10,Math.floor(Math.log10(raw)));
+    const normalized=raw/power;
+    let nice=normalized<=1?1:normalized<=2?2:normalized<=5?5:10;
+    const step=nice*power;
+    return {gridStep:step,scale:245/(step*4)};
+  }
+
+  function rotatePoint([x,y,z]){
+    const cyaw=Math.cos(yaw),syaw=Math.sin(yaw);
+    const x1=x*cyaw-y*syaw;
+    const y1=x*syaw+y*cyaw;
+    const z1=z;
+    const cp=Math.cos(pitch),sp=Math.sin(pitch);
+    return [x1,y1*cp-z1*sp,y1*sp+z1*cp];
+  }
+
+  function project(v){
+    const [rx,ry,rz]=rotatePoint(v);
+    return [cx+scale*rx,cy-scale*rz];
+  }
+
+  function drawAxes(){
+    gridLayer.replaceChildren();
+    axisLayer.replaceChildren();
+
+    for(let k=-4;k<=4;k++){
+      const val=k*gridStep;
+      let p1=project([-4*gridStep,val,0]),p2=project([4*gridStep,val,0]);
+      gridLayer.appendChild(svgEl("line",{x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],stroke:"#eceff3","stroke-width":1}));
+      p1=project([val,-4*gridStep,0]);p2=project([val,4*gridStep,0]);
+      gridLayer.appendChild(svgEl("line",{x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],stroke:"#eceff3","stroke-width":1}));
+    }
+
+    const axes=[
+      {end:[4.8*gridStep,0,0],label:"x₁"},
+      {end:[0,4.8*gridStep,0],label:"x₂"},
+      {end:[0,0,4.8*gridStep],label:"x₃"}
+    ];
+
+    for(const a of axes){
+      const p0=project([0,0,0]),p1=project(a.end);
+      axisLayer.appendChild(svgEl("line",{x1:p0[0],y1:p0[1],x2:p1[0],y2:p1[1],stroke:"#4b5563","stroke-width":2.3}));
+      const t=svgEl("text",{x:p1[0]+10,y:p1[1]-6,"font-size":16,fill:"#374151"});
+      t.textContent=a.label;axisLayer.appendChild(t);
+    }
+
+    for(const end of [[-4.8*gridStep,0,0],[0,-4.8*gridStep,0],[0,0,-4.8*gridStep]]){
+      const p0=project([0,0,0]),p1=project(end);
+      axisLayer.appendChild(svgEl("line",{x1:p0[0],y1:p0[1],x2:p1[0],y2:p1[1],stroke:"#9ca3af","stroke-width":1.4,"stroke-dasharray":"5 5"}));
+    }
+  }
+
+  function drawHouse(points,color,opacity){
+    for(const [i,j] of edges){
+      const p1=project(points[i]),p2=project(points[j]);
+      houseLayer.appendChild(svgEl("line",{x1:p1[0],y1:p1[1],x2:p2[0],y2:p2[1],stroke:color,"stroke-width":4,"stroke-linecap":"round",opacity}));
+    }
+    points.forEach((p,i)=>{
+      const q=project(p);
+      houseLayer.appendChild(svgEl("circle",{cx:q[0],cy:q[1],r:4.5,fill:color,opacity}));
+      const t=svgEl("text",{x:q[0]+6,y:q[1]-6,"font-size":11,fill:color,opacity});
+      t.textContent=`P${i+1}`;houseLayer.appendChild(t);
+    });
+  }
+
+  function redraw(){
+    drawAxes();
+    houseLayer.replaceChildren();
+    drawHouse(originalPoints,"#2563eb",0.62);
+    drawHouse(transformed,"#dc2626",0.95);
+  }
+
+  function update(){
+    try{
+      const A=readMatrix();
+      error.textContent="";
+      transformed=originalPoints.map(p=>transformPoint(A,p));
+      const s=chooseScale([originalPoints,transformed]);
+      gridStep=s.gridStep;scale=s.scale;
+      redraw();
+    }catch(e){
+      error.textContent=e.message;
+    }
+  }
+
+  applyBtn.addEventListener("click",update);
+  for(const input of Object.values(inputs)){
+    input.addEventListener("input",update);
+    input.addEventListener("keydown",e=>{if(e.key==="Enter") update();});
+  }
+
+  for(const b of presetButtons){
+    b.addEventListener("click",()=>{
+      const vals=b.dataset.m.split(",");
+      ids.forEach((id,i)=>inputs[id].value=vals[i]);
+      update();
+    });
+  }
+
+  let dragging=false,lastX=0,lastY=0;
+  plot.addEventListener("pointerdown",e=>{
+    dragging=true;lastX=e.clientX;lastY=e.clientY;
+    plot.classList.add("dragging");plot.setPointerCapture(e.pointerId);
+  });
+  plot.addEventListener("pointermove",e=>{
+    if(!dragging) return;
+    const dx=e.clientX-lastX,dy=e.clientY-lastY;
+    lastX=e.clientX;lastY=e.clientY;
+    yaw+=dx*0.01;pitch+=dy*0.01;
+    const lim=Math.PI/2-0.05;
+    pitch=Math.max(-lim,Math.min(lim,pitch));
+    redraw();
+  });
+  function stop(e){
+    dragging=false;plot.classList.remove("dragging");
+    if(plot.hasPointerCapture && plot.hasPointerCapture(e.pointerId)) plot.releasePointerCapture(e.pointerId);
+  }
+  plot.addEventListener("pointerup",stop);
+  plot.addEventListener("pointercancel",stop);
+
+  update();
+})();
+</script>
+</body>
+</html>
