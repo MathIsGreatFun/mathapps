@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Euclidean Algorithm Explorer</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1c3049;background:#f5f7fc;font-synthesis:none}*{box-sizing:border-box}body{margin:0;padding:32px 20px}main{max-width:1160px;margin:0 auto}header{margin-bottom:23px}h1{font-size:clamp(1.65rem,3vw,2.35rem);margin:0 0 8px;letter-spacing:-.035em}header p{margin:0;color:#607086;line-height:1.5}.controls{background:white;border:1px solid #e0e7f0;border-radius:16px;padding:20px;box-shadow:0 4px 20px #18375b0b;display:flex;flex-wrap:wrap;align-items:end;gap:14px}.field{display:grid;gap:6px;flex:1;min-width:175px}.field label{font-weight:650;font-size:.9rem}input{font:inherit;font-size:1.08rem;padding:11px 13px;border:1px solid #bfccdd;border-radius:9px;width:100%;background:#fff}input:focus{outline:3px solid #d7e7ff;border-color:#426fb0}button{border:0;border-radius:9px;padding:12px 17px;font:inherit;font-weight:700;background:#2359ad;color:white;cursor:pointer;min-height:47px}button:hover{background:#18488f}.examples{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:13px 2px 23px;color:#607086;font-size:.87rem}.examples button{background:#e7edf8;color:#24518e;padding:6px 11px;min-height:0;font-size:.85rem}.examples button:hover{background:#d8e6fa}.error{color:#b42318;margin-top:10px;min-height:1.4em}.summary{background:#e8f4ec;border:1px solid #a8d5b5;padding:17px 20px;border-radius:14px;display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:21px}.summary strong{font-size:1.55rem;color:#12683b}.summary span{color:#345e48}.summary .pill{background:#fff;color:#186a3e;border:1px solid #bedec8;border-radius:999px;padding:6px 11px;font-size:.8rem;font-weight:700}.panels{display:block}.panel{background:white;border:1px solid #e0e7f0;border-radius:15px;overflow:hidden;box-shadow:0 4px 20px #18375b0b}.panel h2{font-size:1.05rem;margin:0;padding:19px 20px 6px}.panel .subhead{margin:0;padding:0 20px 17px;color:#65748b;font-size:.84rem;line-height:1.45}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.95rem}thead{background:#f0f4fa;color:#5d6b80;font-size:.85rem;letter-spacing:.01em}th,td{text-align:left;padding:15px 17px;border-bottom:1px solid #e8edf5;vertical-align:top}th:first-child,td:first-child{width:70px;color:#8190a6}th:nth-child(2),td:nth-child(2){width:36%;border-right:1px solid #e8edf5}tr:last-child td{border-bottom:0}.math{font-variant-numeric:tabular-nums;white-space:nowrap;line-height:1.8}.math b{color:#12683b}.steps .math{white-space:normal;overflow-wrap:anywhere}.definitions{font-size:.86rem;color:#52647b;background:#f3f6fb;border-left:3px solid #c0cce0;padding:5px 9px;margin-bottom:8px}.numeric-combo{margin-top:6px;padding-top:6px;border-top:1px dashed #d5deeb;font-weight:750;color:#1e4c85}.note{display:block;font-size:.82rem;line-height:1.4;margin-top:5px;color:#66768a}.terminate{background:#fff8e9}.terminate .note{color:#9b6408;font-weight:750}.gcdrow{background:#e7f5eb}.gcdrow td{border-bottom-color:#c5e4cc}.gcdtag{display:inline-block;background:#187547;color:#fff;border-radius:5px;padding:3px 7px;font-size:.72rem;font-weight:750;margin-left:7px;vertical-align:middle}.gcdvalue{color:#12683b;font-weight:850;font-size:1.12em}.foot{font-size:.83rem;color:#617185;line-height:1.55;margin:17px 4px}.final{text-align:center;padding:15px 18px;color:#12683b;background:#e7f5eb;font-weight:750;border-top:1px solid #c5e4cc}.empty{padding:20px}sub{font-size:.7em} @media(max-width:810px){body{padding:20px 12px}.panels{grid-template-columns:1fr}.controls{padding:15px}th,td{padding:12px 10px}.panel h2{padding:16px 14px 6px}.panel .subhead{padding:0 14px 14px}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Euclidean Algorithm Explorer</h1><p>Follow every division, then write each remainder as a linear combination of the original inputs.</p></header>
+<form id="form" class="controls" novalidate>
+<div class="field"><label for="a">Positive integer a</label><input id="a" type="text" inputmode="numeric" value="252" autocomplete="off" spellcheck="false"></div>
+<div class="field"><label for="b">Positive integer b</label><input id="b" type="text" inputmode="numeric" value="198" autocomplete="off" spellcheck="false"></div>
+<button type="submit">Run algorithm</button>
+</form>
+<div class="error" id="error" role="alert" aria-live="polite"></div>
+<div id="results" aria-live="polite"></div>
+<p class="foot">On the right, <b>a</b> and <b>b</b> always refer to the <em>original</em> inputs, even when the algorithm swaps their roles. All calculations use exact integer arithmetic.</p>
+</main>
+<script>
+(()=>{
+const form=document.getElementById('form'), aInput=document.getElementById('a'),bInput=document.getElementById('b'),error=document.getElementById('error'),results=document.getElementById('results');
+const fmt=x=>x.toString();
+function linear(A,B){
+ const parts=[];
+ for(const [c,v] of [[A,'a'],[B,'b']]){
+  if(c===0n)continue;
+  const abs=c<0n?-c:c;
+  const term=(abs===1n?'':fmt(abs))+v;
+  if(!parts.length)parts.push((c<0n?'−':'')+term);
+  else parts.push((c<0n?' − ':' + ')+term);
+ }
+ return parts.join('')||'0';
+}
+function multiple(q,expr){return q===1n?`(${expr})`:`${fmt(q)}(${expr})`}
+function calculate(){
+ error.textContent='';
+ const av=aInput.value.trim(),bv=bInput.value.trim();
+ if(!/^[0-9]+$/.test(av)||!/^[0-9]+$/.test(bv)||BigInt(av)===0n||BigInt(bv)===0n){error.textContent='Please enter two positive whole numbers.';results.innerHTML='';return;}
+ if(av.length>80||bv.length>80){error.textContent='Please enter numbers with at most 80 digits so the steps stay readable.';results.innerHTML='';return;}
+ const A=BigInt(av),B=BigInt(bv);
+ let x=A,y=B,xc=[1n,0n],yc=[0n,1n],rows=[],index=0;
+ while(y!==0n){
+   const q=x/y,r=x%y,rc=[xc[0]-q*yc[0],xc[1]-q*yc[1]];
+   rows.push({x,y,q,r,xc:xc.slice(),yc:yc.slice(),rc,index:index+1});
+   if(r===0n)break;
+   x=y;y=r;xc=yc;yc=rc;index++;
+ }
+ const gcd=rows[rows.length-1].y;
+ const finalNonzeroIndex=rows.length>1?rows.length-2:-1;
+ const combined=rows.map((row,i)=>{
+  const terminal=row.r===0n, lastNonzero=i===finalNonzeroIndex;
+  const remainder=lastNonzero?`<span class="gcdvalue">${fmt(row.r)}</span><span class="gcdtag">GCD</span>`:fmt(row.r);
+  let t=`<tr class="${lastNonzero?'gcdrow ':''}${terminal?'terminate':''}"><td>${row.index}</td><td><div class="math">${fmt(row.x)} = ${fmt(row.q)}(${fmt(row.y)}) + ${remainder}</div>`;
+  if(terminal)t+=`<span class="note">Algorithm terminates. Last nonzero ${rows.length===1?'divisor':'remainder'}: <span class="gcdvalue">${fmt(gcd)}</span> <span class="gcdtag">GCD</span></span>`;
+  else if(lastNonzero)t+=`<span class="note">Last nonzero remainder</span>`;
+  return t+'</td>';
+ });
+ const right=rows.map((row,i)=>{
+  // Stop the extended work before the zero-remainder division.
+  if(row.r===0n)return '';
+  const prev=i===0?'a':i===1?'b':`r<sub>${i-1}</sub>`;
+  const divisor=i===0?'b':`r<sub>${i}</sub>`;
+  const label=`r<sub>${i+1}</sub>`;
+  const leading=`${label} = ${prev} − ${fmt(row.q)}${divisor==='b'?'b':divisor}`;
+  const before=linear(row.xc[0],row.xc[1]),div=linear(row.yc[0],row.yc[1]);
+  const expanded=i===0?`a − ${fmt(row.q)}b`:`(${before}) − ${multiple(row.q,div)}`;
+  // Explicitly define all named remainders used in the current calculation.
+  const referenced=[];
+  if(i>=2)referenced.push(i-1);
+  if(i>=1)referenced.push(i);
+  const definitions=referenced.length
+   ? `<div class="definitions">Using ${referenced.map(n=>`r<sub>${n}</sub> = ${fmt(rows[n-1].r)}`).join(' and ')}</div>`
+   : '';
+  let explanation=definitions+`<div class="math">${leading}</div>`;
+  if(i>0)explanation+=`<div class="math">= ${expanded}</div>`;
+  const combo=linear(row.rc[0],row.rc[1]);
+  explanation+=`<div class="math">= <b>${combo}</b></div>`;
+  explanation+=`<div class="math numeric-combo">${fmt(row.r)} = ${combo}</div>`;
+  if(i===finalNonzeroIndex)explanation+=`<span class="note"><b>GCD(${fmt(A)}, ${fmt(B)}) = ${fmt(gcd)} = ${combo}</b></span>`;
+  return explanation;
+ });
+ const body=combined.map((opening,i)=>opening+`<td>${right[i]}</td></tr>`).join('');
+ const gcdcoeff= rows.length===1 ? rows[0].yc : rows[rows.length-2].rc;
+ results.innerHTML=`<div class="summary"><strong>gcd(${fmt(A)}, ${fmt(B)}) = ${fmt(gcd)}</strong><span class="pill">${rows.length} division${rows.length===1?'':'s'}</span><span>${fmt(gcd)} = ${linear(gcdcoeff[0],gcdcoeff[1])}</span></div><section class="panel steps"><h2>Euclidean Algorithm &amp; Back-Substitution</h2><p class="subhead">Each row pairs a division with its corresponding remainder expressed in terms of the original a and b.</p><div class="scroll"><table><thead><tr><th>Step</th><th>Euclidean Algorithm</th><th>Extended Euclidean Algorithm</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
+form.addEventListener('submit',e=>{e.preventDefault();calculate()});calculate();
+})();
+</script>
+</body>
+</html>
